@@ -648,7 +648,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   // 献立を端末どうしで共有する Google Apps Script のURL（…/exec）。空のままなら、この端末の保存だけで動きます。
-  var SYNC_URL = '';
+  var SYNC_URL = 'https://matsunaga-bin-api.netlify.app/api/store';
 
   var MENU = [
     ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
