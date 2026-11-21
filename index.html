@@ -281,6 +281,7 @@ input[type="time"].field{width:auto;min-width:140px}
 .bubble-line{display:flex;justify-content:flex-end;align-items:flex-end;gap:6px}
 .bubble{max-width:88%;white-space:pre-wrap;word-break:break-word;background:var(--bubble);color:var(--bubble-fg);padding:10px 14px;border-radius:16px 16px 2px 16px;font-size:15px}
 .chat .stamp{margin:6px 0 0;text-align:right;font-size:12px;color:var(--muted)}
+.liff-status{margin:14px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
 .notice{margin:0 0 10px;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface);font-size:13px;font-weight:700}
 .sheet-err{margin:0 0 10px;padding:8px 10px;border:2px solid var(--focus);border-radius:4px;background:var(--surface);font-size:14px;font-weight:700}
 .chat .warn{margin:10px 0 0;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;font-size:13px;font-weight:700}
@@ -493,6 +494,8 @@ input[type="time"].field{width:auto;min-width:140px}
     <div id="chat-log"></div>
     <p class="warn" id="chat-warn">試作のため、実際には送られていません。</p>
   </section>
+
+  <p class="liff-status" id="liff-status" role="status">LINE接続：確認中…</p>
 </div>
 
 <div class="bar">
@@ -1243,23 +1246,37 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // LIFF SDK は LIFF_ID があるときだけ読み込む。失敗したら試作モードのまま。
   function initLiff(){
-    if(!LIFF_ID) return;
+    function status(t){ $('liff-status').textContent = 'LINE接続：' + t; }
+    if(!LIFF_ID){ status('未設定（試作モード）'); return; }
+    status('準備中…');
     var s = document.createElement('script');
     s.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
     s.onload = function(){
       try{
         window.liff.init({ liffId: LIFF_ID }).then(function(){
-          var ctx = null;
+          var ctx = null, inClient = false, os = '不明', ver = '不明';
           try{ ctx = window.liff.getContext(); }catch(e){}
-          if(window.liff.isInClient() && ctx && ['utou', 'group', 'room'].indexOf(ctx.type) >= 0){
+          try{ inClient = !!window.liff.isInClient(); }catch(e){}
+          try{ os = window.liff.getOS() || '不明'; }catch(e){}
+          try{ ver = window.liff.getLineVersion() || '不明'; }catch(e){}
+          var type = (ctx && ctx.type) ? ctx.type : '不明';
+          if(inClient && ['utou', 'group', 'room'].indexOf(type) >= 0){
             lineMode = true;
           }else{
             $('liff-notice').hidden = false;
+            if(!inClient){
+              $('liff-notice').textContent = '松永さんとのトークに貼ったリンクから開くと、そのまま送れます。スマホのLINEアプリで、トークに貼ったリンクを押して開いてください（パソコン版LINEやブラウザでは送れません）。';
+            }
           }
-        }).catch(function(){});
-      }catch(e){}
+          status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・OS=' + os + '・LINE=' + ver + (lineMode ? ' → 送信できます' : ' → 試作モード'));
+        }).catch(function(e){
+          status('初期化に失敗（code=' + ((e && e.code) || '不明') + '、message=' + ((e && e.message) || String(e)) + '）');
+        });
+      }catch(e){
+        status('初期化に失敗（' + ((e && e.message) || String(e)) + '）');
+      }
     };
-    s.onerror = function(){};
+    s.onerror = function(){ status('部品を読み込めませんでした'); };
     document.head.appendChild(s);
   }
 
