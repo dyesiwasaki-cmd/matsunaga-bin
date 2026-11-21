@@ -159,7 +159,11 @@ button,input,textarea{font:inherit;color:inherit}
 .cat-head h3 .name-btn{padding:4px 8px;min-height:40px;font-weight:700}
 .rename-in{width:9em;max-width:100%;min-height:40px;margin:2px;padding:4px 8px;border:2px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--fg);font:inherit}
 .tag-chip{font-size:13px}
+.tag-more{border-style:dashed;color:var(--accent);font-weight:700}
 .hash-edit .edit-item > span{font-size:14px}
+.subgroup-edit{margin:8px 0;padding:8px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface)}
+.subwrap .subbox{margin-bottom:6px}
+select.field{padding-right:8px}
 .subbox{margin:8px 0 4px 6px;padding:8px 8px 10px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .subbox .sub-h{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
 .chip.sub-chip{min-height:38px;padding:3px 10px;font-size:14px}
@@ -602,137 +606,316 @@ input[type="time"].field{width:auto;min-width:140px}
     if(i) i.focus();
   }
 
-  // ---- 具材（料理名をキーにしたサブメニュー。localStorage に保存） ----
-  var SUB_KEY = 'otetsudai-sub-v1';
+  // ---- サブメニュー（「グループ」の配列。料理名をキーにして localStorage に保存） ----
+  // グループ = { label: 見出し, multi: 複数選択か, options: 選択肢, showIf: null | { label: 前の見出し, value: その選択肢 } }
+  var SUBG_KEY = 'otetsudai-subgroups-v1';
+  var SUB_KEY = 'otetsudai-sub-v1', SUB_META_KEY = 'otetsudai-submeta-v1';   // 旧形式（移行のために読むだけ）
+  function G(label, multi, options, showIf){ return { label: label, multi: multi, options: options, showIf: showIf || null }; }
+  var TOPPING_UDON = ['ねぎ','天かす','わかめ','卵','かまぼこ','油揚げ','ちくわ天','えび天','とろろ','大根おろし'];
   var SUB_DEFAULT = {
-    'アヒージョ': ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー'],
-    'カレー': ['ビーフ','ポーク','チキン','キーマ','シーフード','野菜','バターチキン','カツカレー','スープカレー','グリーンカレー'],
-    'おでん': ['大根','たまご','こんにゃく','しらたき','ちくわ','ちくわぶ','はんぺん','ごぼう天','さつま揚げ','つみれ','厚揚げ','がんもどき','餅巾着','牛すじ','タコ','じゃがいも','ロールキャベツ','結び昆布']
+    'うどん': [
+      G('温度', false, ['冷たい','温かい']),
+      G('種類（温かい時）', false, ['かけ','きつね','たぬき','月見','肉','カレー','鍋焼き','かき揚げ'], { label: '温度', value: '温かい' }),
+      G('種類（冷たい時）', false, ['ざる','ぶっかけ','釜玉','冷やしたぬき','サラダうどん'], { label: '温度', value: '冷たい' }),
+      G('トッピング', true, TOPPING_UDON)
+    ],
+    'そば': [
+      G('温度', false, ['冷たい','温かい']),
+      G('種類（温かい時）', false, ['かけ','きつね','たぬき','月見','山菜','にしん','天ぷら'], { label: '温度', value: '温かい' }),
+      G('種類（冷たい時）', false, ['ざる','もり','ぶっかけ','とろろ','おろし'], { label: '温度', value: '冷たい' }),
+      G('トッピング', true, TOPPING_UDON)
+    ],
+    'ラーメン': [
+      G('味', false, ['醤油','味噌','塩','豚骨']),
+      G('トッピング', true, ['チャーシュー','煮卵','メンマ','ねぎ','もやし','コーン','バター','のり'])
+    ],
+    'パスタ': [
+      G('ソース', false, ['トマト','クリーム','和風','オイル','ミート']),
+      G('具', true, ['ベーコン','きのこ','ツナ','エビ','ほうれん草','ナス','チーズ'])
+    ],
+    'カレー': [
+      G('種類', false, ['ビーフ','ポーク','チキン','キーマ','シーフード','野菜','バターチキン','カツカレー','スープカレー','グリーンカレー']),
+      G('辛さ', false, ['甘口','中辛','辛口']),
+      G('トッピング', true, ['チーズ','卵','カツ','唐揚げ','ほうれん草','コロッケ','福神漬け'])
+    ],
+    'ハンバーグ': [
+      G('ソース', false, ['デミグラス','和風おろし','ケチャップ','チーズ','照り焼き']),
+      G('付け合わせ', true, ['ポテト','にんじん','コーン','ブロッコリー','目玉焼き'])
+    ],
+    'オムライス': [
+      G('ソース', false, ['ケチャップ','デミグラス','ホワイト']),
+      G('卵', false, ['ふわとろ','薄焼き']),
+      G('中のご飯', false, ['チキンライス','バターライス'])
+    ],
+    '焼き魚定食': [ G('魚', false, ['鮭','さば','ほっけ','さんま','あじ','ぶり']) ],
+    'ステーキ': [
+      G('焼き加減', false, ['レア','ミディアム','ウェルダン']),
+      G('ソース', false, ['和風','ガーリック','デミグラス','塩こしょう'])
+    ],
+    '唐揚げ': [
+      G('味', false, ['醤油','塩','ねぎ塩']),
+      G('添えるもの', true, ['レモン','マヨネーズ','タルタル'])
+    ],
+    '餃子': [ G('焼き方', false, ['焼き','水','揚げ']) ],
+    '牛丼': [ G('トッピング', true, ['卵','温泉卵','ねぎ','チーズ','キムチ']) ],
+    '味噌汁': [ G('具', true, ['豆腐','わかめ','ねぎ','油揚げ','なめこ','大根','じゃがいも','玉ねぎ','しじみ']) ],
+    'サラダ': [ G('ドレッシング', false, ['和風','ごま','シーザー','フレンチ','青じそ']) ],
+    '冷やし中華': [ G('たれ', false, ['醤油','ごまだれ']) ],
+    'アヒージョ': [ G('具材', true, ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー']) ],
+    'おでん': [ G('具', true, ['大根','たまご','こんにゃく','しらたき','ちくわ','ちくわぶ','はんぺん','ごぼう天','さつま揚げ','つみれ','厚揚げ','がんもどき','餅巾着','牛すじ','タコ','じゃがいも','ロールキャベツ','結び昆布']) ]
   };
-  var SUB_META_DEFAULT = {
+  // 旧版（料理ごとに1つの見出し＋選択肢）の初期設定。移行時にだけ使う
+  var OLD_META_DEFAULT = {
     'アヒージョ': { label: '具材', multi: true },
     'カレー': { label: '種類', multi: false },
     'おでん': { label: '具', multi: true }
   };
-  var SUB_META_KEY = 'otetsudai-submeta-v1';
-  function subMeta(name){
-    var b = meta[name] || SUB_META_DEFAULT[name] || { label: '種類', multi: false };
-    return { label: b.label, multi: b.multi, none: b.label + 'はおまかせ', other: 'その他の' + b.label };
+  function validGroups(arr){
+    return Array.isArray(arr) && arr.every(function(g){
+      return g && typeof g.label === 'string' && g.label && typeof g.multi === 'boolean' &&
+        Array.isArray(g.options) && g.options.every(function(s){ return typeof s === 'string'; }) &&
+        (g.showIf == null || (typeof g.showIf === 'object' && typeof g.showIf.label === 'string' && typeof g.showIf.value === 'string'));
+    });
   }
   function loadSub(){
-    var hasMetaKey = false;
-    try{ hasMetaKey = window.localStorage.getItem(SUB_META_KEY) !== null; }catch(e){}
     try{
-      var raw = window.localStorage.getItem(SUB_KEY);
+      var raw = window.localStorage.getItem(SUBG_KEY);
       if(raw){
         var p = JSON.parse(raw), ok = p && typeof p === 'object' && !Array.isArray(p);
-        if(ok) Object.keys(p).forEach(function(k){
-          if(!Array.isArray(p[k]) || !p[k].every(function(s){ return typeof s === 'string'; })) ok = false;
-        });
+        if(ok) Object.keys(p).forEach(function(k){ if(!validGroups(p[k])) ok = false; });
         if(ok){
-          // 見出し名・選び方の保存が無い（旧版のデータ）ときだけ、足りない初期料理を補う
-          if(!hasMetaKey) Object.keys(SUB_DEFAULT).forEach(function(k){
-            if(!Object.prototype.hasOwnProperty.call(p, k)) p[k] = SUB_DEFAULT[k].slice();
-          });
+          Object.keys(p).forEach(function(k){ p[k].forEach(function(g){ if(g.showIf == null) g.showIf = null; }); });
           return p;
         }
       }
     }catch(e){}
-    return JSON.parse(JSON.stringify(SUB_DEFAULT));
-  }
-  function loadMeta(){
+    var res = clone(SUB_DEFAULT), migrated = false;
     try{
-      var raw = window.localStorage.getItem(SUB_META_KEY);
-      if(raw){
-        var p = JSON.parse(raw), ok = p && typeof p === 'object' && !Array.isArray(p);
-        if(ok) Object.keys(p).forEach(function(k){
-          if(!p[k] || typeof p[k].label !== 'string' || !p[k].label || typeof p[k].multi !== 'boolean') ok = false;
+      var rawOld = window.localStorage.getItem(SUB_KEY);
+      if(rawOld){
+        var po = JSON.parse(rawOld), ok2 = po && typeof po === 'object' && !Array.isArray(po);
+        if(ok2) Object.keys(po).forEach(function(k){
+          if(!Array.isArray(po[k]) || !po[k].every(function(s){ return typeof s === 'string'; })) ok2 = false;
         });
-        if(ok) return p;
+        if(ok2){
+          var mo = {}, hasMeta = false;
+          try{
+            var rawMeta = window.localStorage.getItem(SUB_META_KEY);
+            if(rawMeta !== null){
+              hasMeta = true;
+              var pm = JSON.parse(rawMeta);
+              if(pm && typeof pm === 'object' && !Array.isArray(pm)) mo = pm;
+            }
+          }catch(e){}
+          var out = {};
+          Object.keys(po).forEach(function(k){
+            var m = mo[k] || OLD_META_DEFAULT[k] || { label: '種類', multi: false };
+            if(typeof m.label !== 'string' || !m.label) m = { label: '種類', multi: false };
+            out[k] = [G(m.label, !!m.multi, po[k].slice())];
+            if(k === 'カレー' && SUB_DEFAULT[k]) out[k] = out[k].concat(clone(SUB_DEFAULT[k]).slice(1));
+          });
+          // 新しい初期料理を補う（旧版の初期3料理は、旧版で外してあれば外したまま）
+          Object.keys(SUB_DEFAULT).forEach(function(k){
+            if(out[k]) return;
+            if(OLD_META_DEFAULT[k] && hasMeta) return;
+            out[k] = clone(SUB_DEFAULT[k]);
+          });
+          res = out; migrated = true;
+        }
       }
     }catch(e){}
-    return {};
+    if(migrated){
+      try{ window.localStorage.setItem(SUBG_KEY, JSON.stringify(res)); }catch(e){}
+    }
+    return res;
   }
   function saveSub(){
-    try{ window.localStorage.setItem(SUB_KEY, JSON.stringify(sub)); }catch(e){}
-    try{ window.localStorage.setItem(SUB_META_KEY, JSON.stringify(meta)); }catch(e){}
+    try{ window.localStorage.setItem(SUBG_KEY, JSON.stringify(sub)); }catch(e){}
   }
-  function setMeta(name, patch){
-    var m = subMeta(name);
-    meta[name] = { label: patch.label != null ? patch.label : m.label, multi: patch.multi != null ? patch.multi : m.multi };
-    saveSub();
-  }
-  var sub = loadSub(), meta = loadMeta(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {};
+  var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {};
   function hasSub(name){ return Object.prototype.hasOwnProperty.call(sub, name) && Array.isArray(sub[name]); }
-  function dishLabel(name){
-    if(!hasSub(name)) return name;
-    var m = subMeta(name), list = (subSel[name] || []).slice(), o = (subOther[name] || '').trim();
-    if(o){ if(m.multi) list.push(o); else list = [o]; }
-    return name + '（' + (list.length ? list.join('・') : m.none) + '）';
+  function subMarkText(name){
+    var gs = sub[name];
+    if(!gs.length) return '空';
+    return gs[0].label + (gs.length > 1 ? '+' + (gs.length - 1) : '');
   }
-  function focusSubAdd(name){
-    var ins = menuEl.querySelectorAll('input[data-sub]');
-    for(var i = 0; i < ins.length; i++) if(ins[i].dataset.sub === name){ ins[i].focus(); return; }
+
+  // 選択状態：subSel[料理名][見出し] = [選んだもの]、subOther[料理名][見出し] = 「その他」の文字
+  function selOf(name, label){ return (subSel[name] && subSel[name][label]) || []; }
+  function setSel(name, label, arr){ if(!subSel[name]) subSel[name] = {}; subSel[name][label] = arr; }
+  function otherOf(name, label){ return (subOther[name] && subOther[name][label]) || ''; }
+  function setOther(name, label, v){ if(!subOther[name]) subOther[name] = {}; subOther[name][label] = v; }
+  // いま表示するグループ（表示条件を満たしたものだけ）
+  function visibleGroups(name){
+    var vis = [], seen = {};
+    (sub[name] || []).forEach(function(g){
+      var show = !g.showIf || (seen[g.showIf.label] && selOf(name, g.showIf.label).indexOf(g.showIf.value) >= 0);
+      if(show){ vis.push(g); seen[g.label] = true; }
+    });
+    return vis;
+  }
+  // 表示されなくなったグループの選択を消す
+  function pruneSub(name){
+    var keep = {};
+    visibleGroups(name).forEach(function(g){ keep[g.label] = true; });
+    [subSel, subOther].forEach(function(obj){
+      if(obj[name]) Object.keys(obj[name]).forEach(function(k){ if(!keep[k]) delete obj[name][k]; });
+    });
+  }
+  function dishLabel(name){
+    if(!hasSub(name) || !sub[name].length) return name;
+    pruneSub(name);
+    var segs = [], run = null, first = true;
+    visibleGroups(name).forEach(function(g){
+      var list = selOf(name, g.label).slice(), o = otherOf(name, g.label).trim();
+      if(o){ if(g.multi) list.push(o); else list = [o]; }
+      if(!list.length) return;
+      if(!g.multi && first){
+        if(!run){ run = { vals: [] }; segs.push(run); }
+        run.vals.push(list.join('・'));
+      }else{
+        first = false;
+        segs.push({ label: g.label, vals: list });
+      }
+    });
+    var txt = segs.map(function(s){ return (s.label ? s.label + '：' : '') + s.vals.join('・'); }).join('／');
+    return name + '（' + (txt || 'おまかせ') + '）';
   }
   function focusDishChip(name){
     var cs = menuEl.querySelectorAll('.chip[data-v]');
     for(var i = 0; i < cs.length; i++) if(cs[i].dataset.v === name){ cs[i].focus(); return; }
   }
-  function subPanel(name){
-    var box = el('div', 'subbox');
-    box.setAttribute('role', 'group');
-    var m = subMeta(name), btns = [];
-    box.setAttribute('aria-label', name + 'の' + m.label);
-    box.appendChild(el('p', 'sub-h', name + 'の' + m.label + (m.multi ? '（複数可）' : '（1つ選べます）')));
-    var chips = el('div', 'chips');
-    function paint(){
-      btns.forEach(function(bb){
-        bb.b.setAttribute('aria-pressed', (subSel[name] || []).indexOf(bb.ing) >= 0 ? 'true' : 'false');
-      });
+  function focusSubChip(name, label, opt){
+    var cs = menuEl.querySelectorAll('button[data-sopt]');
+    for(var i = 0; i < cs.length; i++){
+      var d = cs[i].dataset;
+      if(d.sname === name && d.sgroup === label && d.sopt === opt){ cs[i].focus(); return; }
     }
-    var inp = el('input', 'field');
-    sub[name].forEach(function(ing){
-      var b = el('button', 'chip sub-chip', ing);
-      b.type = 'button';
-      btns.push({ b: b, ing: ing });
-      b.addEventListener('click', function(){
-        if(!subSel[name]) subSel[name] = [];
-        if(m.multi){
-          toggle(subSel[name], ing);
-        }else{
-          var was = subSel[name].indexOf(ing) >= 0;
-          subSel[name] = was ? [] : [ing];
-          if(!was){ subOther[name] = ''; inp.value = ''; }
-        }
-        paint();
-      });
-      chips.appendChild(b);
-    });
-    paint();
-    box.appendChild(chips);
-    inp.type = 'text'; inp.maxLength = 20; inp.autocomplete = 'off';
-    inp.placeholder = m.other + '（任意）';
-    inp.setAttribute('aria-label', name + 'の' + m.other);
-    inp.value = subOther[name] || '';
-    inp.addEventListener('input', function(){
-      subOther[name] = inp.value;
-      if(!m.multi && inp.value.trim()){ subSel[name] = []; paint(); }
-    });
-    box.appendChild(inp);
-    return box;
   }
-  function focusSubLabel(name){
+  function focusSubOther(name, label){
+    var ins = menuEl.querySelectorAll('input[data-sother]');
+    for(var i = 0; i < ins.length; i++){
+      var d = ins[i].dataset;
+      if(d.sname === name && d.sgroup === label){
+        ins[i].focus();
+        try{ ins[i].setSelectionRange(ins[i].value.length, ins[i].value.length); }catch(e){}
+        return;
+      }
+    }
+  }
+  // 注文側：選んだ料理の直下に出るサブメニュー
+  function subPanel(name){
+    pruneSub(name);
+    var wrap = el('div', 'subwrap');
+    visibleGroups(name).forEach(function(g){
+      var box = el('div', 'subbox');
+      box.setAttribute('role', 'group');
+      box.setAttribute('aria-label', name + 'の' + g.label);
+      box.appendChild(el('p', 'sub-h', name + 'の' + g.label + (g.multi ? '（複数可）' : '（1つ選べます）')));
+      var chips = el('div', 'chips');
+      g.options.forEach(function(opt){
+        var b = el('button', 'chip sub-chip', opt);
+        b.type = 'button';
+        b.dataset.sname = name; b.dataset.sgroup = g.label; b.dataset.sopt = opt;
+        b.setAttribute('aria-pressed', selOf(name, g.label).indexOf(opt) >= 0 ? 'true' : 'false');
+        b.addEventListener('click', function(){
+          var cur = selOf(name, g.label).slice();
+          if(g.multi) toggle(cur, opt); else cur = cur.indexOf(opt) >= 0 ? [] : [opt];
+          setSel(name, g.label, cur);
+          if(!g.multi && cur.length) setOther(name, g.label, '');
+          pruneSub(name);
+          render(); focusSubChip(name, g.label, opt);
+        });
+        chips.appendChild(b);
+      });
+      box.appendChild(chips);
+      var inp = el('input', 'field');
+      inp.type = 'text'; inp.maxLength = 20; inp.autocomplete = 'off';
+      inp.placeholder = 'その他の' + g.label + '（任意）';
+      inp.setAttribute('aria-label', name + 'のその他の' + g.label);
+      inp.dataset.sother = '1'; inp.dataset.sname = name; inp.dataset.sgroup = g.label;
+      inp.value = otherOf(name, g.label);
+      inp.addEventListener('input', function(){
+        var had = selOf(name, g.label).length > 0;
+        setOther(name, g.label, inp.value);
+        if(!g.multi && inp.value.trim() && had){
+          setSel(name, g.label, []); pruneSub(name);
+          render(); focusSubOther(name, g.label);
+        }
+      });
+      box.appendChild(inp);
+      wrap.appendChild(box);
+    });
+    return wrap;
+  }
+
+  // ---- 編集モード：サブメニューの設定パネル ----
+  function snapSub(){
+    hideUndo();
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther) };
+  }
+  function focusSubLabel(name, gi){
     var ins = menuEl.querySelectorAll('input[data-sublabel]');
-    for(var i = 0; i < ins.length; i++) if(ins[i].dataset.sublabel === name){ ins[i].focus(); return; }
+    for(var i = 0; i < ins.length; i++){
+      if(ins[i].dataset.sublabel === name && ins[i].dataset.g === String(gi)){ ins[i].focus(); return; }
+    }
+  }
+  function focusSubAdd(name, gi){
+    var ins = menuEl.querySelectorAll('input[data-sub]');
+    for(var i = 0; i < ins.length; i++){
+      if(ins[i].dataset.sub === name && ins[i].dataset.g === String(gi)){ ins[i].focus(); return; }
+    }
   }
   function focusDishToggle(name){
     var bs = menuEl.querySelectorAll('button[data-subbtn]');
     for(var i = 0; i < bs.length; i++) if(bs[i].dataset.subbtn === name){ bs[i].focus(); return; }
   }
+  function focusAddGroup(name){
+    var bs = menuEl.querySelectorAll('button[data-addgroup]');
+    for(var i = 0; i < bs.length; i++) if(bs[i].dataset.addgroup === name){ bs[i].focus(); return; }
+  }
   function removeSub(name){
-    delete sub[name]; delete meta[name]; delete subSel[name]; delete subOther[name];
+    delete sub[name]; delete subSel[name]; delete subOther[name];
     delete subEditOpen[name]; delete subRemoveAsk[name];
     saveSub(); setMsg(name + 'のサブメニューを外しました。'); render(); focusDishToggle(name);
+  }
+  function uniqueLabel(name){
+    var base = '項目', n = 1, lab = base;
+    while(sub[name].some(function(g){ return g.label === lab; })){ n++; lab = base + n; }
+    return lab;
+  }
+  function addGroup(name){
+    hideUndo();
+    sub[name].push(G(uniqueLabel(name), false, []));
+    saveSub(); setMsg(''); render(); focusSubLabel(name, sub[name].length - 1);
+  }
+  function removeGroup(name, gi){
+    snapSub();
+    var lab = sub[name][gi].label;
+    sub[name].splice(gi, 1);
+    sub[name].forEach(function(g){ if(g.showIf && g.showIf.label === lab) g.showIf = null; });
+    if(subSel[name]) delete subSel[name][lab];
+    if(subOther[name]) delete subOther[name][lab];
+    saveSub(); setMsg(''); render();
+    showUndo('項目「' + lab + '」を消しました。');
+    focusAddGroup(name);
+  }
+  function deleteSubOpt(name, gi, ing){
+    snapSub();
+    var g = sub[name][gi], i = g.options.indexOf(ing);
+    if(i >= 0) g.options.splice(i, 1);
+    var cur = selOf(name, g.label), k = cur.indexOf(ing);
+    if(k >= 0) cur.splice(k, 1);
+    saveSub(); setMsg(''); render();
+    showUndo('「' + ing + '」を削除しました。');
+    focusSubAdd(name, gi);
+  }
+  function addSubOpt(name, gi, raw){
+    var v = raw.trim(), g = sub[name][gi];
+    if(!v){ setMsg('選択肢を入力してください。'); focusSubAdd(name, gi); return; }
+    if(g.options.indexOf(v) >= 0){ setMsg('「' + v + '」はすでに入っています。'); focusSubAdd(name, gi); return; }
+    hideUndo();
+    g.options.push(v); saveSub(); setMsg(''); render(); focusSubAdd(name, gi);
   }
   function subEditPanel(name){
     var box = el('div', 'subbox');
@@ -743,71 +926,135 @@ input[type="time"].field{width:auto;min-width:140px}
       box.appendChild(el('p', 'note', 'この料理を選んだとき、続けて選べる項目（例：種類・具・味付け）を作れます。'));
       var mk = el('button', 'mini', 'サブメニューを作る'); mk.type = 'button';
       mk.addEventListener('click', function(){
-        sub[name] = []; meta[name] = { label: '種類', multi: false };
-        saveSub(); setMsg(''); render(); focusSubLabel(name);
+        sub[name] = [G('種類', false, [])];
+        saveSub(); setMsg(''); render(); focusSubLabel(name, 0);
       });
       box.appendChild(mk);
       return box;
     }
-    var m = subMeta(name);
-    var lab = el('label', 'sub-lab');
-    lab.appendChild(el('span', null, '見出し名'));
-    var li = el('input', 'field');
-    li.type = 'text'; li.maxLength = 8; li.autocomplete = 'off'; li.value = m.label;
-    li.dataset.sublabel = name;
-    li.addEventListener('input', function(){ var v = li.value.trim(); if(v) setMeta(name, { label: v }); });
-    li.addEventListener('change', function(){ if(!li.value.trim()) li.value = subMeta(name).label; });
-    lab.appendChild(li);
-    box.appendChild(lab);
+    var rebuilders = [];
+    sub[name].forEach(function(g, gi){
+      var gb = el('div', 'subgroup-edit');
+      gb.setAttribute('role', 'group');
+      gb.setAttribute('aria-label', name + 'の項目 ' + (gi + 1));
 
-    var seg = el('div', 'seg');
-    seg.setAttribute('role', 'radiogroup'); seg.setAttribute('aria-label', '選び方');
-    var one = el('button', 'chip', '1つだけ'), many = el('button', 'chip', 'いくつでも');
-    [one, many].forEach(function(b){ b.type = 'button'; b.setAttribute('role', 'radio'); seg.appendChild(b); });
-    function paintSeg(){
-      var mu = subMeta(name).multi;
-      one.setAttribute('aria-pressed', mu ? 'false' : 'true'); one.setAttribute('aria-checked', mu ? 'false' : 'true');
-      many.setAttribute('aria-pressed', mu ? 'true' : 'false'); many.setAttribute('aria-checked', mu ? 'true' : 'false');
-    }
-    one.addEventListener('click', function(){
-      setMeta(name, { multi: false });
-      if(subSel[name] && subSel[name].length > 1) subSel[name] = subSel[name].slice(0, 1);
+      var lab = el('label', 'sub-lab');
+      lab.appendChild(el('span', null, '見出し名'));
+      var li = el('input', 'field');
+      li.type = 'text'; li.maxLength = 12; li.autocomplete = 'off'; li.value = g.label;
+      li.dataset.sublabel = name; li.dataset.g = String(gi);
+      li.addEventListener('input', function(){
+        var v = li.value.trim(), old = g.label;
+        if(!v || v === old) return;
+        if(sub[name].some(function(x, i){ return i !== gi && x.label === v; })){ setMsg('「' + v + '」はこの料理の別の項目と同じです。'); return; }
+        sub[name].forEach(function(x){ if(x.showIf && x.showIf.label === old) x.showIf.label = v; });
+        [subSel, subOther].forEach(function(obj){
+          if(obj[name] && Object.prototype.hasOwnProperty.call(obj[name], old)){ obj[name][v] = obj[name][old]; delete obj[name][old]; }
+        });
+        g.label = v; saveSub(); setMsg('');
+        rebuilders.forEach(function(r){ r(); });
+      });
+      li.addEventListener('change', function(){ li.value = g.label; });
+      lab.appendChild(li);
+      gb.appendChild(lab);
+
+      var seg = el('div', 'seg');
+      seg.setAttribute('role', 'radiogroup'); seg.setAttribute('aria-label', '選び方');
+      var one = el('button', 'chip', '1つだけ'), many = el('button', 'chip', 'いくつでも');
+      [one, many].forEach(function(b){ b.type = 'button'; b.setAttribute('role', 'radio'); seg.appendChild(b); });
+      function paintSeg(){
+        one.setAttribute('aria-pressed', g.multi ? 'false' : 'true'); one.setAttribute('aria-checked', g.multi ? 'false' : 'true');
+        many.setAttribute('aria-pressed', g.multi ? 'true' : 'false'); many.setAttribute('aria-checked', g.multi ? 'true' : 'false');
+      }
+      one.addEventListener('click', function(){
+        g.multi = false;
+        var cur = selOf(name, g.label);
+        if(cur.length > 1) setSel(name, g.label, cur.slice(0, 1));
+        saveSub(); paintSeg();
+      });
+      many.addEventListener('click', function(){ g.multi = true; saveSub(); paintSeg(); });
       paintSeg();
-    });
-    many.addEventListener('click', function(){ setMeta(name, { multi: true }); paintSeg(); });
-    paintSeg();
-    box.appendChild(seg);
+      gb.appendChild(seg);
 
-    var chips = el('div', 'chips'); chips.style.marginTop = '8px';
-    sub[name].forEach(function(ing){
-      var it = el('div', 'edit-item');
-      it.appendChild(el('span', null, ing));
-      var x = el('button', 'del', '\u00d7');
-      x.type = 'button';
-      x.setAttribute('aria-label', name + 'の選択肢「' + ing + '」を削除');
-      x.addEventListener('click', function(){ deleteSub(name, ing); });
-      it.appendChild(x);
-      chips.appendChild(it);
+      // 表示条件
+      var sl = el('label', 'sub-lab');
+      sl.appendChild(el('span', null, '表示条件'));
+      var sel = el('select', 'field');
+      sel.setAttribute('aria-label', name + 'の「' + g.label + '」の表示条件');
+      function buildSel(){
+        while(sel.firstChild) sel.removeChild(sel.firstChild);
+        var o0 = el('option', null, 'いつも表示'); o0.value = ''; sel.appendChild(o0);
+        var cur = g.showIf ? g.showIf.label + '\u001f' + g.showIf.value : '';
+        var found = !g.showIf;
+        sub[name].slice(0, gi).forEach(function(h){
+          h.options.forEach(function(opt){
+            var v = h.label + '\u001f' + opt;
+            var o = el('option', null, '「' + h.label + '」で「' + opt + '」を選んだとき'); o.value = v;
+            if(v === cur) found = true;
+            sel.appendChild(o);
+          });
+        });
+        if(!found){
+          var ox = el('option', null, '「' + g.showIf.label + '」で「' + g.showIf.value + '」を選んだとき（選択肢が見つかりません）');
+          ox.value = cur; sel.appendChild(ox);
+        }
+        sel.value = cur;
+      }
+      buildSel();
+      rebuilders.push(buildSel);
+      sel.addEventListener('change', function(){
+        if(!sel.value) g.showIf = null;
+        else{
+          var parts = sel.value.split('\u001f');
+          g.showIf = { label: parts[0], value: parts.slice(1).join('\u001f') };
+        }
+        saveSub(); setMsg('');
+      });
+      sl.appendChild(sel);
+      gb.appendChild(sl);
+
+      var chips = el('div', 'chips'); chips.style.marginTop = '8px';
+      g.options.forEach(function(ing){
+        var it = el('div', 'edit-item');
+        it.appendChild(el('span', null, ing));
+        var x = el('button', 'del', '\u00d7');
+        x.type = 'button';
+        x.setAttribute('aria-label', name + 'の' + g.label + 'の選択肢「' + ing + '」を削除');
+        x.addEventListener('click', function(){ deleteSubOpt(name, gi, ing); });
+        it.appendChild(x);
+        chips.appendChild(it);
+      });
+      gb.appendChild(chips);
+      var row = el('div', 'add-row');
+      var inp = el('input', 'field');
+      inp.type = 'text'; inp.maxLength = 20; inp.placeholder = '選択肢を追加'; inp.autocomplete = 'off';
+      inp.dataset.sub = name; inp.dataset.g = String(gi);
+      inp.setAttribute('aria-label', name + 'の' + g.label + 'に選択肢を追加');
+      var ab = el('button', 'mini', '追加'); ab.type = 'button';
+      ab.setAttribute('aria-label', name + 'の' + g.label + 'の選択肢に追加');
+      function go(){ addSubOpt(name, gi, inp.value); }
+      ab.addEventListener('click', go);
+      inp.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go(); }
+      });
+      row.appendChild(inp); row.appendChild(ab);
+      gb.appendChild(row);
+
+      var rg = el('button', 'mini sub', 'この項目を消す'); rg.type = 'button';
+      rg.style.marginTop = '10px';
+      rg.addEventListener('click', function(){ removeGroup(name, gi); });
+      gb.appendChild(rg);
+      box.appendChild(gb);
     });
-    box.appendChild(chips);
-    var row = el('div', 'add-row');
-    var inp = el('input', 'field');
-    inp.type = 'text'; inp.maxLength = 20; inp.placeholder = '選択肢を追加'; inp.autocomplete = 'off';
-    inp.dataset.sub = name;
-    inp.setAttribute('aria-label', name + 'の選択肢を追加');
-    var ab = el('button', 'mini', '追加'); ab.type = 'button';
-    ab.setAttribute('aria-label', name + 'の選択肢に追加');
-    function go(){ addSub(name, inp.value); }
-    ab.addEventListener('click', go);
-    inp.addEventListener('keydown', function(e){
-      if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go(); }
-    });
-    row.appendChild(inp); row.appendChild(ab);
-    box.appendChild(row);
+
+    var ag = el('button', 'mini', '項目を追加'); ag.type = 'button';
+    ag.dataset.addgroup = name;
+    ag.addEventListener('click', function(){ addGroup(name); });
+    box.appendChild(ag);
 
     if(subRemoveAsk[name]){
       var cf = el('div', 'undo');
-      cf.appendChild(el('span', null, name + 'のサブメニュー（選択肢' + sub[name].length + '件）を外します。よろしいですか？'));
+      cf.appendChild(el('span', null, name + 'のサブメニュー（' + sub[name].length + '項目）を外します。よろしいですか？'));
       var y = el('button', 'mini', '外す'); y.type = 'button';
       var nb = el('button', 'mini sub', 'やめる'); nb.type = 'button';
       y.addEventListener('click', function(){ removeSub(name); });
@@ -816,28 +1063,11 @@ input[type="time"].field{width:auto;min-width:140px}
       box.appendChild(cf);
     }else{
       var rm = el('button', 'mini sub', 'サブメニューを外す'); rm.type = 'button';
-      rm.style.marginTop = '10px';
+      rm.style.margin = '10px 0 0 8px';
       rm.addEventListener('click', function(){ subRemoveAsk[name] = true; render(); });
       box.appendChild(rm);
     }
     return box;
-  }
-  function deleteSub(name, ing){
-    hideUndo();
-    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub) };
-    var i = sub[name].indexOf(ing);
-    if(i >= 0) sub[name].splice(i, 1);
-    if(subSel[name]){ var k = subSel[name].indexOf(ing); if(k >= 0) subSel[name].splice(k, 1); }
-    saveSub(); setMsg(''); render();
-    showUndo('「' + ing + '」を削除しました。');
-    focusSubAdd(name);
-  }
-  function addSub(name, raw){
-    var v = raw.trim();
-    if(!v){ setMsg('選択肢を入力してください。'); focusSubAdd(name); return; }
-    if(sub[name].indexOf(v) >= 0){ setMsg('「' + v + '」はすでに入っています。'); focusSubAdd(name); return; }
-    hideUndo();
-    sub[name].push(v); saveSub(); setMsg(''); render(); focusSubAdd(name);
   }
 
   var TAG_DEFAULT = {
@@ -947,6 +1177,12 @@ input[type="time"].field{width:auto;min-width:140px}
     try{ window.localStorage.setItem(TAGS_KEY, JSON.stringify(tags)); }catch(e){}
   }
   var tags = loadTags(), tagEditOpen = {}, tagFilter = '', tagQuery = '';
+  var TAGS_OPEN_KEY = 'otetsudai-tagsopen-v1';
+  var tagsOpen = false;
+  try{ tagsOpen = window.localStorage.getItem(TAGS_OPEN_KEY) === '1'; }catch(e){}
+  function saveTagsOpen(){
+    try{ window.localStorage.setItem(TAGS_OPEN_KEY, tagsOpen ? '1' : '0'); }catch(e){}
+  }
   function tagsOf(name){
     return Object.prototype.hasOwnProperty.call(tags, name) ? tags[name] : (TAG_DEFAULT[name] || []);
   }
@@ -970,7 +1206,8 @@ input[type="time"].field{width:auto;min-width:140px}
     if(editing) return;
     var cnt = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){ tagsOf(nm).forEach(function(t){ cnt[t] = (cnt[t] || 0) + 1; }); }); });
-    var top = Object.keys(cnt).sort(function(a, b){ return (cnt[b] - cnt[a]) || (a < b ? -1 : a > b ? 1 : 0); }).slice(0, 12);
+    var all = Object.keys(cnt).sort(function(a, b){ return (cnt[b] - cnt[a]) || (a < b ? -1 : a > b ? 1 : 0); });
+    var top = tagsOpen ? all.slice() : all.slice(0, 12);
     if(tagFilter && top.indexOf(tagFilter) < 0) top.push(tagFilter);
     var box = $('tag-chips'); box.innerHTML = '';
     top.forEach(function(t){
@@ -985,6 +1222,18 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       box.appendChild(b);
     });
+    if(all.length > 12){
+      var more = el('button', 'chip sub-chip tag-chip tag-more', tagsOpen ? '閉じる' : 'もっと見る（あと' + (all.length - 12) + '個）');
+      more.type = 'button';
+      more.setAttribute('aria-expanded', tagsOpen ? 'true' : 'false');
+      more.addEventListener('click', function(){
+        tagsOpen = !tagsOpen; saveTagsOpen();
+        renderFind();
+        var mb = $('tag-chips').querySelector('.tag-more');
+        if(mb) mb.focus();
+      });
+      box.appendChild(more);
+    }
     var st = $('tag-status');
     if(!filterActive()){ st.hidden = true; return; }
     var vis = 0, hid = 0;
@@ -1086,7 +1335,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(menu.some(function(g, i){ return i !== st.gi && g[0] === v; })){ setMsg('分類「' + v + '」はすでにあります。'); return; }
     }
     hideUndo();
-    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), meta: clone(meta), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags) };
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags) };
     if(st.k === 'dish'){
       var arr = menu[st.gi][1], ix = arr.indexOf(st.old);
       if(ix >= 0) arr[ix] = v;
@@ -1094,7 +1343,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(!stillUsed){
         var di = dishes.indexOf(st.old);
         if(di >= 0) dishes[di] = v;
-        moveKey(sub, st.old, v); moveKey(meta, st.old, v);
+        moveKey(sub, st.old, v);
         moveKey(subSel, st.old, v); moveKey(subOther, st.old, v);
         moveKey(subEditOpen, st.old, v); moveKey(subRemoveAsk, st.old, v);
         saveSub();
@@ -1172,7 +1421,7 @@ input[type="time"].field{width:auto;min-width:140px}
             nm.dataset.rename = name;
             nm.setAttribute('aria-label', '「' + name + '」の名前を変える');
             nm.appendChild(el('span', null, name));
-            if(hasSub(name)) nm.appendChild(el('small', 'submark', '▾' + subMeta(name).label));
+            if(hasSub(name)) nm.appendChild(el('small', 'submark', '▾' + subMarkText(name)));
             nm.appendChild(el('span', 'pen', '✎'));
             nm.addEventListener('click', function(){ startRename('dish', gi, name); });
             it.appendChild(nm);
@@ -1288,7 +1537,6 @@ input[type="time"].field{width:auto;min-width:140px}
     menu = undoSnap.menu; dishes = undoSnap.dishes;
     if(undoSnap.sub){
       sub = undoSnap.sub;
-      if(undoSnap.meta) meta = undoSnap.meta;
       if(undoSnap.subSel){ subSel = undoSnap.subSel; subOther = undoSnap.subOther; }
       saveSub();
     }
@@ -1304,7 +1552,7 @@ input[type="time"].field{width:auto;min-width:140px}
   });
   $('reset-yes').addEventListener('click', function(){
     menu = clone(MENU);
-    sub = clone(SUB_DEFAULT); meta = {}; subSel = {}; subOther = {}; subEditOpen = {}; subRemoveAsk = {};
+    sub = clone(SUB_DEFAULT); subSel = {}; subOther = {}; subEditOpen = {}; subRemoveAsk = {};
     saveSub();
     tags = {}; saveTags(); tagEditOpen = {}; tagFilter = ''; tagQuery = ''; $('tag-search').value = '';
     dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
