@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>松永便</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f1f4ef;
+  --surface:#fafbf8;
+  --fg:#1f2a28;
+  --muted:#55655f;
+  --line:#c3cfc8;
+  --accent:#1d6b66;
+  --accent-fg:#ffffff;
+  --accent-soft:#d9eae6;
+  --focus:#c8650f;
+  --disabled-bg:#dde4df;
+  --disabled-fg:#6f7f79;
+  --overlay:rgba(20,30,28,.5);
+  --shadow:rgba(20,30,28,.18);
+  --bubble:#1d6b66;
+  --bubble-fg:#ffffff;
+  --chat-bg:#e6ece7;
+  --cat-glow:none;
+  --brand-plate:transparent;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151c1b;
+    --surface:#1e2826;
+    --fg:#e6eeea;
+    --muted:#9bb0aa;
+    --line:#38463f;
+    --accent:#6cc5bb;
+    --accent-fg:#0f1f1d;
+    --accent-soft:#27423e;
+    --focus:#f0b45a;
+    --disabled-bg:#27312e;
+    --disabled-fg:#7d908a;
+    --overlay:rgba(0,0,0,.6);
+    --shadow:rgba(0,0,0,.5);
+    --bubble:#6cc5bb;
+    --bubble-fg:#0f1f1d;
+    --chat-bg:#1a2321;
+    --cat-glow:drop-shadow(0 0 1.2px rgba(255,255,255,.85));
+    --brand-plate:#121a1a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151c1b;
+  --surface:#1e2826;
+  --fg:#e6eeea;
+  --muted:#9bb0aa;
+  --line:#38463f;
+  --accent:#6cc5bb;
+  --accent-fg:#0f1f1d;
+  --accent-soft:#27423e;
+  --focus:#f0b45a;
+  --disabled-bg:#27312e;
+  --disabled-fg:#7d908a;
+  --overlay:rgba(0,0,0,.6);
+  --shadow:rgba(0,0,0,.5);
+  --bubble:#6cc5bb;
+  --bubble-fg:#0f1f1d;
+  --chat-bg:#1a2321;
+  --cat-glow:drop-shadow(0 0 1.2px rgba(255,255,255,.85));
+  --brand-plate:#121a1a;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  padding-block:20px 0;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  overflow-x:hidden;
+}
+.wrap{max-width:480px;margin:0 auto;padding-bottom:120px}
+
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* ---- 見出し ---- */
+.titlebar{display:flex;align-items:center;gap:10px;margin:0 0 2px;border-bottom:3px double var(--accent);padding-bottom:6px}
+.title{display:flex;align-items:center;gap:10px;flex:1;min-width:0;margin:0;font-size:26px;font-weight:700;letter-spacing:.08em}
+.theme-btn{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:2px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--accent);cursor:pointer;box-shadow:0 2px 0 var(--line)}
+.theme-btn:active{transform:translateY(2px);box-shadow:none}
+.theme-btn svg{display:block}
+.cat{filter:var(--cat-glow)}
+.brand,.brand-dark{display:block;max-width:100%;height:auto;border-radius:10px}
+.brand-dark{display:none;background:var(--brand-plate)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .brand{display:none}
+  :root:not([data-theme="light"]) .brand-dark{display:block}
+}
+:root[data-theme="dark"] .brand{display:none}
+:root[data-theme="dark"] .brand-dark{display:block}
+.logo{flex:none;display:block;width:56px;height:56px;border-radius:12px;border:1px solid var(--line);object-fit:cover}
+.logo{flex:none}
+.cat{flex:none;display:block}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sec-head h2{margin:0}
+.edit-btn{flex:none;min-height:44px;padding:4px 14px;border:2px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 0 var(--line)}
+.edit-btn.on{background:var(--accent);color:var(--accent-fg)}
+.edit-btn:active{transform:translateY(2px);box-shadow:none}
+.cat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;margin-bottom:6px}
+.cat-head h3{margin:0 !important}
+.cat-head:first-child{margin-top:0}
+.del-cat{flex:none;width:44px;height:44px;border:2px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
+.edit-item{display:inline-flex;align-items:stretch;max-width:100%;min-height:44px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface)}
+.edit-item span{display:flex;align-items:center;padding:6px 10px;font-size:15px;word-break:break-word;min-width:0}
+.edit-item .del{flex:none;width:44px;border:0;border-left:2px dashed var(--muted);background:var(--accent-soft);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
+.edit-item .del:active{filter:brightness(.9)}
+.add-row{display:flex;gap:8px;margin-top:10px}
+.add-row .field{flex:1;min-width:0}
+.mini{flex:none;min-height:48px;padding:0 16px;border:2px solid var(--accent);border-radius:6px;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:15px;cursor:pointer}
+.mini.sub{background:var(--surface);color:var(--accent)}
+.mini:active{filter:brightness(.92)}
+.undo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;padding:8px 10px;background:var(--accent-soft);border-left:5px solid var(--accent);border-radius:2px;font-size:14px}
+.undo span{flex:1 1 180px;min-width:0}
+#edit-tools,#shop-tools{margin-top:14px;padding-top:4px;border-top:1px dashed var(--line)}
+.usual{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:72px;padding:10px 14px;border:2px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 var(--line);transition:transform .12s, box-shadow .12s, background-color .12s}
+.usual .usual-ico{width:48px;height:48px}
+@media (max-width:420px){.usual .usual-ico{width:40px;height:40px}}
+.usual:active{transform:translateY(3px);box-shadow:none}
+.usual[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);box-shadow:none;transform:translateY(3px)}
+.usual[aria-pressed="true"] span::before{content:"\2713";margin-right:8px}
+.shop-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding:6px 8px 6px 12px;border:2px solid var(--line);border-radius:4px;background:var(--surface)}
+.shop-row.on{border-color:var(--accent);background:var(--accent-soft)}
+.shop-row .nm{flex:1;min-width:0;word-break:break-word;font-size:16px}
+.shop-row.on .nm{font-weight:700}
+.shop-row.on .nm::before{content:"\2713";margin-right:6px;color:var(--accent)}
+.shop-row .stepper{flex:none}
+.shop-row .stepper output{min-width:48px}
+.stepper button[aria-disabled="true"]{background:var(--disabled-bg);color:var(--disabled-fg);cursor:not-allowed}
+.subbox{margin:8px 0 4px 6px;padding:8px 8px 10px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 4px 4px 0}
+.subbox .sub-h{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
+.chip.sub-chip{min-height:38px;padding:3px 10px;font-size:14px}
+.chip.sub-chip[aria-pressed="true"]{padding-left:28px}
+.subbox .field{min-height:44px;margin-top:8px;font-size:15px}
+.subbox .add-row{margin-top:8px}
+.subbox .mini{min-height:44px}
+.lead{margin:8px 0 16px;color:var(--muted);font-size:14px}
+
+/* ---- タブ ---- */
+.tabs{display:flex;gap:0;border:2px solid var(--accent);border-radius:6px;overflow:hidden;margin-bottom:8px}
+.tab{
+  flex:1;min-height:48px;padding:6px 8px;border:0;background:var(--surface);cursor:pointer;
+  font-weight:700;font-size:16px;color:var(--accent);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.tab-ico{flex:none;display:block;border-radius:50%;background:var(--surface);border:1px solid var(--line);object-fit:cover}
+.tab + .tab{border-left:2px solid var(--accent)}
+.tab{white-space:nowrap;min-width:0}
+@media (max-width:420px){
+  .tab{font-size:14px;gap:4px;padding:6px 2px}
+  .tab-ico{width:26px;height:26px}
+  .tab .badge{min-width:20px;height:20px;padding:0 5px;line-height:20px;font-size:12px}
+}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-fg)}
+.tab .badge{
+  min-width:22px;height:22px;padding:0 6px;border-radius:11px;font-size:13px;line-height:22px;
+  background:var(--accent);color:var(--accent-fg);display:none;
+}
+.tab[aria-selected="true"] .badge{background:var(--accent-fg);color:var(--accent)}
+.tab .badge.on{display:inline-block}
+
+/* ---- セクション（献立表風の罫線区切り） ---- */
+.sec{padding:16px 0;border-bottom:1px dashed var(--line)}
+.sec h2{margin:0 0 10px;font-size:15px;font-weight:700;color:var(--accent);letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.sec h2::before{content:"";width:6px;height:16px;background:var(--accent);display:inline-block}
+.sec h3{margin:14px 0 6px;font-size:14px;font-weight:700;color:var(--fg)}
+.sec h3:first-of-type{margin-top:0}
+
+/* ---- チップ ---- */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  min-height:44px;padding:6px 14px;border:2px solid var(--line);border-radius:4px;
+  background:var(--surface);color:var(--fg);cursor:pointer;font-size:15px;
+  box-shadow:0 2px 0 var(--line);
+  transition:transform .12s, box-shadow .12s, background-color .12s;
+  position:relative;
+}
+.chip:active{transform:translateY(2px);box-shadow:none}
+.chip[aria-pressed="true"]{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:700;
+  box-shadow:none;transform:translateY(2px);padding-left:30px;
+}
+.chip[aria-pressed="true"]::before{content:"\2713";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700}
+
+/* 朝昼夜：丸いラジオ風 */
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg .chip{flex:1;border-radius:24px;text-align:center}
+.seg .chip[aria-pressed="true"]{padding-left:14px}
+.seg .chip{white-space:nowrap;min-width:0}
+@media (max-width:420px){
+  #when-group,#clean-when{gap:5px}
+  #clean-when .chip{padding-left:4px;padding-right:4px;font-size:14px}
+  #clean-when .chip[aria-pressed="true"]{padding-left:4px}
+  #clean-when .chip[aria-pressed="true"]::before{margin-right:4px}
+  #when-group .chip{padding-left:4px;padding-right:4px;font-size:14px}
+  #when-group .chip[aria-pressed="true"]{padding-left:4px}
+  #when-group .chip[aria-pressed="true"]::before{margin-right:4px}
+}
+.seg .chip[aria-pressed="true"]::before{content:"";position:static;display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent-fg);margin-right:8px;transform:none;vertical-align:middle}
+
+/* ---- 入力 ---- */
+.field{display:block;width:100%;min-height:48px;padding:10px 12px;border:2px solid var(--line);border-radius:4px;background:var(--surface);}
+.field:focus-visible{border-color:var(--accent)}
+textarea.field{min-height:84px;resize:vertical}
+.note{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.row label{font-weight:700;font-size:15px}
+.stepper{display:inline-flex;align-items:center;border:2px solid var(--accent);border-radius:6px;overflow:hidden}
+.stepper button{width:48px;height:48px;border:0;background:var(--accent);color:var(--accent-fg);font-size:24px;font-weight:700;cursor:pointer}
+.stepper button:active{filter:brightness(.9)}
+.stepper button:disabled{background:var(--disabled-bg);color:var(--disabled-fg);cursor:not-allowed}
+.stepper output{min-width:64px;text-align:center;font-size:18px;font-weight:700;background:var(--surface)}
+input[type="time"].field{width:auto;min-width:140px}
+
+/* ---- 下部固定ボタン ---- */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:10;
+  background:var(--surface);border-top:2px solid var(--accent);
+  padding-top:10px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  box-shadow:0 -4px 12px var(--shadow);
+}
+.bar-in{max-width:480px;margin:0 auto}
+.go{
+  width:100%;min-height:54px;border:0;border-radius:6px;background:var(--accent);color:var(--accent-fg);
+  font-size:18px;font-weight:700;letter-spacing:.1em;cursor:pointer;
+  box-shadow:0 4px 0 var(--shadow);transition:transform .12s, box-shadow .12s;
+}
+.go:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+.go:disabled{background:var(--disabled-bg);color:var(--disabled-fg);cursor:not-allowed;box-shadow:none}
+
+/* ---- 確認シート ---- */
+.scrim{position:fixed;inset:0;z-index:20;background:var(--overlay);display:none}
+.scrim.open{display:block}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;
+  background:var(--surface);border-top:4px solid var(--accent);border-radius:14px 14px 0 0;
+  padding-top:18px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  animation:up .2s ease-out;
+}
+.sheet-in{max-width:480px;margin:0 auto}
+.sheet h2{margin:0 0 4px;font-size:18px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cats{display:flex;gap:4px;align-items:flex-end}
+.sheet p.sub{margin:0 0 10px;color:var(--muted);font-size:13px}
+.msg{white-space:pre-wrap;word-break:break-word;margin:0 0 16px;padding:12px;background:var(--accent-soft);border-left:5px solid var(--accent);border-radius:2px;font-family:inherit;font-size:15px}
+.btns{display:flex;gap:10px}
+.btn{flex:1;min-height:50px;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer;border:2px solid var(--accent)}
+.btn.sub{background:var(--surface);color:var(--accent)}
+.btn.main{background:var(--accent);color:var(--accent-fg);flex:1.4}
+.btn:active{filter:brightness(.92)}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+
+/* ---- 送信プレビュー ---- */
+.chat{margin-top:20px;padding:14px 12px;background:var(--chat-bg);border:2px solid var(--line);border-radius:6px}
+.chat h2{margin:0 0 10px;font-size:14px;color:var(--muted)}
+.bubble-line{display:flex;justify-content:flex-end;align-items:flex-end;gap:6px}
+.bubble{max-width:88%;white-space:pre-wrap;word-break:break-word;background:var(--bubble);color:var(--bubble-fg);padding:10px 14px;border-radius:16px 16px 2px 16px;font-size:15px}
+.chat .stamp{margin:6px 0 0;text-align:right;font-size:12px;color:var(--muted)}
+.notice{margin:0 0 10px;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface);font-size:13px;font-weight:700}
+.sheet-err{margin:0 0 10px;padding:8px 10px;border:2px solid var(--focus);border-radius:4px;background:var(--surface);font-size:14px;font-weight:700}
+.chat .warn{margin:10px 0 0;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;font-size:13px;font-weight:700}
+
+[hidden]{display:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+@media (max-width:360px){
+  .chip{padding-left:10px;padding-right:10px;font-size:14px}
+  .chip[aria-pressed="true"]{padding-left:26px}
+}
+</style>
+<script>
+(function(){
+  try{
+    var t = window.localStorage.getItem('otetsudai-theme-v1');
+    if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="cat-rag" viewBox="0 0 120 120"><g stroke="#4a3a30" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M24 120 Q26 92 60 90 Q94 92 96 120 Z" fill="#f8f0e2"/>
+<path d="M43 120 L45 98 Q60 106 75 98 L77 120 Z" fill="#fff7ea"/>
+<path d="M45 98 Q50 105 54 100 Q57 106 60 102 Q63 106 66 100 Q70 105 75 98" fill="none" stroke="#e9806e" stroke-width="2"/>
+<path d="M46 98 L40 89 M74 98 L80 89" fill="none" stroke="#e9806e" stroke-width="3.5"/>
+<path d="M28 46 L29 20 L52 34 Z" fill="#f8f0e2"/><path d="M92 46 L91 20 L68 34 Z" fill="#f8f0e2"/>
+<path d="M33 38 L33 27 L44 34 Z" fill="#8a6a58" stroke="none"/><path d="M87 38 L87 27 L76 34 Z" fill="#8a6a58" stroke="none"/>
+<ellipse cx="60" cy="56" rx="35" ry="30" fill="#f8f0e2"/>
+<ellipse cx="45" cy="53" rx="11" ry="9" fill="#8a6a58" opacity=".6" stroke="none"/><ellipse cx="75" cy="53" rx="11" ry="9" fill="#8a6a58" opacity=".6" stroke="none"/>
+<path d="M55 40 Q60 36 65 40 L63 58 Q60 62 57 58 Z" fill="#8a6a58" opacity=".5" stroke="none"/>
+<ellipse cx="60" cy="67" rx="15" ry="11" fill="#fffdf8" stroke="none"/>
+<path d="M92 42 L104 36 L100 50 Z" fill="#fff"/>
+<path d="M26 44 Q60 8 94 44 Q60 32 26 44 Z" fill="#fff"/>
+<circle cx="60" cy="31" r="1.8" fill="#e9806e" stroke="none"/><circle cx="47" cy="34" r="1.8" fill="#e9806e" stroke="none"/><circle cx="73" cy="34" r="1.8" fill="#e9806e" stroke="none"/>
+<circle cx="46" cy="56" r="5" fill="#5aa0d8" stroke-width="1.5"/><circle cx="46" cy="56" r="2.4" fill="#1f2a35" stroke="none"/><circle cx="44.6" cy="54.4" r="1.2" fill="#fff" stroke="none"/><circle cx="74" cy="56" r="5" fill="#5aa0d8" stroke-width="1.5"/><circle cx="74" cy="56" r="2.4" fill="#1f2a35" stroke="none"/><circle cx="72.6" cy="54.4" r="1.2" fill="#fff" stroke="none"/><path d="M56.5 64 Q60 62 63.5 64 Q60 69 56.5 64 Z" fill="#d98c8c" stroke-width="1.5"/>
+<path d="M60 67 L60 70 M60 70 Q56 74 52 71 M60 70 Q64 74 68 71" fill="none" stroke-width="1.8"/>
+<path d="M40 68 L26 66 M40 72 L27 75 M80 68 L94 66 M80 72 L93 75" fill="none" stroke-width="1.2"/>
+<ellipse cx="38" cy="68" rx="4" ry="2.5" fill="#f4a9a0" opacity=".6" stroke="none"/><ellipse cx="82" cy="68" rx="4" ry="2.5" fill="#f4a9a0" opacity=".6" stroke="none"/>
+<path d="M92 106 L104 76" fill="none" stroke-width="5.5"/><path d="M92 106 L104 76" fill="none" stroke="#d9b27a" stroke-width="2.5"/>
+<circle cx="105" cy="71" r="6.5" fill="#c9ced3"/><circle cx="92" cy="106" r="6.5" fill="#f8f0e2"/>
+</g></symbol><symbol id="cat-ben" viewBox="0 0 120 120"><g stroke="#4a3a30" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M24 120 Q26 92 60 90 Q94 92 96 120 Z" fill="#e0a04e"/>
+<circle cx="34" cy="100" r="3.2" fill="#b86f2a" stroke="#4a2a14" stroke-width="1.6"/><circle cx="88" cy="108" r="3.2" fill="#b86f2a" stroke="#4a2a14" stroke-width="1.6"/><circle cx="36" cy="114" r="3.2" fill="#b86f2a" stroke="#4a2a14" stroke-width="1.6"/><circle cx="84" cy="96" r="3.2" fill="#b86f2a" stroke="#4a2a14" stroke-width="1.6"/><path d="M43 120 L45 98 Q60 106 75 98 L77 120 Z" fill="#fff7ea"/>
+<path d="M45 98 Q50 105 54 100 Q57 106 60 102 Q63 106 66 100 Q70 105 75 98" fill="none" stroke="#e9806e" stroke-width="2"/>
+<path d="M46 98 L40 89 M74 98 L80 89" fill="none" stroke="#e9806e" stroke-width="3.5"/>
+<path d="M28 46 L29 20 L52 34 Z" fill="#e0a04e"/><path d="M92 46 L91 20 L68 34 Z" fill="#e0a04e"/>
+<path d="M33 38 L33 27 L44 34 Z" fill="#e7a58e" stroke="none"/><path d="M87 38 L87 27 L76 34 Z" fill="#e7a58e" stroke="none"/>
+<ellipse cx="60" cy="56" rx="35" ry="30" fill="#e0a04e"/>
+<ellipse cx="60" cy="67" rx="15" ry="11" fill="#f6dcae" stroke="none"/>
+<path d="M26 56 L36 58 M25 63 L35 63 M94 56 L84 58 M95 63 L85 63" fill="none" stroke="#5a3a22" stroke-width="2.2"/>
+<path d="M50 47 L53 40 L60 45 L67 40 L70 47" fill="none" stroke="#5a3a22" stroke-width="2.4"/>
+<path d="M27 44 L14 40 L20 52 Z" fill="#e9806e"/>
+<path d="M26 44 Q60 8 94 44 Q60 32 26 44 Z" fill="#e9806e"/>
+<circle cx="60" cy="31" r="1.8" fill="#fff" stroke="none"/><circle cx="47" cy="34" r="1.8" fill="#fff" stroke="none"/><circle cx="73" cy="34" r="1.8" fill="#fff" stroke="none"/>
+<circle cx="46" cy="56" r="5" fill="#b4c23c" stroke-width="1.5"/><circle cx="46" cy="56" r="2.4" fill="#1f2a35" stroke="none"/><circle cx="44.6" cy="54.4" r="1.2" fill="#fff" stroke="none"/><circle cx="74" cy="56" r="5" fill="#b4c23c" stroke-width="1.5"/><circle cx="74" cy="56" r="2.4" fill="#1f2a35" stroke="none"/><circle cx="72.6" cy="54.4" r="1.2" fill="#fff" stroke="none"/><path d="M56.5 64 Q60 62 63.5 64 Q60 69 56.5 64 Z" fill="#d98c8c" stroke-width="1.5"/>
+<path d="M60 67 L60 70 M60 70 Q56 74 52 71 M60 70 Q64 74 68 71" fill="none" stroke-width="1.8"/>
+<path d="M40 68 L26 66 M40 72 L27 75 M80 68 L94 66 M80 72 L93 75" fill="none" stroke-width="1.2"/>
+<ellipse cx="38" cy="68" rx="4" ry="2.5" fill="#f4a9a0" opacity=".6" stroke="none"/><ellipse cx="82" cy="68" rx="4" ry="2.5" fill="#f4a9a0" opacity=".6" stroke="none"/>
+<path d="M28 106 L17 78" fill="none" stroke-width="5.5"/><path d="M28 106 L17 78" fill="none" stroke="#d9b27a" stroke-width="2.5"/>
+<ellipse cx="14" cy="68" rx="3.5" ry="9" fill="#7fb8d6" transform="rotate(-30 16 76)"/><ellipse cx="16" cy="67" rx="3.5" ry="9" fill="#f2c94c"/><ellipse cx="19" cy="68" rx="3.5" ry="9" fill="#e9806e" transform="rotate(30 17 76)"/>
+<circle cx="28" cy="106" r="6.5" fill="#e0a04e"/>
+</g></symbol></svg>
+
+<div class="wrap">
+  <p class="notice" id="liff-notice" role="status" hidden>松永さんとのトークに貼ったリンクから開くと、そのまま送れます。</p>
+  <div class="titlebar">
+  <h1 class="title"><img class="brand" src="cat-icons/logo-720.png" alt="松永便" width="240" height="80"><img class="brand-dark" src="cat-icons/logo-720-dark.png" alt="松永便" width="240" height="80"></h1>
+  <button type="button" class="theme-btn" id="theme-btn"></button>
+  </div>
+  <p class="lead">お手伝いさんへのお願いを、こちらからお送りいたします。</p>
+
+  <div class="tabs" role="tablist" aria-label="お願いの種類">
+    <button class="tab" id="tab-meal" role="tab" aria-selected="true" aria-controls="panel-meal" type="button"><img class="tab-ico" src="cat-icons/tab-meal-96.png" width="32" height="32" alt="">ご飯<span class="badge" id="badge-meal"></span></button>
+    <button class="tab" id="tab-clean" role="tab" aria-selected="false" aria-controls="panel-clean" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-clean-96.png" width="32" height="32" alt="">掃除<span class="badge" id="badge-clean"></span></button>
+    <button class="tab" id="tab-shop" role="tab" aria-selected="false" aria-controls="panel-shop" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-shop-96.png" width="32" height="32" alt="">買い物<span class="badge" id="badge-shop"></span></button>
+  </div>
+
+  <!-- ご飯 -->
+  <div id="panel-meal" role="tabpanel" aria-labelledby="tab-meal">
+    <section class="sec">
+      <h2>いつのご飯ですか</h2>
+      <div class="seg" id="day-group" role="radiogroup" aria-label="今日か明日か" style="margin-bottom:8px">
+        <button type="button" class="chip" id="day-today" role="radio" aria-pressed="true" aria-checked="true">今日</button>
+        <button type="button" class="chip" id="day-tomorrow" role="radio" aria-pressed="false" aria-checked="false">明日</button>
+      </div>
+      <div class="seg" id="when-group" role="radiogroup" aria-label="いつ">
+        <button type="button" class="chip" id="when-now" role="radio" aria-pressed="false" aria-checked="false" data-v="すぐに">すぐに</button>
+        <button type="button" class="chip" id="when-morning" role="radio" aria-pressed="false" aria-checked="false" data-v="朝">朝</button>
+        <button type="button" class="chip" id="when-noon" role="radio" aria-pressed="false" aria-checked="false" data-v="昼">昼</button>
+        <button type="button" class="chip" id="when-night" role="radio" aria-pressed="true" aria-checked="true" data-v="夜">夜</button>
+        <button type="button" class="chip" id="when-time" role="radio" aria-pressed="false" aria-checked="false" data-v="時間指定">時間指定</button>
+      </div>
+      <div class="row" id="meal-time-row" style="margin-top:12px" hidden>
+        <input class="field" id="meal-time" type="time" value="19:00" aria-label="何時までに">
+        <span>まで</span>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-head">
+        <h2 id="menu-h">献立をお選びください（複数可）</h2>
+        <button type="button" class="edit-btn" id="edit-toggle">編集</button>
+      </div>
+      <div class="undo" id="edit-undo" role="status" hidden>
+        <span id="edit-undo-text"></span>
+        <button type="button" class="mini sub" id="edit-undo-btn">元に戻す</button>
+      </div>
+      <div id="menu"></div>
+      <div id="edit-tools" hidden>
+        <h3 id="cat-add-h">分類を追加</h3>
+        <div class="add-row">
+          <input class="field" id="cat-add-input" type="text" maxlength="12" placeholder="例：鍋物" autocomplete="off" aria-labelledby="cat-add-h">
+          <button type="button" class="mini" id="cat-add-btn">追加</button>
+        </div>
+        <p class="note" id="edit-msg" role="status"></p>
+        <button type="button" class="mini sub" id="reset-ask" style="margin-top:8px">元の献立に戻す</button>
+        <div class="undo" id="reset-confirm" hidden>
+          <span>献立を初期の状態に戻します。追加・削除した内容は消えます。よろしいですか？</span>
+          <button type="button" class="mini" id="reset-yes">戻す</button>
+          <button type="button" class="mini sub" id="reset-no">やめる</button>
+        </div>
+      </div>
+      <h3 id="free-h" style="margin-top:18px">表にない料理</h3>
+      <input class="field" id="free-dish" type="text" placeholder="例：鶏のから揚げ" autocomplete="off" aria-labelledby="free-h">
+      <p class="note">お菓子・スイーツは受けておりません。</p>
+    </section>
+
+    <section class="sec">
+      <h2>人数</h2>
+      <div class="row">
+        <label for="people">人数</label>
+        <div class="stepper">
+          <button type="button" id="people-minus" aria-label="人数を減らす">&minus;</button>
+          <output id="people" aria-live="polite">2</output>
+          <button type="button" id="people-plus" aria-label="人数を増やす">+</button>
+        </div>
+        <span>人分</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- 掃除 -->
+  <div id="panel-clean" role="tabpanel" aria-labelledby="tab-clean" hidden>
+    <section class="sec">
+      <h2>お願いの内容</h2>
+      <button type="button" class="usual" id="usual-clean" aria-pressed="false">
+        <img class="tab-ico usual-ico" src="cat-icons/clean-usual-128.png" width="48" height="48" alt="">
+        <span>いつもの掃除をお願いする</span>
+      </button>
+    </section>
+    <section class="sec">
+      <h2>時間</h2>
+      <div class="seg" id="clean-when" role="radiogroup" aria-label="掃除の時間">
+        <button type="button" class="chip" id="clean-now" role="radio" aria-pressed="false" aria-checked="false">すぐに</button>
+        <button type="button" class="chip" id="cw-any" role="radio" aria-pressed="true" aria-checked="true">いつでも</button>
+        <button type="button" class="chip" id="cw-set" role="radio" aria-pressed="false" aria-checked="false">時間を指定</button>
+      </div>
+      <div class="row" id="clean-time-row" style="margin-top:12px" hidden>
+        <label for="clean-time">何時までに</label>
+        <input class="field" id="clean-time" type="time" value="17:00">
+      </div>
+    </section>
+  </div>
+
+  <!-- 買い物 -->
+  <div id="panel-shop" role="tabpanel" aria-labelledby="tab-shop" hidden>
+    <section class="sec">
+      <div class="sec-head">
+        <h2>よく頼むもの</h2>
+        <button type="button" class="edit-btn" id="shop-edit-toggle">編集</button>
+      </div>
+      <div class="undo" id="shop-undo" role="status" hidden>
+        <span id="shop-undo-text"></span>
+        <button type="button" class="mini sub" id="shop-undo-btn">元に戻す</button>
+      </div>
+      <div id="shop-list"></div>
+      <div id="shop-tools" hidden>
+        <h3 id="shop-add-h">品目を追加</h3>
+        <div class="add-row">
+          <input class="field" id="shop-add-input" type="text" maxlength="20" placeholder="例：牛乳" autocomplete="off" aria-labelledby="shop-add-h">
+          <button type="button" class="mini" id="shop-add-btn">追加</button>
+        </div>
+        <p class="note" id="shop-msg" role="status"></p>
+        <button type="button" class="mini sub" id="shop-reset-ask" style="margin-top:8px">元のリストに戻す</button>
+        <div class="undo" id="shop-reset-confirm" hidden>
+          <span>品目を初期のリストに戻します。追加・削除した内容は消えます。よろしいですか？</span>
+          <button type="button" class="mini" id="shop-reset-yes">戻す</button>
+          <button type="button" class="mini sub" id="shop-reset-no">やめる</button>
+        </div>
+      </div>
+    </section>
+    <section class="sec">
+      <h2 id="shop-other-h">その他</h2>
+      <input class="field" id="shop-other" type="text" placeholder="例：牛乳" autocomplete="off" aria-labelledby="shop-other-h">
+    </section>
+  </div>
+
+  <!-- 共通 -->
+  <section class="sec" style="border-bottom:0">
+    <h2>ひとことメモ（任意）</h2>
+    <textarea class="field" id="memo" placeholder="例：辛さ控えめでお願いします" aria-label="メモ"></textarea>
+  </section>
+
+  <section class="chat" id="chat" hidden aria-live="polite">
+    <h2>送信プレビュー</h2>
+    <div id="chat-log"></div>
+    <p class="warn" id="chat-warn">試作のため、実際には送られていません。</p>
+  </section>
+</div>
+
+<div class="bar">
+  <div class="bar-in">
+    <button type="button" class="go" id="go" disabled>頼む</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-in">
+      <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"></div></div>
+      <p class="sub">内容をご確認ください。</p>
+      <pre class="msg" id="sheet-msg"></pre>
+      <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
+      <div class="btns">
+        <button type="button" class="btn sub" id="sheet-back">戻る</button>
+        <button type="button" class="btn main" id="sheet-send">送る</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- LINE（LIFF）連携 ----
+  // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
+  // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
+  var LIFF_ID = '';
+  var lineMode = false, sending = false;
+
+  var MENU = [
+    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯']],
+    ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ']],
+    ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏']],
+    ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん']],
+    ['丼もの',['親子丼','牛丼','カツ丼','海鮮丼','天丼','中華丼','ネギトロ丼','ビビンバ']],
+    ['汁物',['味噌汁','豚汁','ミネストローネ','中華スープ','けんちん汁','わかめスープ','コーンスープ','クラムチャウダー']],
+    ['副菜',['サラダ','玉ねぎサラダ','ほうれん草のおひたし','きんぴら','ポテトサラダ','キムチになる前のキャベツ','野菜スティック','だし巻き卵','冷奴','ひじき煮','切り干し大根','春雨サラダ','枝豆','茶碗蒸し']]
+  ];
+  var MENU_KEY = 'otetsudai-menu-v1';
+
+  var dishes = [];   // 選択順を保持
+  var usual = false;   // いつもの掃除
+  var people = 2;
+  var when = '夜';
+  var tab = 'meal';
+
+  function $(id){ return document.getElementById(id); }
+  function toggle(arr, v){ var i = arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); }
+
+  // ---- 献立データ（編集可・localStorage に保存） ----
+  function clone(x){ return JSON.parse(JSON.stringify(x)); }
+  function loadMenu(){
+    try{
+      var raw = window.localStorage.getItem(MENU_KEY);
+      if(raw){
+        var p = JSON.parse(raw), ok = Array.isArray(p);
+        if(ok) p.forEach(function(g){
+          if(!Array.isArray(g) || typeof g[0] !== 'string' || !Array.isArray(g[1]) ||
+             !g[1].every(function(s){ return typeof s === 'string'; })) ok = false;
+        });
+        if(ok) return p;
+      }
+    }catch(e){}
+    return clone(MENU);
+  }
+  function saveMenu(){
+    try{ window.localStorage.setItem(MENU_KEY, JSON.stringify(menu)); }catch(e){}
+  }
+  var menu = loadMenu(), editing = false, undoSnap = null, undoTimer = 0;
+
+  var menuEl = $('menu'), n = 0;
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(text != null) e.textContent = text;
+    return e;
+  }
+  function focusAdd(gi){
+    var i = document.getElementById('add-in-' + gi);
+    if(i) i.focus();
+  }
+
+  // ---- 具材（料理名をキーにしたサブメニュー。localStorage に保存） ----
+  var SUB_KEY = 'otetsudai-sub-v1';
+  var SUB_DEFAULT = {
+    'アヒージョ': ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー'],
+    'カレー': ['ビーフ','ポーク','チキン','キーマ','シーフード','野菜','バターチキン','カツカレー','スープカレー','グリーンカレー']
+  };
+  var SUB_META = {
+    'アヒージョ': { label: '具材', multi: true, none: '具材はおまかせ', other: 'その他の具材' },
+    'カレー': { label: '種類', multi: false, none: '種類はおまかせ', other: 'その他の種類' }
+  };
+  function subMeta(name){
+    return SUB_META[name] || { label: '具材', multi: true, none: '具材はおまかせ', other: 'その他の具材' };
+  }
+  function loadSub(){
+    try{
+      var raw = window.localStorage.getItem(SUB_KEY);
+      if(raw){
+        var p = JSON.parse(raw), ok = p && typeof p === 'object' && !Array.isArray(p);
+        if(ok) Object.keys(p).forEach(function(k){
+          if(!Array.isArray(p[k]) || !p[k].every(function(s){ return typeof s === 'string'; })) ok = false;
+        });
+        if(ok){
+          Object.keys(SUB_DEFAULT).forEach(function(k){
+            if(!Object.prototype.hasOwnProperty.call(p, k)) p[k] = SUB_DEFAULT[k].slice();
+          });
+          return p;
+        }
+      }
+    }catch(e){}
+    return JSON.parse(JSON.stringify(SUB_DEFAULT));
+  }
+  function saveSub(){
+    try{ window.localStorage.setItem(SUB_KEY, JSON.stringify(sub)); }catch(e){}
+  }
+  var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {};
+  function hasSub(name){ return Object.prototype.hasOwnProperty.call(sub, name) && Array.isArray(sub[name]); }
+  function dishLabel(name){
+    if(!hasSub(name)) return name;
+    var m = subMeta(name), list = (subSel[name] || []).slice(), o = (subOther[name] || '').trim();
+    if(o){ if(m.multi) list.push(o); else list = [o]; }
+    return name + '（' + (list.length ? list.join('・') : m.none) + '）';
+  }
+  function focusSubAdd(name){
+    var ins = menuEl.querySelectorAll('input[data-sub]');
+    for(var i = 0; i < ins.length; i++) if(ins[i].dataset.sub === name){ ins[i].focus(); return; }
+  }
+  function focusDishChip(name){
+    var cs = menuEl.querySelectorAll('.chip[data-v]');
+    for(var i = 0; i < cs.length; i++) if(cs[i].dataset.v === name){ cs[i].focus(); return; }
+  }
+  function subPanel(name){
+    var box = el('div', 'subbox');
+    box.setAttribute('role', 'group');
+    var m = subMeta(name), btns = [];
+    box.setAttribute('aria-label', name + 'の' + m.label);
+    box.appendChild(el('p', 'sub-h', name + 'の' + m.label + (m.multi ? '（複数可）' : '（1つ選べます）')));
+    var chips = el('div', 'chips');
+    function paint(){
+      btns.forEach(function(bb){
+        bb.b.setAttribute('aria-pressed', (subSel[name] || []).indexOf(bb.ing) >= 0 ? 'true' : 'false');
+      });
+    }
+    var inp = el('input', 'field');
+    sub[name].forEach(function(ing){
+      var b = el('button', 'chip sub-chip', ing);
+      b.type = 'button';
+      btns.push({ b: b, ing: ing });
+      b.addEventListener('click', function(){
+        if(!subSel[name]) subSel[name] = [];
+        if(m.multi){
+          toggle(subSel[name], ing);
+        }else{
+          var was = subSel[name].indexOf(ing) >= 0;
+          subSel[name] = was ? [] : [ing];
+          if(!was){ subOther[name] = ''; inp.value = ''; }
+        }
+        paint();
+      });
+      chips.appendChild(b);
+    });
+    paint();
+    box.appendChild(chips);
+    inp.type = 'text'; inp.maxLength = 20; inp.autocomplete = 'off';
+    inp.placeholder = m.other + '（任意）';
+    inp.setAttribute('aria-label', name + 'の' + m.other);
+    inp.value = subOther[name] || '';
+    inp.addEventListener('input', function(){
+      subOther[name] = inp.value;
+      if(!m.multi && inp.value.trim()){ subSel[name] = []; paint(); }
+    });
+    box.appendChild(inp);
+    return box;
+  }
+  function subEditPanel(name){
+    var box = el('div', 'subbox');
+    var open = !!subEditOpen[name];
+    var tg = el('button', 'mini sub', name + 'の' + subMeta(name).label + 'を' + (open ? '編集し終える' : '編集'));
+    tg.type = 'button';
+    tg.setAttribute('aria-expanded', open ? 'true' : 'false');
+    tg.addEventListener('click', function(){ subEditOpen[name] = !open; render(); focusDishToggle(name); });
+    box.appendChild(tg);
+    if(open){
+      var chips = el('div', 'chips'); chips.style.marginTop = '8px';
+      sub[name].forEach(function(ing){
+        var it = el('div', 'edit-item');
+        it.appendChild(el('span', null, ing));
+        var x = el('button', 'del', '\u00d7');
+        x.type = 'button';
+        x.setAttribute('aria-label', name + 'の' + subMeta(name).label + '「' + ing + '」を削除');
+        x.addEventListener('click', function(){ deleteSub(name, ing); });
+        it.appendChild(x);
+        chips.appendChild(it);
+      });
+      box.appendChild(chips);
+      var row = el('div', 'add-row');
+      var inp = el('input', 'field');
+      inp.type = 'text'; inp.maxLength = 20; inp.placeholder = subMeta(name).label + '名'; inp.autocomplete = 'off';
+      inp.dataset.sub = name;
+      inp.setAttribute('aria-label', name + 'に' + subMeta(name).label + 'を追加');
+      var ab = el('button', 'mini', '追加'); ab.type = 'button';
+      ab.setAttribute('aria-label', name + 'の' + subMeta(name).label + 'に追加');
+      function go(){ addSub(name, inp.value); }
+      ab.addEventListener('click', go);
+      inp.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go(); }
+      });
+      row.appendChild(inp); row.appendChild(ab);
+      box.appendChild(row);
+    }
+    return box;
+  }
+  function focusDishToggle(name){
+    var bs = menuEl.querySelectorAll('.subbox > button[aria-expanded]');
+    for(var i = 0; i < bs.length; i++) if(bs[i].textContent.indexOf(name) === 0){ bs[i].focus(); return; }
+  }
+  function deleteSub(name, ing){
+    hideUndo();
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub) };
+    var i = sub[name].indexOf(ing);
+    if(i >= 0) sub[name].splice(i, 1);
+    if(subSel[name]){ var k = subSel[name].indexOf(ing); if(k >= 0) subSel[name].splice(k, 1); }
+    saveSub(); setMsg(''); render();
+    showUndo('「' + ing + '」を削除しました。');
+    focusSubAdd(name);
+  }
+  function addSub(name, raw){
+    var v = raw.trim();
+    if(!v){ setMsg(subMeta(name).label + '名を入力してください。'); focusSubAdd(name); return; }
+    if(sub[name].indexOf(v) >= 0){ setMsg('「' + v + '」はすでに入っています。'); focusSubAdd(name); return; }
+    hideUndo();
+    sub[name].push(v); saveSub(); setMsg(''); render(); focusSubAdd(name);
+  }
+
+  // メニュー表を描画
+  function render(){
+    Object.keys(subSel).forEach(function(k){
+      if(dishes.indexOf(k) < 0){ delete subSel[k]; delete subOther[k]; }
+    });
+    menuEl.innerHTML = ''; n = 0;
+    menu.forEach(function(g, gi){
+      var head = el('div', 'cat-head');
+      head.appendChild(el('h3', null, g[0]));
+      if(editing && g[1].length === 0){
+        var dc = el('button', 'del-cat', '×');
+        dc.type = 'button';
+        dc.setAttribute('aria-label', '空の分類「' + g[0] + '」を削除');
+        dc.addEventListener('click', function(){
+          menu.splice(gi, 1); saveMenu(); setMsg(''); render();
+          $('edit-toggle').focus();
+        });
+        head.appendChild(dc);
+      }
+      menuEl.appendChild(head);
+      var box = el('div', 'chips');
+      g[1].forEach(function(name){
+        if(editing){
+          var it = el('div', 'edit-item');
+          it.appendChild(el('span', null, name));
+          var x = el('button', 'del', '×');
+          x.type = 'button';
+          x.setAttribute('aria-label', '「' + name + '」を削除');
+          x.addEventListener('click', function(){ deleteDish(gi, name); });
+          it.appendChild(x);
+          box.appendChild(it);
+          return;
+        }
+        var b = el('button', 'chip', name);
+        b.type = 'button'; b.id = 'dish-' + (n++);
+        b.setAttribute('aria-pressed', dishes.indexOf(name) >= 0 ? 'true' : 'false'); b.dataset.v = name;
+        b.addEventListener('click', function(){
+          toggle(dishes, name);
+          b.setAttribute('aria-pressed', dishes.indexOf(name)>=0 ? 'true':'false');
+          if(hasSub(name)){
+            if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
+            render(); focusDishChip(name);
+          }
+          refresh();
+        });
+        box.appendChild(b);
+      });
+      menuEl.appendChild(box);
+      g[1].forEach(function(name){
+        if(!hasSub(name)) return;
+        if(editing) menuEl.appendChild(subEditPanel(name));
+        else if(dishes.indexOf(name) >= 0) menuEl.appendChild(subPanel(name));
+      });
+      if(editing){
+        var row = el('div', 'add-row');
+        var inp = el('input', 'field');
+        inp.type = 'text'; inp.id = 'add-in-' + gi; inp.maxLength = 20; inp.placeholder = '料理名';
+        inp.autocomplete = 'off';
+        inp.setAttribute('aria-label', '「' + g[0] + '」に料理を追加');
+        var ab = el('button', 'mini', '追加'); ab.type = 'button';
+        ab.setAttribute('aria-label', '「' + g[0] + '」に追加');
+        function go(){ addDish(gi, inp.value); }
+        ab.addEventListener('click', go);
+        inp.addEventListener('keydown', function(e){
+          if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go(); }
+        });
+        row.appendChild(inp); row.appendChild(ab);
+        menuEl.appendChild(row);
+      }
+    });
+  }
+
+  function setMsg(t){ $('edit-msg').textContent = t; }
+  function hideUndo(){ clearTimeout(undoTimer); undoSnap = null; $('edit-undo').hidden = true; }
+  function showUndo(text){
+    $('edit-undo-text').textContent = text;
+    $('edit-undo').hidden = false;
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideUndo, 8000);
+  }
+  function deleteDish(gi, name){
+    hideUndo();
+    undoSnap = { menu: clone(menu), dishes: dishes.slice() };
+    var arr = menu[gi][1], i = arr.indexOf(name);
+    if(i >= 0) arr.splice(i, 1);
+    var stillThere = menu.some(function(g){ return g[1].indexOf(name) >= 0; });
+    if(!stillThere){ var k = dishes.indexOf(name); if(k >= 0) dishes.splice(k, 1); }
+    saveMenu(); setMsg(''); render(); refresh();
+    showUndo('「' + name + '」を削除しました。');
+    focusAdd(gi);
+  }
+  function addDish(gi, raw){
+    var v = raw.trim();
+    if(!v){ setMsg('料理名を入力してください。'); focusAdd(gi); return; }
+    if(menu[gi][1].indexOf(v) >= 0){ setMsg('「' + v + '」は「' + menu[gi][0] + '」に入っています。'); focusAdd(gi); return; }
+    hideUndo();
+    menu[gi][1].push(v); saveMenu(); setMsg(''); render(); focusAdd(gi);
+  }
+  function addCat(){
+    var inp = $('cat-add-input'), v = inp.value.trim();
+    if(!v){ setMsg('分類名を入力してください。'); inp.focus(); return; }
+    if(menu.some(function(g){ return g[0] === v; })){ setMsg('分類「' + v + '」はすでにあります。'); inp.focus(); return; }
+    hideUndo();
+    menu.push([v, []]); saveMenu(); inp.value = ''; setMsg(''); render(); inp.focus();
+  }
+  $('cat-add-btn').addEventListener('click', addCat);
+  $('cat-add-input').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); addCat(); }
+  });
+  $('edit-undo-btn').addEventListener('click', function(){
+    if(!undoSnap) return;
+    menu = undoSnap.menu; dishes = undoSnap.dishes;
+    if(undoSnap.sub){ sub = undoSnap.sub; saveSub(); }
+    saveMenu(); hideUndo(); render(); refresh();
+    $('edit-toggle').focus();
+  });
+  $('reset-ask').addEventListener('click', function(){
+    $('reset-confirm').hidden = false; $('reset-no').focus();
+  });
+  $('reset-no').addEventListener('click', function(){
+    $('reset-confirm').hidden = true; $('reset-ask').focus();
+  });
+  $('reset-yes').addEventListener('click', function(){
+    menu = clone(MENU);
+    dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
+    try{ window.localStorage.removeItem(MENU_KEY); }catch(e){}
+    hideUndo(); $('reset-confirm').hidden = true; setMsg('初期の献立に戻しました。');
+    render(); refresh(); $('reset-ask').focus();
+  });
+  $('edit-toggle').addEventListener('click', function(){
+    editing = !editing;
+    $('edit-toggle').textContent = editing ? '編集を終える' : '編集';
+    $('edit-toggle').classList.toggle('on', editing);
+    $('edit-tools').hidden = !editing;
+    $('reset-confirm').hidden = true;
+    hideUndo(); setMsg('');
+    render();
+  });
+  render();
+
+  $('usual-clean').addEventListener('click', function(){
+    usual = !usual;
+    this.setAttribute('aria-pressed', usual ? 'true' : 'false');
+    refresh();
+  });
+
+  // 朝昼夜
+  var whenBtns = document.querySelectorAll('#when-group .chip');
+  function setWhen(v){
+    when = v;
+    $('meal-time-row').hidden = when !== '時間指定';
+    Array.prototype.forEach.call(whenBtns, function(x){
+      var on = x.dataset.v === v;
+      x.setAttribute('aria-pressed', on ? 'true':'false');
+      x.setAttribute('aria-checked', on ? 'true':'false');
+    });
+  }
+  Array.prototype.forEach.call(whenBtns, function(b){
+    b.addEventListener('click', function(){ setWhen(b.dataset.v); });
+  });
+
+  // 今日／明日（明日は「すぐに」を選べない）
+  var tomorrow = false;
+  function setDay(t){
+    tomorrow = t;
+    $('day-today').setAttribute('aria-pressed', t ? 'false' : 'true');
+    $('day-today').setAttribute('aria-checked', t ? 'false' : 'true');
+    $('day-tomorrow').setAttribute('aria-pressed', t ? 'true' : 'false');
+    $('day-tomorrow').setAttribute('aria-checked', t ? 'true' : 'false');
+    $('when-now').hidden = t;
+    if(t && when === 'すぐに') setWhen('夜');
+  }
+  $('day-today').addEventListener('click', function(){ setDay(false); });
+  $('day-tomorrow').addEventListener('click', function(){ setDay(true); });
+
+  // 人数
+  $('people-minus').addEventListener('click', function(){ if(people>1){ people--; refresh(); } });
+  $('people-plus').addEventListener('click', function(){ if(people<20){ people++; refresh(); } });
+
+  $('free-dish').addEventListener('input', refresh);
+
+  // ---- 表示テーマ（端末に合わせる→ライト→ダーク） ----
+  var THEME_KEY = 'otetsudai-theme-v1';
+  var THEMES = ['auto', 'light', 'dark'];
+  var THEME_NAME = { auto: '端末に合わせる', light: 'ライト', dark: 'ダーク' };
+  var ICONS = {
+    auto: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+    light: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" fill="currentColor"/></svg>'
+  };
+  var theme = 'auto';
+  try{
+    var savedTheme = window.localStorage.getItem(THEME_KEY);
+    if(savedTheme === 'light' || savedTheme === 'dark') theme = savedTheme;
+  }catch(e){}
+  function applyTheme(){
+    var root = document.documentElement;
+    if(theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', theme);
+    var next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    var b = $('theme-btn');
+    b.innerHTML = ICONS[theme];
+    var label = '表示：' + THEME_NAME[theme] + '（押すと' + THEME_NAME[next] + 'に切り替え）';
+    b.setAttribute('aria-label', label);
+    b.title = label;
+  }
+  $('theme-btn').addEventListener('click', function(){
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try{
+      if(theme === 'auto') window.localStorage.removeItem(THEME_KEY);
+      else window.localStorage.setItem(THEME_KEY, theme);
+    }catch(e){}
+    applyTheme();
+  });
+  applyTheme();
+
+  // ---- 買い物（品目は編集可・localStorage に保存） ----
+  var SHOP_KEY = 'otetsudai-shop-v1';
+  var SHOP_DEFAULT = ['カフェラテ','モンスター','リポビタンD'];
+  function loadShop(){
+    try{
+      var raw = window.localStorage.getItem(SHOP_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(Array.isArray(p) && p.every(function(s){ return typeof s === 'string'; })) return p;
+      }
+    }catch(e){}
+    return SHOP_DEFAULT.slice();
+  }
+  function saveShop(){
+    try{ window.localStorage.setItem(SHOP_KEY, JSON.stringify(shop)); }catch(e){}
+  }
+  var shop = loadShop(), qty = {}, shopEditing = false, shopSnap = null, shopTimer = 0;
+  var shopListEl = $('shop-list');
+  function shopOther(){ return $('shop-other').value.trim(); }
+  function shopCount(){
+    return shop.filter(function(nm){ return (qty[nm] || 0) >= 1; }).length + (shopOther() ? 1 : 0);
+  }
+  function setShopMsg(t){ $('shop-msg').textContent = t; }
+  function hideShopUndo(){ clearTimeout(shopTimer); shopSnap = null; $('shop-undo').hidden = true; }
+  function showShopUndo(text){
+    $('shop-undo-text').textContent = text;
+    $('shop-undo').hidden = false;
+    clearTimeout(shopTimer);
+    shopTimer = setTimeout(hideShopUndo, 8000);
+  }
+  function renderShop(){
+    shopListEl.innerHTML = '';
+    if(shopEditing){
+      var box = el('div', 'chips');
+      shop.forEach(function(nm){
+        var it = el('div', 'edit-item');
+        it.appendChild(el('span', null, nm));
+        var x = el('button', 'del', '\u00d7');
+        x.type = 'button';
+        x.setAttribute('aria-label', '「' + nm + '」を削除');
+        x.addEventListener('click', function(){ deleteShop(nm); });
+        it.appendChild(x);
+        box.appendChild(it);
+      });
+      shopListEl.appendChild(box);
+      return;
+    }
+    shop.forEach(function(nm){
+      var row = el('div', 'shop-row');
+      var label = el('span', 'nm', nm);
+      var st = el('div', 'stepper');
+      var minus = el('button', null, '\u2212'); minus.type = 'button';
+      minus.setAttribute('aria-label', '「' + nm + '」を減らす');
+      var out = el('output', null, '0');
+      out.setAttribute('aria-live', 'polite');
+      var plus = el('button', null, '+'); plus.type = 'button';
+      plus.setAttribute('aria-label', '「' + nm + '」を増やす');
+      function upd(){
+        var q = qty[nm] || 0;
+        out.textContent = q;
+        row.classList.toggle('on', q >= 1);
+        minus.setAttribute('aria-disabled', q <= 0 ? 'true' : 'false');
+        plus.setAttribute('aria-disabled', q >= 20 ? 'true' : 'false');
+      }
+      minus.addEventListener('click', function(){ var q = qty[nm] || 0; if(q > 0){ qty[nm] = q - 1; upd(); refresh(); } });
+      plus.addEventListener('click', function(){ var q = qty[nm] || 0; if(q < 20){ qty[nm] = q + 1; upd(); refresh(); } });
+      st.appendChild(minus); st.appendChild(out); st.appendChild(plus);
+      row.appendChild(label); row.appendChild(st);
+      shopListEl.appendChild(row);
+      upd();
+    });
+  }
+  function deleteShop(nm){
+    hideShopUndo();
+    shopSnap = { shop: shop.slice(), qty: JSON.parse(JSON.stringify(qty)) };
+    var i = shop.indexOf(nm);
+    if(i >= 0) shop.splice(i, 1);
+    delete qty[nm];
+    saveShop(); setShopMsg(''); renderShop(); refresh();
+    showShopUndo('「' + nm + '」を削除しました。');
+    $('shop-add-input').focus();
+  }
+  function addShop(){
+    var inp = $('shop-add-input'), v = inp.value.trim();
+    if(!v){ setShopMsg('品目名を入力してください。'); inp.focus(); return; }
+    if(shop.indexOf(v) >= 0){ setShopMsg('「' + v + '」はすでにあります。'); inp.focus(); return; }
+    hideShopUndo();
+    shop.push(v); saveShop(); inp.value = ''; setShopMsg(''); renderShop(); inp.focus();
+  }
+  $('shop-add-btn').addEventListener('click', addShop);
+  $('shop-add-input').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); addShop(); }
+  });
+  $('shop-undo-btn').addEventListener('click', function(){
+    if(!shopSnap) return;
+    shop = shopSnap.shop; qty = shopSnap.qty;
+    saveShop(); hideShopUndo(); renderShop(); refresh();
+    $('shop-edit-toggle').focus();
+  });
+  $('shop-reset-ask').addEventListener('click', function(){
+    $('shop-reset-confirm').hidden = false; $('shop-reset-no').focus();
+  });
+  $('shop-reset-no').addEventListener('click', function(){
+    $('shop-reset-confirm').hidden = true; $('shop-reset-ask').focus();
+  });
+  $('shop-reset-yes').addEventListener('click', function(){
+    shop = SHOP_DEFAULT.slice();
+    Object.keys(qty).forEach(function(k){ if(shop.indexOf(k) < 0) delete qty[k]; });
+    try{ window.localStorage.removeItem(SHOP_KEY); }catch(e){}
+    hideShopUndo(); $('shop-reset-confirm').hidden = true; setShopMsg('初期のリストに戻しました。');
+    renderShop(); refresh(); $('shop-reset-ask').focus();
+  });
+  $('shop-edit-toggle').addEventListener('click', function(){
+    shopEditing = !shopEditing;
+    $('shop-edit-toggle').textContent = shopEditing ? '編集を終える' : '編集';
+    $('shop-edit-toggle').classList.toggle('on', shopEditing);
+    $('shop-tools').hidden = !shopEditing;
+    $('shop-reset-confirm').hidden = true;
+    hideShopUndo(); setShopMsg('');
+    renderShop();
+  });
+  $('shop-other').addEventListener('input', refresh);
+  renderShop();
+
+  // 掃除の時間（すぐに／いつでも／時間を指定）
+  var cleanMode = 'any';
+  function setCleanMode(m){
+    cleanMode = m;
+    [['clean-now','now'],['cw-any','any'],['cw-set','set']].forEach(function(p){
+      var on = p[1] === m;
+      $(p[0]).setAttribute('aria-pressed', on ? 'true' : 'false');
+      $(p[0]).setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    $('clean-time-row').hidden = m !== 'set';
+  }
+  function setCleanAny(v){ setCleanMode(v ? 'any' : 'set'); }
+  $('clean-now').addEventListener('click', function(){ setCleanMode('now'); });
+  $('cw-any').addEventListener('click', function(){ setCleanMode('any'); });
+  $('cw-set').addEventListener('click', function(){ setCleanMode('set'); });
+
+  // タブ
+  function setTab(t){
+    tab = t;
+    ['meal','clean','shop'].forEach(function(k){
+      var on = k === t;
+      $('tab-'+k).setAttribute('aria-selected', on?'true':'false');
+      $('tab-'+k).tabIndex = on ? 0 : -1;
+      $('panel-'+k).hidden = !on;
+    });
+  }
+  $('tab-meal').addEventListener('click', function(){ setTab('meal'); });
+  $('tab-clean').addEventListener('click', function(){ setTab('clean'); });
+  $('tab-shop').addEventListener('click', function(){ setTab('shop'); });
+  document.querySelector('.tabs').addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+      var order = ['meal','clean','shop'], i = order.indexOf(tab);
+      var t = order[(i + (e.key==='ArrowRight' ? 1 : order.length - 1)) % order.length];
+      setTab(t); $('tab-'+t).focus();
+    }
+  });
+
+  function catsHtml(meal, clean, shopOn, w, hh){
+    var k = [];
+    if(meal || shopOn) k.push('rag');
+    if(clean || shopOn) k.push('ben');
+    return k.map(function(x){
+      return '<svg class="cat" viewBox="14 10 92 82" width="'+w+'" height="'+hh+'" aria-hidden="true" focusable="false"><use href="#cat-'+x+'" width="120" height="120"/></svg>';
+    }).join('');
+  }
+  function freeText(){ return $('free-dish').value.trim(); }
+  function mealCount(){ return dishes.length + (freeText() ? 1 : 0); }
+
+  function refresh(){
+    $('people').textContent = people;
+    $('people-minus').disabled = people <= 1;
+    var m = mealCount(), c = usual ? 1 : 0, s = shopCount(), total = m + c + s;
+    [['meal',m],['clean',c],['shop',s]].forEach(function(p){
+      var bd = $('badge-'+p[0]);
+      bd.textContent = p[1]; bd.classList.toggle('on', p[1] > 0);
+    });
+    var go = $('go');
+    go.disabled = total === 0;
+    go.textContent = total === 0 ? '頼む' : '頼む（' + total + '件）';
+  }
+
+  function buildMessage(){
+    var parts = [], memo = $('memo').value.trim();
+    var items = dishes.map(dishLabel);
+    if(freeText()) items.push(freeText());
+    if(items.length){
+      parts.push('【ご飯のお願い】\n' + (tomorrow ? '明日の' : '') + (when === '時間指定' ? ($('meal-time').value || '時間未指定') + 'までに' : when) + '：' + items.join('、') + '\n' + people + '人分' + (when === 'すぐに' ? '／できるだけ早くお願いします' : ''));
+    }
+    if(usual){
+      parts.push('【掃除のお願い】\nいつもの掃除\n' + (cleanMode === 'now' ? 'できるだけ早くお願いします' : cleanMode === 'any' ? '時間はいつでも大丈夫です' : ($('clean-time').value || '時間未指定') + 'まで'));
+    }
+    var lines = [], other = shopOther();
+    shop.forEach(function(nm){ if((qty[nm] || 0) >= 1) lines.push(nm + '\u00d7' + qty[nm]); });
+    if(lines.length || other){
+      var sb = '【買い物のお願い】';
+      if(lines.length) sb += '\n' + lines.join('、');
+      if(other) sb += '\nその他：' + other;
+      parts.push(sb);
+    }
+    var text = parts.join('\n\n');
+    if(memo) text += '\nメモ：' + memo;
+    return text;
+  }
+
+  // 確認シート
+  var scrim = $('scrim'), lastFocus = null, pending = '';
+  function openSheet(){
+    pending = buildMessage();
+    if(!pending) return;
+    showSheetErr('');
+    $('sheet-msg').textContent = pending;
+    $('sheet-cats').innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 44, 39);
+    lastFocus = document.activeElement;
+    scrim.classList.add('open');
+    $('sheet-send').focus();
+  }
+  function closeSheet(){
+    scrim.classList.remove('open');
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  $('go').addEventListener('click', openSheet);
+  $('sheet-back').addEventListener('click', closeSheet);
+  scrim.addEventListener('click', function(e){ if(e.target === scrim) closeSheet(); });
+  document.addEventListener('keydown', function(e){
+    if(!scrim.classList.contains('open')) return;
+    if(e.key === 'Escape') closeSheet();
+    if(e.key === 'Tab'){ // フォーカスをシート内に留める
+      var f = [$('sheet-back'), $('sheet-send')], i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+    }
+  });
+
+  function showSheetErr(t){ var e = $('sheet-err'); e.textContent = t; e.hidden = !t; }
+  $('sheet-send').addEventListener('click', function(){
+    var text = pending;
+    if(!lineMode){ finishSend(text, false); return; }
+    if(sending) return;
+    if(text.length > 5000){
+      showSheetErr('文字数が多すぎます（' + text.length + '字）。LINEで送れるのは5000字までです。内容を減らしてください。');
+      return;
+    }
+    sending = true; showSheetErr('');
+    $('sheet-send').disabled = true;
+    function done(){ sending = false; $('sheet-send').disabled = false; }
+    var p;
+    try{ p = window.liff.sendMessages([{ type: 'text', text: text }]); }
+    catch(e){ p = Promise.reject(e); }
+    p.then(function(){
+      done(); finishSend(text, true);
+    }).catch(function(e){
+      done();
+      showSheetErr('送れませんでした。もう一度お試しください（理由：' + ((e && (e.message || e.code)) || '不明') + '）');
+      $('sheet-send').focus();
+    });
+  });
+
+  // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
+  function finishSend(text, sent){
+    $('chat-warn').textContent = sent ? '送りました。' : '試作のため、実際には送られていません。';
+    var line = document.createElement('div'); line.className = 'bubble-line';
+    line.innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 36, 32);
+    var bub = document.createElement('div'); bub.className = 'bubble'; bub.textContent = text;
+    line.appendChild(bub);
+    var st = document.createElement('p'); st.className = 'stamp';
+    var d = new Date();
+    st.textContent = ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+    var log = $('chat-log'); log.appendChild(line); log.appendChild(st);
+    $('chat').hidden = false;
+
+    // 選択をリセット
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 2; when = '夜';
+    $('free-dish').value = ''; $('memo').value = '';
+    qty = {}; $('shop-other').value = ''; renderShop();
+    $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
+    Array.prototype.forEach.call(document.querySelectorAll('.chip[aria-pressed]'), function(x){
+      var on = x.id === 'when-night';
+      x.setAttribute('aria-pressed', 'false');
+      if(x.closest('#when-group')){ x.setAttribute('aria-pressed', on?'true':'false'); x.setAttribute('aria-checked', on?'true':'false'); }
+    });
+    $('meal-time-row').hidden = true;
+    setDay(false);
+    render();
+    setCleanAny(true);
+    refresh();
+    scrim.classList.remove('open');
+    lastFocus = null;
+    $('chat').scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center'});
+  }
+
+  // LIFF SDK は LIFF_ID があるときだけ読み込む。失敗したら試作モードのまま。
+  function initLiff(){
+    if(!LIFF_ID) return;
+    var s = document.createElement('script');
+    s.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+    s.onload = function(){
+      try{
+        window.liff.init({ liffId: LIFF_ID }).then(function(){
+          var ctx = null;
+          try{ ctx = window.liff.getContext(); }catch(e){}
+          if(window.liff.isInClient() && ctx && ['utou', 'group', 'room'].indexOf(ctx.type) >= 0){
+            lineMode = true;
+          }else{
+            $('liff-notice').hidden = false;
+          }
+        }).catch(function(){});
+      }catch(e){}
+    };
+    s.onerror = function(){};
+    document.head.appendChild(s);
+  }
+
+  refresh();
+  initLiff();
+})();
+</script>
+</body>
+</html>
