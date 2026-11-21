@@ -3481,7 +3481,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }else{
       box.appendChild(el('p', 'note', '松永さんにこの内容を送ります'));
       box.appendChild(el('pre', 'msg', cancelText(o)));
-      if(sendMode !== 'chat') box.appendChild(el('p', 'rv-err', '松永さんとのトークから開いてください。'));
+      if(sendMode !== 'chat') box.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。'));
       var go2 = el('button', 'mini', ordUi.sending ? '送っています…' : '取り消しを送る'); go2.type = 'button';
       go2.disabled = ordUi.sending || sendMode !== 'chat';
       go2.addEventListener('click', function(){ ordCancel(o); });
@@ -3764,6 +3764,7 @@ input[type="time"].field{width:auto;min-width:140px}
       rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
       return;
     }
+    if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事は松永さんがしてください（押した人の名前で送られます）'));
     var pendingAny = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
     if(!pendingAny) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
     else{
@@ -3802,7 +3803,7 @@ input[type="time"].field{width:auto;min-width:140px}
     v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
     var expired = o.target.date < dateStr(new Date());
-    var canSend = liffReady && liffInClient && liffType === 'utou' && sendMode === 'chat';
+    var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
     var matsu = liffReady && !mine && !expired && canSend;
     if(matsu) ensureRs(o);
     var previewing = matsu && rs.mode === 'preview';
@@ -3823,7 +3824,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(mine){ v.appendChild(el('p', 'note', 'お嬢様の画面です。「済みにする」で状態を変えられます。')); return; }
     if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
     if(!canSend){
-      v.appendChild(el('p', 'rv-err', 'お嬢様とのトークから開いてください。'));
+      v.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。'));
       return;
     }
     renderActions(v, o);
