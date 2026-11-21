@@ -1473,6 +1473,9 @@ input[type="time"].field{width:auto;min-width:140px}
   // LIFF SDK は LIFF_ID があるときだけ読み込む。失敗したら試作モードのまま。
   function initLiff(){
     function status(t){ $('liff-status').textContent = 'LINE接続：' + t; }
+    try{
+      if(new URLSearchParams(location.search).get('proto') === '1'){ status('確認用の試作モード'); return; }
+    }catch(e){}
     if(!LIFF_ID){ status('未設定（試作モード）'); return; }
     status('準備中…');
     var s = document.createElement('script');
