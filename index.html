@@ -121,7 +121,7 @@ button,input,textarea{font:inherit;color:inherit}
 .cat-head:first-child{margin-top:0}
 .del-cat{flex:none;width:44px;height:44px;border:2px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
 .edit-item{display:inline-flex;align-items:stretch;max-width:100%;min-height:44px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface)}
-.edit-item span{display:flex;align-items:center;padding:6px 10px;font-size:15px;word-break:break-word;min-width:0}
+.edit-item > span{display:flex;align-items:center;padding:6px 10px;font-size:15px;word-break:break-word;min-width:0}
 .edit-item .del{flex:none;width:44px;border:0;border-left:2px dashed var(--muted);background:var(--accent-soft);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
 .edit-item .del:active{filter:brightness(.9)}
 .add-row{display:flex;gap:8px;margin-top:10px}
@@ -153,6 +153,11 @@ button,input,textarea{font:inherit;color:inherit}
 .sub-lab .field{flex:1;min-width:0;margin-top:0}
 .subbox .seg{margin:6px 0 4px}
 .subbox .seg .chip{min-height:40px;font-size:14px}
+.name-btn{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.name-btn:hover{background:var(--accent-soft)}
+.name-btn .pen{flex:none;font-size:12px;color:var(--accent)}
+.cat-head h3 .name-btn{padding:4px 8px;min-height:40px;font-weight:700}
+.rename-in{width:9em;max-width:100%;min-height:40px;margin:2px;padding:4px 8px;border:2px solid var(--accent);border-radius:4px;background:var(--surface);color:var(--fg);font:inherit}
 .subbox{margin:8px 0 4px 6px;padding:8px 8px 10px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .subbox .sub-h{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
 .chip.sub-chip{min-height:38px;padding:3px 10px;font-size:14px}
@@ -420,18 +425,6 @@ input[type="time"].field{width:auto;min-width:140px}
       <p class="note">お菓子・スイーツは受けておりません。</p>
     </section>
 
-    <section class="sec">
-      <h2>人数</h2>
-      <div class="row">
-        <label for="people">人数</label>
-        <div class="stepper">
-          <button type="button" id="people-minus" aria-label="人数を減らす">&minus;</button>
-          <output id="people" aria-live="polite">2</output>
-          <button type="button" id="people-plus" aria-label="人数を増やす">+</button>
-        </div>
-        <span>人分</span>
-      </div>
-    </section>
   </div>
 
   <!-- 掃除 -->
@@ -516,6 +509,15 @@ input[type="time"].field{width:auto;min-width:140px}
     <div class="sheet-in">
       <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"></div></div>
       <p class="sub">内容をご確認ください。</p>
+      <div class="row" id="sheet-people" style="margin-bottom:12px" hidden>
+        <span id="people-q" style="font-weight:700">何人分ですか？</span>
+        <div class="stepper" role="group" aria-labelledby="people-q">
+          <button type="button" id="people-minus" aria-label="人数を減らす">&minus;</button>
+          <output id="people" aria-live="polite">1</output>
+          <button type="button" id="people-plus" aria-label="人数を増やす">+</button>
+        </div>
+        <span>人分</span>
+      </div>
       <pre class="msg" id="sheet-msg"></pre>
       <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
       <div class="btns">
@@ -548,7 +550,7 @@ input[type="time"].field{width:auto;min-width:140px}
 
   var dishes = [];   // 選択順を保持
   var usual = false;   // いつもの掃除
-  var people = 2;
+  var people = 1;
   var when = '夜';
   var tab = 'meal';
 
@@ -826,6 +828,75 @@ input[type="time"].field{width:auto;min-width:140px}
     sub[name].push(v); saveSub(); setMsg(''); render(); focusSubAdd(name);
   }
 
+  // ---- 名前の変更（料理・分類） ----
+  var renameSt = null;   // { k: 'dish' | 'cat', gi: 分類の番号, old: 元の名前 }
+  function focusRename(k, key){
+    var bs = menuEl.querySelectorAll(k === 'dish' ? 'button[data-rename]' : 'button[data-renamecat]');
+    for(var i = 0; i < bs.length; i++){
+      var v = k === 'dish' ? bs[i].dataset.rename : bs[i].dataset.renamecat;
+      if(v === String(key)){ bs[i].focus(); return; }
+    }
+  }
+  function startRename(k, gi, old){
+    renameSt = { k: k, gi: gi, old: old };
+    setMsg(''); render();
+    var ins = menuEl.querySelectorAll('input.rename-in');
+    if(ins.length){ ins[0].focus(); ins[0].select(); }
+  }
+  function cancelRename(){
+    var st = renameSt; renameSt = null; render();
+    if(st) focusRename(st.k, st.k === 'dish' ? st.old : st.gi);
+  }
+  function moveKey(obj, a, b){
+    if(Object.prototype.hasOwnProperty.call(obj, a) && !Object.prototype.hasOwnProperty.call(obj, b)){
+      obj[b] = obj[a]; delete obj[a];
+    }
+  }
+  function commitRename(raw){
+    var st = renameSt;
+    if(!st) return;
+    var v = raw.trim();
+    if(v === st.old){ renameSt = null; render(); focusRename(st.k, st.k === 'dish' ? st.old : st.gi); return; }
+    if(!v){ setMsg('名前を入力してください。'); return; }
+    if(st.k === 'dish'){
+      if(menu[st.gi][1].indexOf(v) >= 0){ setMsg('「' + v + '」は「' + menu[st.gi][0] + '」にすでにあります。'); return; }
+    }else{
+      if(menu.some(function(g, i){ return i !== st.gi && g[0] === v; })){ setMsg('分類「' + v + '」はすでにあります。'); return; }
+    }
+    hideUndo();
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), meta: clone(meta), subSel: clone(subSel), subOther: clone(subOther) };
+    if(st.k === 'dish'){
+      var arr = menu[st.gi][1], ix = arr.indexOf(st.old);
+      if(ix >= 0) arr[ix] = v;
+      var stillUsed = menu.some(function(g){ return g[1].indexOf(st.old) >= 0; });
+      if(!stillUsed){
+        var di = dishes.indexOf(st.old);
+        if(di >= 0) dishes[di] = v;
+        moveKey(sub, st.old, v); moveKey(meta, st.old, v);
+        moveKey(subSel, st.old, v); moveKey(subOther, st.old, v);
+        moveKey(subEditOpen, st.old, v); moveKey(subRemoveAsk, st.old, v);
+        saveSub();
+      }
+    }else{
+      menu[st.gi][0] = v;
+    }
+    saveMenu(); setMsg(''); renameSt = null; render(); refresh();
+    showUndo('「' + st.old + '」を「' + v + '」に変えました。');
+    focusRename(st.k, st.k === 'dish' ? v : st.gi);
+  }
+  function renameInput(k, gi, old){
+    var inp = el('input', 'rename-in');
+    inp.type = 'text'; inp.maxLength = k === 'cat' ? 12 : 20; inp.autocomplete = 'off'; inp.value = old;
+    inp.setAttribute('aria-label', '「' + old + '」の新しい名前');
+    inp.addEventListener('keydown', function(e){
+      if(e.isComposing) return;
+      if(e.key === 'Enter'){ e.preventDefault(); commitRename(inp.value); }
+      else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cancelRename(); }
+    });
+    inp.addEventListener('blur', function(){ commitRename(inp.value); });
+    return inp;
+  }
+
   // メニュー表を描画
   function render(){
     Object.keys(subSel).forEach(function(k){
@@ -834,7 +905,23 @@ input[type="time"].field{width:auto;min-width:140px}
     menuEl.innerHTML = ''; n = 0;
     menu.forEach(function(g, gi){
       var head = el('div', 'cat-head');
-      head.appendChild(el('h3', null, g[0]));
+      var h3 = el('h3');
+      if(editing){
+        if(renameSt && renameSt.k === 'cat' && renameSt.gi === gi){
+          h3.appendChild(renameInput('cat', gi, g[0]));
+        }else{
+          var cb = el('button', 'name-btn'); cb.type = 'button';
+          cb.dataset.renamecat = String(gi);
+          cb.setAttribute('aria-label', '分類「' + g[0] + '」の名前を変える');
+          cb.appendChild(el('span', null, g[0]));
+          cb.appendChild(el('span', 'pen', '✎'));
+          cb.addEventListener('click', function(){ startRename('cat', gi, g[0]); });
+          h3.appendChild(cb);
+        }
+      }else{
+        h3.textContent = g[0];
+      }
+      head.appendChild(h3);
       if(editing && g[1].length === 0){
         var dc = el('button', 'del-cat', '×');
         dc.type = 'button';
@@ -850,9 +937,18 @@ input[type="time"].field{width:auto;min-width:140px}
       g[1].forEach(function(name){
         if(editing){
           var it = el('div', 'edit-item');
-          var nm = el('span', null, name);
-          if(hasSub(name)) nm.appendChild(el('small', 'submark', '▾' + subMeta(name).label));
-          it.appendChild(nm);
+          if(renameSt && renameSt.k === 'dish' && renameSt.gi === gi && renameSt.old === name){
+            it.appendChild(renameInput('dish', gi, name));
+          }else{
+            var nm = el('button', 'name-btn'); nm.type = 'button';
+            nm.dataset.rename = name;
+            nm.setAttribute('aria-label', '「' + name + '」の名前を変える');
+            nm.appendChild(el('span', null, name));
+            if(hasSub(name)) nm.appendChild(el('small', 'submark', '▾' + subMeta(name).label));
+            nm.appendChild(el('span', 'pen', '✎'));
+            nm.addEventListener('click', function(){ startRename('dish', gi, name); });
+            it.appendChild(nm);
+          }
           var sb = el('button', 'subbtn', 'サブメニュー'); sb.type = 'button';
           sb.dataset.subbtn = name;
           sb.setAttribute('aria-expanded', subEditOpen[name] ? 'true' : 'false');
@@ -951,7 +1047,12 @@ input[type="time"].field{width:auto;min-width:140px}
   $('edit-undo-btn').addEventListener('click', function(){
     if(!undoSnap) return;
     menu = undoSnap.menu; dishes = undoSnap.dishes;
-    if(undoSnap.sub){ sub = undoSnap.sub; saveSub(); }
+    if(undoSnap.sub){
+      sub = undoSnap.sub;
+      if(undoSnap.meta) meta = undoSnap.meta;
+      if(undoSnap.subSel){ subSel = undoSnap.subSel; subOther = undoSnap.subOther; }
+      saveSub();
+    }
     saveMenu(); hideUndo(); render(); refresh();
     $('edit-toggle').focus();
   });
@@ -976,7 +1077,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('edit-toggle').classList.toggle('on', editing);
     $('edit-tools').hidden = !editing;
     $('reset-confirm').hidden = true;
-    hideUndo(); setMsg('');
+    hideUndo(); setMsg(''); renameSt = null;
     render();
   });
   render();
@@ -1017,8 +1118,13 @@ input[type="time"].field{width:auto;min-width:140px}
   $('day-tomorrow').addEventListener('click', function(){ setDay(true); });
 
   // 人数
-  $('people-minus').addEventListener('click', function(){ if(people>1){ people--; refresh(); } });
-  $('people-plus').addEventListener('click', function(){ if(people<20){ people++; refresh(); } });
+  function updateSheetMsg(){
+    if(!$('scrim').classList.contains('open')) return;
+    pending = buildMessage();
+    $('sheet-msg').textContent = pending;
+  }
+  $('people-minus').addEventListener('click', function(){ if(people>1){ people--; refresh(); updateSheetMsg(); } });
+  $('people-plus').addEventListener('click', function(){ if(people<20){ people++; refresh(); updateSheetMsg(); } });
 
   $('free-dish').addEventListener('input', refresh);
 
@@ -1230,7 +1336,8 @@ input[type="time"].field{width:auto;min-width:140px}
 
   function refresh(){
     $('people').textContent = people;
-    $('people-minus').disabled = people <= 1;
+    $('people-minus').setAttribute('aria-disabled', people <= 1 ? 'true' : 'false');
+    $('people-plus').setAttribute('aria-disabled', people >= 20 ? 'true' : 'false');
     var m = mealCount(), c = usual ? 1 : 0, s = shopCount(), total = m + c + s;
     [['meal',m],['clean',c],['shop',s]].forEach(function(p){
       var bd = $('badge-'+p[0]);
@@ -1269,6 +1376,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function openSheet(){
     pending = buildMessage();
     if(!pending) return;
+    $('sheet-people').hidden = mealCount() === 0;
     showSheetErr('');
     $('sheet-send').textContent = sendMode === 'picker' ? '送り先を選んで送る' : '送る';
     $('sheet-msg').textContent = pending;
@@ -1288,7 +1396,8 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!scrim.classList.contains('open')) return;
     if(e.key === 'Escape') closeSheet();
     if(e.key === 'Tab'){ // フォーカスをシート内に留める
-      var f = [$('sheet-back'), $('sheet-send')], i = f.indexOf(document.activeElement);
+      var f = $('sheet-people').hidden ? [$('sheet-back'), $('sheet-send')] : [$('people-minus'), $('people-plus'), $('sheet-back'), $('sheet-send')];
+      var i = f.indexOf(document.activeElement);
       e.preventDefault();
       f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
     }
@@ -1342,7 +1451,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 2; when = '夜';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; when = '夜';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
