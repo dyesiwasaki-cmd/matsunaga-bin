@@ -243,6 +243,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .rv-btn.sub[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .st-na{color:var(--muted)}
+.alt-pick{margin:8px 0;padding:8px;border:2px dashed var(--line);border-radius:6px;min-width:0;overflow-wrap:anywhere}
+.alt-pick .chips{margin:4px 0}
+.alt-selitem{display:inline-flex;align-items:center;gap:2px;max-width:100%}
+.alt-selitem .chip{min-width:0}
+.alt-x{min-width:32px;min-height:32px;padding:0 8px}
+.alt-cathead{display:block;width:100%;min-height:40px;margin:6px 0 2px;padding:4px 8px;border:2px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font:inherit;font-weight:700;text-align:left;cursor:pointer}
+.alt-cat .note{margin:6px 0 2px}
 .rv-title{margin:12px 0 4px;font-size:20px}
 .rv-big{margin:4px 0 8px;font-size:24px;font-weight:700;line-height:1.35}
 .rv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
@@ -3646,6 +3653,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(res.duplicate && !(failed && failed.text === text)){ rs = { mode: 'main' }; replyNotice = 'さっき同じお返事を送っています。'; renderReply(); return; }
       return Promise.resolve().then(function(){ return window.liff.sendMessages([{ type: 'text', text: text }]); }).then(function(){
         setReplyFail(null);
+        if(rs.hist && rs.hist.length) addAnswerHistory(rs.hist);
         rs = { mode: 'main' }; replyNotice = 'お返事を送りました。'; renderReply();
       }).catch(function(e){
         setReplyFail({ text: text });
@@ -3814,6 +3822,153 @@ input[type="time"].field{width:auto;min-width:140px}
   // ---- 答える画面（URL に answer=ID があるとき：ぴーちゃんが松永さんの相談に答える） ----
   function isDropped(o, k){ return stOf(o, k) === 'na' && (o[k] || []).length > 0; }   // 答えで「なし」になった種類（最初から依頼が無い種類とは区別）
   var ANS_CHOICES = [['ok', '👌 それで大丈夫です'], ['alt', '🔁 代わりは…でお願いします'], ['na', '🙅 今回はなしで大丈夫です']];
+  // ---- 代わりを「献立から選ぶ」「品目から選ぶ」 ----
+  function pickLabel(p){ return p.name === OMAKASE ? 'おまかせ' : labelFor(p.name, p.sel || {}, p.other || {}); }
+  function pickPrune(p){
+    var keep = {};
+    visibleGroups(p.name, p.sel).forEach(function(g){ keep[g.label] = true; });
+    Object.keys(p.sel).forEach(function(l){ if(!keep[l]) delete p.sel[l]; });
+    Object.keys(p.other).forEach(function(l){ if(!keep[l]) delete p.other[l]; });
+  }
+  // サブメニュー（段階式）。選ばなければ「（おまかせ）」扱い
+  function pickSubPanel(p){
+    var wrap = el('div', 'subbox');
+    wrap.appendChild(el('p', 'sub-h', p.name + 'の種類（選ばなければおまかせ）'));
+    visibleGroups(p.name, p.sel).forEach(function(g){
+      wrap.appendChild(el('p', 'note', g.label + (g.multi ? '（複数可）' : '')));
+      var row = el('div', 'chips');
+      g.options.forEach(function(op){
+        var on = (p.sel[g.label] || []).indexOf(op) >= 0;
+        var c = el('button', 'chip sub-chip', op); c.type = 'button'; c.setAttribute('aria-pressed', on ? 'true' : 'false');
+        c.addEventListener('click', function(){
+          var cur = (p.sel[g.label] || []).slice(), i = cur.indexOf(op);
+          if(g.multi){ if(i >= 0) cur.splice(i, 1); else cur.push(op); }
+          else cur = (i >= 0) ? [] : [op];
+          if(cur.length) p.sel[g.label] = cur; else delete p.sel[g.label];
+          pickPrune(p); renderReply();
+        });
+        row.appendChild(c);
+      });
+      wrap.appendChild(row);
+      var oi = el('input', 'field'); oi.type = 'text'; oi.maxLength = 20; oi.autocomplete = 'off';
+      oi.placeholder = g.label + 'のその他（なくてもOK）'; oi.value = p.other[g.label] || '';
+      oi.addEventListener('input', function(){ if(oi.value.trim()) p.other[g.label] = oi.value; else delete p.other[g.label]; });
+      wrap.appendChild(oi);
+    });
+    return wrap;
+  }
+  function pickDishMatch(nm, q){
+    if(!q) return true;
+    if(normText(nm).indexOf(q) >= 0) return true;
+    if(tagsOf(nm).some(function(t){ return normText(t).indexOf(q) >= 0; })) return true;
+    return moodsOf(nm).some(function(m){ return normText(m).indexOf(q) >= 0; });
+  }
+  function altPicker(card, k, a){
+    if(!a.picks) a.picks = [];
+    if(a.q == null) a.q = '';
+    if(!a.cats) a.cats = {};
+    var max = k === 'meal' ? 5 : 8, box = el('div', 'alt-pick');
+    box.appendChild(el('p', 'sub-h', k === 'meal' ? '献立から選ぶ（' + max + '品まで）' : '品目から選ぶ'));
+    function picked(nm){ for(var i = 0; i < a.picks.length; i++) if(a.picks[i].name === nm) return i; return -1; }
+    function toggleDish(nm){
+      rs.err = '';
+      var i = picked(nm);
+      if(i >= 0){ a.picks.splice(i, 1); if(a.subOpen === nm) a.subOpen = ''; }
+      else{
+        if(a.picks.length >= max){ rs.err = '選べるのは' + max + '品までです。'; renderReply(); return; }
+        a.picks.push({ name: nm, sel: {}, other: {} });
+        a.subOpen = (nm !== OMAKASE && hasSub(nm) && sub[nm].length) ? nm : '';
+      }
+      renderReply();
+    }
+    function dishChip(parent, nm){
+      var c = el('button', 'chip sub-chip', nm); c.type = 'button';
+      c.setAttribute('aria-pressed', picked(nm) >= 0 ? 'true' : 'false');
+      c.addEventListener('click', function(){ toggleDish(nm); });
+      parent.appendChild(c);
+    }
+    // 選んだもの
+    if(a.picks.length){
+      var selBox = el('div', 'chips alt-sel');
+      a.picks.forEach(function(p, i){
+        var g = el('span', 'alt-selitem');
+        var b = el('button', 'chip sub-chip', '✓ ' + pickLabel(p)); b.type = 'button'; b.setAttribute('aria-pressed', 'true');
+        if(k === 'meal' && p.name !== OMAKASE && hasSub(p.name) && sub[p.name].length){
+          b.setAttribute('aria-expanded', a.subOpen === p.name ? 'true' : 'false');
+          b.addEventListener('click', function(){ a.subOpen = a.subOpen === p.name ? '' : p.name; renderReply(); });
+        }
+        var x = el('button', 'mini sub alt-x', '×'); x.type = 'button';
+        x.setAttribute('aria-label', pickLabel(p) + 'を外す');
+        x.addEventListener('click', function(){ a.picks.splice(i, 1); if(a.subOpen === p.name) a.subOpen = ''; renderReply(); });
+        g.appendChild(b); g.appendChild(x); selBox.appendChild(g);
+      });
+      box.appendChild(selBox);
+      var op = a.picks.filter(function(p){ return p.name === a.subOpen; })[0];
+      if(op) box.appendChild(pickSubPanel(op));
+    }
+    if(k === 'shop'){
+      var sbox = el('div', 'chips');
+      shop.forEach(function(nm){ dishChip(sbox, nm); });
+      box.appendChild(sbox);
+      card.appendChild(box);
+      return;
+    }
+    // 検索・よく頼むもの・お気に入り・おまかせ・分類
+    var si = el('input', 'field'); si.type = 'search'; si.autocomplete = 'off'; si.placeholder = '料理名・食材・気分で探す';
+    si.setAttribute('aria-label', '料理名・食材・気分で探す'); si.value = a.q;
+    box.appendChild(si);
+    var cat = el('div', 'alt-cat');
+    box.appendChild(cat);
+    function paintCat(){
+      cat.innerHTML = '';
+      var q = normText(String(a.q || '').trim());
+      var cnt = {}, last = {};
+      orderHist.forEach(function(e, i){ if(e.name !== OMAKASE && menuHas(e.name)){ cnt[e.name] = (cnt[e.name] || 0) + 1; last[e.name] = i; } });
+      var freq = Object.keys(cnt).sort(function(x, y){ return (cnt[y] - cnt[x]) || (last[y] - last[x]); }).slice(0, 8).filter(function(nm){ return pickDishMatch(nm, q); });
+      var favNames = [];
+      favs.forEach(function(f){ if(f.name !== OMAKASE && menuHas(f.name) && favNames.indexOf(f.name) < 0 && pickDishMatch(f.name, q)) favNames.push(f.name); });
+      var om = el('button', 'chip sub-chip', '🍳 松永さんにおまかせ'); om.type = 'button';
+      om.setAttribute('aria-pressed', picked(OMAKASE) >= 0 ? 'true' : 'false');
+      om.addEventListener('click', function(){ toggleDish(OMAKASE); });
+      var r0 = el('div', 'chips'); r0.appendChild(om); cat.appendChild(r0);
+      if(freq.length){ cat.appendChild(el('p', 'note', 'よく頼むもの')); var r1 = el('div', 'chips'); freq.forEach(function(nm){ dishChip(r1, nm); }); cat.appendChild(r1); }
+      if(favNames.length){ cat.appendChild(el('p', 'note', 'お気に入り')); var r2 = el('div', 'chips'); favNames.forEach(function(nm){ dishChip(r2, nm); }); cat.appendChild(r2); }
+      var hc = {};
+      orderHist.forEach(function(e){ hc[e.name] = (hc[e.name] || 0) + 1; });
+      var any = false;
+      menu.forEach(function(g){
+        var names = g[1].filter(function(nm){ return pickDishMatch(nm, q); });
+        if(!names.length) return;
+        any = true;
+        if(sortMode === 'freq') names = sortByFreq(names, hc);
+        var open = q ? true : !!a.cats[g[0]];
+        var h = el('button', 'alt-cathead', (open ? '▾ ' : '▸ ') + g[0] + '（' + names.length + '）'); h.type = 'button';
+        h.setAttribute('aria-expanded', open ? 'true' : 'false');
+        h.addEventListener('click', function(){ a.cats[g[0]] = !a.cats[g[0]]; paintCat(); });
+        cat.appendChild(h);
+        if(open){ var row = el('div', 'chips'); names.forEach(function(nm){ dishChip(row, nm); }); cat.appendChild(row); }
+      });
+      if(!any) cat.appendChild(el('p', 'note', '該当する料理がありません。手入力もできます。'));
+    }
+    si.addEventListener('input', function(){ a.q = si.value; paintCat(); });
+    paintCat();
+    card.appendChild(box);
+  }
+  // 代わりに選んだ料理を、その注文の履歴にも数える（注文の日付で1件ずつ）
+  function addAnswerHistory(entries){
+    entries.forEach(function(e){ orderHist.push(e); });
+    if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
+    saveHist(true); syncAppendHist(entries); invalidateEaten();
+  }
+  function answerHistEntry(o, p){
+    var fe = filterEntry({ name: p.name, sel: p.sel || {}, other: p.other || {} });
+    var d = String(o.target.date).split('-');
+    fe.t = new Date(+d[0], +d[1] - 1, +d[2], 12, 0, 0).getTime();
+    var m = /[朝昼夜]/.exec(o.target.label || '');
+    if(m) fe.w = m[0];
+    return fe;
+  }
+
   function renderAnswer(v, o){
     v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
     var expired = o.target.date < dateStr(new Date());
@@ -3859,7 +4014,8 @@ input[type="time"].field{width:auto;min-width:140px}
         card.appendChild(b);
       });
       if(rs.a[k] && rs.a[k].t === 'alt'){
-        var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりのもの'));
+        if(k === 'meal' || k === 'shop') altPicker(card, k, rs.a[k]);
+        var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, (k === 'meal' || k === 'shop') ? '手入力（選んだものと一緒でもOK）' : '代わりのもの'));
         var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = rs.a[k].alt || ''; i1.autocomplete = 'off';
         i1.placeholder = '例：ミルクティー';
         i1.addEventListener('input', function(){ rs.a[k].alt = i1.value; });
@@ -3872,13 +4028,16 @@ input[type="time"].field{width:auto;min-width:140px}
     ft.placeholder = '例：ありがとうございます';
     fl.appendChild(ft); v.appendChild(fl);
     sb = rvBtn(v, 'このお返事をLINEに送る', false, function(){
-      var lines = [], changes = {};
+      var lines = [], changes = {}, hist = [];
       for(var i = 0; i < cons.length; i++){
         var k = cons[i], a = rs.a[k];
         if(!a) continue;
         if(a.t === 'alt'){
-          if(!(a.alt && a.alt.trim())){ rs.err = KIND_NAME[k] + 'の代わりのものを入れてください。'; renderReply(); return; }
-          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：代わりは' + a.alt.trim() + 'でお願いします'); changes[k] = 'ack';
+          var labels = (a.picks || []).map(pickLabel);
+          if(a.alt && a.alt.trim()) labels.push(a.alt.trim());
+          if(!labels.length){ rs.err = KIND_NAME[k] + 'の代わりのものを、選ぶか入れてください。'; renderReply(); return; }
+          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：代わりは' + labels.join('・') + 'でお願いします'); changes[k] = 'ack';
+          if(k === 'meal') (a.picks || []).forEach(function(p){ if(p.name !== OMAKASE && menuHas(p.name)) hist.push(answerHistEntry(o, p)); });
         }else if(a.t === 'na'){
           lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：今回はなしで大丈夫です'); changes[k] = 'na';
         }else{
@@ -3888,7 +4047,7 @@ input[type="time"].field{width:auto;min-width:140px}
       var free = (rs.free || '').trim();
       if(free) lines.push('💬 ' + free);
       if(!lines.length){ rs.err = '選ぶか、ひとことを書いてください。'; renderReply(); return; }
-      rs.mode = 'preview'; rs.kind = 'answer'; rs.changes = changes; rs.err = '';
+      rs.mode = 'preview'; rs.kind = 'answer'; rs.changes = changes; rs.hist = hist; rs.err = '';
       rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n');
       renderReply();
     });
