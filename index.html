@@ -197,6 +197,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .totop{position:fixed;z-index:11;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(var(--bar-h,72px) + 12px);width:44px;height:44px;padding:0;border:2px solid var(--accent);border-radius:50%;background:var(--surface);color:var(--accent);font-size:22px;line-height:1;font-weight:700;cursor:pointer;opacity:.55;box-shadow:0 2px 6px var(--shadow)}
 .totop:hover,.totop:focus-visible,.totop:active{opacity:1}
 .totop[hidden]{display:none}
+.mood-chips{display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap;padding:2px 2px 8px;-webkit-overflow-scrolling:touch}
+.mood-chips .chip{flex:none;white-space:nowrap}
+.mood-edit{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:6px}
 .ord,.rv-card{border:2px solid var(--line);border-radius:8px;background:var(--surface);padding:8px 12px;margin:8px 0}
 .ord.consult{border-color:var(--bad,#c62828);box-shadow:0 0 0 2px var(--bad,#c62828)}
 .ord-h{margin:0 0 4px;font-weight:700}
@@ -222,6 +225,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 :root[data-theme="dark"] .st-done,:root[data-theme="dark"] .ord-all{color:#7bd88f}
 :root[data-theme="dark"] .st-consult,:root[data-theme="dark"] .rv-err{color:#ff8a80}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .st-done,:root:not([data-theme="light"]) .ord-all{color:#7bd88f}:root:not([data-theme="light"]) .st-consult,:root:not([data-theme="light"]) .rv-err{color:#ff8a80}}
+.rv-rowmain{display:flex;align-items:stretch;justify-content:space-between;gap:10px}
+.rv-left{flex:1;min-width:0}
+.rv-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:6px}
+.rv-check{min-width:96px;min-height:64px;padding:6px 14px;border:3px solid var(--accent);border-radius:10px;background:var(--surface);color:var(--accent);font:inherit;font-size:20px;font-weight:700;cursor:pointer}
+.rv-check[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.rv-check:disabled{opacity:.5;cursor:not-allowed}
+.rv-consult-btn{min-height:32px;padding:2px 10px;border:2px solid var(--muted);border-radius:16px;background:var(--surface);color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
+.rv-consult-btn[aria-pressed="true"]{border-color:var(--bad,#c62828);color:var(--bad,#c62828);font-weight:700}
+.rv-doneflag{font-weight:700;color:var(--ok,#2e7d32);white-space:nowrap}
+.rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .rv-title{margin:12px 0 4px;font-size:20px}
 .rv-big{margin:4px 0 8px;font-size:24px;font-weight:700;line-height:1.35}
 .rv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
@@ -516,6 +529,7 @@ input[type="time"].field{width:auto;min-width:140px}
     </section>
 
     <section class="sec" id="tag-find">
+      <div id="mood-row" style="margin-bottom:12px"><h2>気分で探す</h2><div class="mood-chips" id="mood-chips" role="group" aria-label="気分で探す"></div></div>
       <h2>食材で探す</h2>
       <input class="field" id="tag-search" type="search" placeholder="料理名や食材で探す（例：鶏肉）" autocomplete="off" aria-label="料理名や食材で探す">
       <div class="chips" id="tag-chips" style="margin-top:10px"></div>
@@ -1425,9 +1439,48 @@ input[type="time"].field{width:auto;min-width:140px}
     s = String(s).normalize('NFKC').toLowerCase().replace(/^#+/, '');
     return s.replace(/[\u30a1-\u30f6]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); });
   }
-  function filterActive(){ return !!(tagFilter || tagQuery.trim()); }
+  // ---- 気分で探す ----
+  var MOOD_LIST = [['ヘルシー', '🥗', 'ヘルシーな'], ['さっぱり', '🍋', 'さっぱりした'], ['がっつり', '🍖', 'がっつりした'], ['こってり', '🧈', 'こってりした'], ['軽め', '🍙', '軽めの'], ['温まる', '🍲', '温まる'], ['野菜たっぷり', '🥬', '野菜たっぷりの'], ['やさしい', '🍵', 'やさしい']];
+  var MOOD_BY = {
+    'ヘルシー': ['焼き魚定食','さばの味噌煮','鮭の塩焼き','ぶり大根','しゃぶしゃぶ','鮭のホイル焼き','湯豆腐','水炊き','豆乳鍋','冷奴','サラダ','玉ねぎサラダ','野菜スティック','ひじき煮','切り干し大根','春雨サラダ','枝豆','きゅうりとわかめの酢の物','ほうれん草のごま和え','白和え','海鮮丼','そば','わかめスープ','豚肉ともやしの中華蒸し','揚げ出し豆腐','いわしの蒲焼き','白身魚のムニエル','筑前煮','ほうれん草のおひたし','茶碗蒸し','こんにゃくの煮物','キムチになる前のキャベツ'],
+    'さっぱり': ['冷やし中華','そうめん','そば','冷麺','きゅうりとわかめの酢の物','玉ねぎサラダ','サラダ','冷奴','あじの南蛮漬け','野菜スティック','きゅうりの浅漬け','春雨サラダ','棒棒鶏','ペペロンチーノ','鮭の塩焼き','しらす丼','お茶漬け','もやしのナムル','ほうれん草のおひたし','海鮮丼','ネギトロ丼','マグロの漬け丼','キムチになる前のキャベツ'],
+    'がっつり': ['唐揚げ','とんかつ','豚の角煮','すき焼き','ハンバーグ','ステーキ','カツ丼','牛丼','豚丼','スタミナ丼','ロコモコ丼','天丼','チキンカツ','メンチカツ','エビフライ','チキン南蛮','回鍋肉','酢豚','餃子','ラーメン','焼きそば','担々麺','カレー','ビビンバ','生姜焼き','ガーリックシュリンプ','油淋鶏','もつ鍋','ちゃんこ鍋','お好み焼き','天ぷら','照り焼きチキン','焼き鳥','焼きうどん','ジャージャー麺','うな丼','ポークソテー'],
+    'こってり': ['カルボナーラ','グラタン','ドリア','クリームコロッケ','ビーフシチュー','豚の角煮','ラーメン','担々麺','麻婆豆腐','麻婆茄子','チャーハン','天津飯','ピザ','マカロニチーズ','オムライス','ミートスパゲティ','シチュー','ハヤシライス','アヒージョ','ポテトサラダ','とんかつ','ロコモコ丼','たこ焼き','コロッケ','ナポリタン','エビチリ','もんじゃ焼き'],
+    '軽め': ['そうめん','おにぎり','お茶漬け','冷奴','枝豆','茶碗蒸し','わかめスープ','サンドイッチ','オムレツ','だし巻き卵','おかゆ','ほうれん草のおひたし','冷やし中華','ニラ玉','かきたま汁','お吸い物','春雨サラダ','こんにゃくの煮物'],
+    '温まる': ['豚汁','味噌汁','けんちん汁','おでん','すき焼き','シチュー','ポトフ','ビーフシチュー','ミネストローネ','クラムチャウダー','コーンスープ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','うどん','雑炊','すいとん','ワンタンスープ','肉じゃが','かぼちゃのポタージュ','オニオンスープ','つみれ汁','あら汁','ちゃんぽん','中華スープ'],
+    '野菜たっぷり': ['肉野菜炒め','八宝菜','ポトフ','ミネストローネ','豚汁','けんちん汁','筑前煮','おでん','ロールキャベツ','青椒肉絲','サラダ','野菜スティック','ちゃんぽん','皿うどん','焼きビーフン','ミルフィーユ鍋','キムチ鍋','もやしのナムル','炊き込みご飯','ニラレバ炒め','ビビンバ','中華丼','ほうれん草とベーコンのソテー','小松菜と油揚げの煮びたし','なすの煮びたし','かぼちゃの煮物','豚肉ともやしの中華蒸し','玉ねぎサラダ','キムチになる前のキャベツ','かぼちゃのそぼろ煮'],
+    'やさしい': ['おかゆ','雑炊','うどん','茶碗蒸し','湯豆腐','お茶漬け','かきたま汁','お吸い物','だし巻き卵','玉子丼','親子丼','白身魚のムニエル','鶏そぼろ','かぼちゃの煮物','かぼちゃのポタージュ','味噌汁','けんちん汁','オムレツ','コーンスープ','肉豆腐','そぼろ丼','白和え','かぼちゃのそぼろ煮']
+  };
+  var MOOD_DEFAULT = {};
+  MOOD_LIST.forEach(function(m){ (MOOD_BY[m[0]] || []).forEach(function(nm){ if(!MOOD_DEFAULT[nm]) MOOD_DEFAULT[nm] = []; if(MOOD_DEFAULT[nm].indexOf(m[0]) < 0) MOOD_DEFAULT[nm].push(m[0]); }); });
+  var MOODS_KEY = 'otetsudai-moods-v1';
+  function loadMoods(){
+    try{
+      var raw = window.localStorage.getItem(MOODS_KEY);
+      if(raw){
+        var p = JSON.parse(raw), ok = p && typeof p === 'object' && !Array.isArray(p);
+        if(ok) Object.keys(p).forEach(function(k){
+          if(!Array.isArray(p[k]) || !p[k].every(function(s){ return typeof s === 'string'; })) ok = false;
+        });
+        if(ok) return p;
+      }
+    }catch(e){}
+    return {};
+  }
+  function saveMoods(){
+    try{ window.localStorage.setItem(MOODS_KEY, JSON.stringify(moods)); }catch(e){}
+    syncMark(MOODS_KEY);
+  }
+  var moods = loadMoods(), moodFilter = '';
+  // 保存された設定があればそれを、なければ初期設定を使う（新しい初期料理は自動で初期設定がつく）
+  function moodsOf(name){
+    return Object.prototype.hasOwnProperty.call(moods, name) ? moods[name] : (MOOD_DEFAULT[name] || []);
+  }
+  function moodInfo(m){ for(var i = 0; i < MOOD_LIST.length; i++) if(MOOD_LIST[i][0] === m) return MOOD_LIST[i]; return null; }
+  function filterActive(){ return !!(tagFilter || moodFilter || tagQuery.trim()); }
   function tagMatch(name){
     if(tagFilter && tagsOf(name).indexOf(tagFilter) < 0) return false;
+    if(moodFilter && moodsOf(name).indexOf(moodFilter) < 0) return false;
     var q = normText(tagQuery.trim());
     if(q){
       if(normText(name).indexOf(q) >= 0) return true;
@@ -1686,6 +1739,19 @@ input[type="time"].field{width:auto;min-width:140px}
     customTags.forEach(function(t){ if(!Object.prototype.hasOwnProperty.call(cnt, t)) cnt[t] = 0; });
     var all = Object.keys(cnt).sort(function(a, b){ return (cnt[b] - cnt[a]) || (a < b ? -1 : a > b ? 1 : 0); });
     $('tag-search').hidden = editing;
+    $('mood-row').hidden = editing;
+    var moodBox = $('mood-chips'); moodBox.innerHTML = '';
+    MOOD_LIST.forEach(function(m){
+      var mbtn = el('button', 'chip sub-chip mood-chip', m[1] + ' ' + m[0]); mbtn.type = 'button'; mbtn.dataset.mood = m[0];
+      mbtn.setAttribute('aria-pressed', moodFilter === m[0] ? 'true' : 'false');
+      mbtn.addEventListener('click', function(){
+        moodFilter = moodFilter === m[0] ? '' : m[0];
+        render();
+        var bs = $('mood-chips').querySelectorAll('button[data-mood]');
+        for(var i = 0; i < bs.length; i++) if(bs[i].dataset.mood === m[0]){ bs[i].focus(); break; }
+      });
+      moodBox.appendChild(mbtn);
+    });
     var top;
     if(editing || tagsOpen) top = all.slice();
     else{
@@ -1735,10 +1801,14 @@ input[type="time"].field{width:auto;min-width:140px}
     menu.forEach(function(g){ g[1].forEach(function(nm){
       if(tagMatch(nm)) vis++; else if(dishes.indexOf(nm) >= 0) hid++;
     }); });
-    var label = (tagFilter ? '#' + tagFilter : '') + (tagFilter && tagQuery.trim() ? ' ＋ ' : '') + (tagQuery.trim() ? '「' + tagQuery.trim() + '」' : '');
+    var mi = moodFilter ? moodInfo(moodFilter) : null, parts = [];
+    if(mi) parts.push(mi[1] + ' ' + mi[0]);
+    if(tagFilter) parts.push('#' + tagFilter);
+    if(tagQuery.trim()) parts.push('「' + tagQuery.trim() + '」');
+    var label = (mi && parts.length === 1) ? mi[1] + ' ' + mi[2] + '料理' : parts.join(' ＋ ') + ' の料理';
     var extra = '';
-    if(vis === 0 && tagFilter && !tagQuery.trim() && cnt[tagFilter] === 0) extra = '（この食材を使う料理はまだありません）';
-    $('tag-status-text').textContent = label + ' の料理：' + vis + '品' + extra + (hid ? '（選んだ料理のうち' + hid + '品は隠れています）' : '');
+    if(vis === 0 && tagFilter && !moodFilter && !tagQuery.trim() && cnt[tagFilter] === 0) extra = '（この食材を使う料理はまだありません）';
+    $('tag-status-text').textContent = label + '：' + vis + '品' + extra + (hid ? '（選んだ料理のうち' + hid + '品は隠れています）' : '');
     st.hidden = false;
   }
   function focusTagAdd(name){
@@ -1793,6 +1863,21 @@ input[type="time"].field{width:auto;min-width:140px}
     });
     row.appendChild(inp); row.appendChild(ab);
     box.appendChild(row);
+    box.appendChild(el('p', 'sub-h', '気分'));
+    var mw = el('div', 'mood-edit'); mw.setAttribute('role', 'group'); mw.setAttribute('aria-label', name + 'の気分');
+    var cur0 = moodsOf(name);
+    MOOD_LIST.forEach(function(m){
+      var lab = el('label', 'checkrow'), cbx = el('input'); cbx.type = 'checkbox'; cbx.checked = cur0.indexOf(m[0]) >= 0;
+      cbx.addEventListener('change', function(){
+        var cur = moodsOf(name).slice(), i = cur.indexOf(m[0]);
+        if(cbx.checked && i < 0) cur.push(m[0]);
+        if(!cbx.checked && i >= 0) cur.splice(i, 1);
+        moods[name] = cur; saveMoods();
+      });
+      lab.appendChild(cbx); lab.appendChild(el('span', null, m[1] + ' ' + m[0]));
+      mw.appendChild(lab);
+    });
+    box.appendChild(mw);
     return box;
   }
 
@@ -2102,7 +2187,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(menu.some(function(g, i){ return i !== st.gi && g[0] === v; })){ setMsg('分類「' + v + '」はすでにあります。'); return; }
     }
     hideUndo();
-    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags), hist: clone(orderHist), favs: clone(favs) };
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags), moods: clone(moods), hist: clone(orderHist), favs: clone(favs) };
     if(st.k === 'dish'){
       var arr = menu[st.gi][1], ix = arr.indexOf(st.old);
       if(ix >= 0) arr[ix] = v;
@@ -2119,6 +2204,8 @@ input[type="time"].field{width:auto;min-width:140px}
         saveHist(); saveFav();
         if(!Object.prototype.hasOwnProperty.call(tags, v) && !TAG_DEFAULT[v]) tags[v] = tagsOf(st.old).slice();
         delete tags[st.old]; saveTags();
+        if(!Object.prototype.hasOwnProperty.call(moods, v) && !MOOD_DEFAULT[v]) moods[v] = moodsOf(st.old).slice();
+        delete moods[st.old]; saveMoods();
         moveKey(tagEditOpen, st.old, v);
       }
     }else{
@@ -2432,6 +2519,7 @@ input[type="time"].field{width:auto;min-width:140px}
       saveSub();
     }
     if(undoSnap.tags){ tags = undoSnap.tags; saveTags(); }
+    if(undoSnap.moods){ moods = undoSnap.moods; saveMoods(); }
     if(undoSnap.ctags){ customTags = undoSnap.ctags; saveCustom(); }
     if(undoSnap.hist){ orderHist = undoSnap.hist; favs = undoSnap.favs; saveHist(); saveFav(); }
     saveMenu(); hideUndo(); render(); refresh();
@@ -2448,6 +2536,7 @@ input[type="time"].field{width:auto;min-width:140px}
     sub = clone(SUB_DEFAULT); subSel = {}; subOther = {}; subEditOpen = {}; subRemoveAsk = {};
     saveSub();
     tags = {}; saveTags(); tagEditOpen = {}; tagFilter = ''; tagQuery = ''; $('tag-search').value = '';
+    moods = {}; saveMoods(); moodFilter = '';
     customTags = []; saveCustom(); tagAddOpen = false; tagAdd = null; tagRenameSt = null;
     $('tag-add-panel').innerHTML = ''; $('tag-add-panel').hidden = true; setTagNote('');
     dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
@@ -2467,7 +2556,7 @@ input[type="time"].field{width:auto;min-width:140px}
   });
   $('tag-search').addEventListener('input', function(){ tagQuery = this.value; render(); });
   $('tag-clear').addEventListener('click', function(){
-    tagFilter = ''; tagQuery = ''; $('tag-search').value = '';
+    tagFilter = ''; moodFilter = ''; tagQuery = ''; $('tag-search').value = '';
     render(); $('tag-search').focus();
   });
   render();
@@ -3074,6 +3163,7 @@ input[type="time"].field{width:auto;min-width:140px}
   SYNC_KEYS[SHOP_KEY] = { get: function(){ return shop; }, load: function(){ shop = loadShop(); } };
   SYNC_KEYS[HIST_KEY] = { get: function(){ return orderHist; }, load: function(){ orderHist = loadList(HIST_KEY); } };
   SYNC_KEYS[SUBSEEN_KEY] = { get: function(){ return loadSubSeen() || []; }, load: function(){} };
+  SYNC_KEYS[MOODS_KEY] = { get: function(){ return moods; }, load: function(){ moods = loadMoods(); } };
   SYNC_KEYS[SEEN_KEY] = { get: function(){ return loadSeen() || []; }, load: function(){} };
   SYNC_KEYS[FAV_KEY] = { get: function(){ return favs; }, load: function(){ favs = loadList(FAV_KEY); } };
   var syncVer = {}, syncDirty = {}, syncTimer = 0, syncChain = Promise.resolve();
@@ -3471,7 +3561,6 @@ input[type="time"].field{width:auto;min-width:140px}
     if(rs.note && rs.note.trim()) t += '\n' + rs.note.trim();
     return t;
   }
-  function toPreview(kind, changes, text){ rs = { mode: 'preview', kind: kind, changes: changes, text: text }; replyNotice = ''; renderReply(); }
   function setAll(kinds, st){ var c = {}; kinds.forEach(function(k){ c[k] = st; }); return c; }
   function permissionHint(e){
     var m = String((e && (e.message || e.code)) || '');
@@ -3535,60 +3624,130 @@ input[type="time"].field{width:auto;min-width:140px}
     parent.appendChild(b);
     return b;
   }
+  // ---- 返事画面：種類ごとのチェック ----
+  function ensureRs(o){
+    if(!rs.ok){ rs.ok = {}; rs.c = {}; rs.base = {}; }
+    KINDS.forEach(function(k){
+      if(!hasKind(o, k)) return;
+      var st = stOf(o, k);
+      if(rs.base[k] !== st){ rs.base[k] = st; rs.ok[k] = (st === 'none'); delete rs.c[k]; }   // 返事なしの行は最初からOK、承知済みの行は「できた」を未チェックで始める
+    });
+  }
+  function rowCard(o, k){
+    var st = stOf(o, k), card = el('div', 'rv-card');
+    var main = el('div', 'rv-rowmain'), left = el('div', 'rv-left'), right = el('div', 'rv-right');
+    var head = el('div', 'rv-head');
+    head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+    head.appendChild(stBadge(st));
+    left.appendChild(head);
+    (o[k] || []).forEach(function(t){ left.appendChild(el('p', 'rv-line', '・' + t)); });
+    if(st === 'done'){
+      right.appendChild(el('span', 'rv-doneflag', '✅ 済み'));
+    }else{
+      var lab = st === 'ack' ? 'できた' : 'OK', on = !!rs.ok[k];
+      var b = el('button', 'rv-check', (on ? '✓ ' : '') + lab); b.type = 'button';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.setAttribute('aria-label', KIND_NAME[k] + '：' + lab);
+      if(rs.sending) b.disabled = true;
+      b.addEventListener('click', function(){
+        rs.err = ''; replyNotice = '';
+        rs.ok[k] = !rs.ok[k];
+        if(rs.ok[k]) delete rs.c[k];
+        renderReply();
+      });
+      right.appendChild(b);
+      var cb = el('button', 'rv-consult-btn', '相談'); cb.type = 'button';
+      cb.setAttribute('aria-pressed', rs.c[k] ? 'true' : 'false');
+      cb.setAttribute('aria-label', KIND_NAME[k] + 'について相談する');
+      if(rs.sending) cb.disabled = true;
+      cb.addEventListener('click', function(){
+        rs.err = ''; replyNotice = '';
+        if(rs.c[k]) delete rs.c[k];
+        else{ rs.c[k] = { reason: '', alt: '', note: '' }; rs.ok[k] = false; }
+        renderReply();
+      });
+      right.appendChild(cb);
+    }
+    main.appendChild(left); main.appendChild(right); card.appendChild(main);
+    if(rs.c[k]) card.appendChild(consultPanel(k));
+    return card;
+  }
+  function consultPanel(k){
+    var c = rs.c[k], box = el('div', 'rv-consult');
+    box.appendChild(el('p', 'note', 'わけは？'));
+    chipRow(box, REASONS.map(function(r){ return [r, r]; }), function(r){ return c.reason === r; }, function(r){ c.reason = r; renderReply(); }, KIND_NAME[k] + 'の相談のわけ');
+    var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
+    var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = c.alt || ''; i1.autocomplete = 'off';
+    i1.addEventListener('input', function(){ c.alt = i1.value; });
+    l1.appendChild(i1); box.appendChild(l1);
+    var l2 = el('label', 'sub-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
+    var i2 = el('input', 'field'); i2.type = 'text'; i2.maxLength = 80; i2.value = c.note || ''; i2.autocomplete = 'off';
+    i2.addEventListener('input', function(){ c.note = i2.value; });
+    l2.appendChild(i2); box.appendChild(l2);
+    return box;
+  }
+  function endSentence(t){ return /[。！？!?☺️]$/.test(t) ? t : t + '。'; }
+  // チェックの結果から、changes・kind・文面を作る。相談のわけが未選択なら文字列（エラー）を返す
+  function buildReply(o){
+    var changes = {}, lines = [], hasConsult = false, hasDone = false, any = false;
+    var okMsg = { meal: '🍳 ご飯：OKです☺️', clean: '🧹 掃除：OKです', shop: '🛒 買い物：OKです' };
+    var doneMsg = { meal: '🍳 ご飯：できました☺️', clean: '🧹 掃除：終わりました', shop: '🛒 買い物：買ってきました' };
+    for(var i = 0; i < KINDS.length; i++){
+      var k = KINDS[i];
+      if(!hasKind(o, k) || stOf(o, k) === 'done') continue;
+      var c = rs.c[k];
+      if(c){
+        if(!c.reason) return KIND_NAME[k] + 'の相談のわけを選んでください。';
+        var t = c.reason === 'その他' ? '' : endSentence(c.reason);
+        t += (c.alt && c.alt.trim()) ? endSentence(c.alt.trim() + 'にしました') : 'どうしましょうか？';
+        if(c.note && c.note.trim()) t += ' ' + endSentence(c.note.trim());
+        lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：' + t);
+        changes[k] = 'consult'; hasConsult = true; any = true;
+      }else if(rs.ok[k]){
+        if(stOf(o, k) === 'ack'){ changes[k] = 'done'; hasDone = true; lines.push(doneMsg[k]); }
+        else{ changes[k] = 'ack'; lines.push(okMsg[k]); }
+        any = true;
+      }
+    }
+    if(!any) return 'チェックか相談を選んでください。';
+    return { changes: changes, kind: hasConsult ? 'consult' : hasDone ? 'done' : 'ack', text: replyHead(o) + '\n' + lines.join('\n') };
+  }
   function renderActions(v, o){
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
     if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
     if(rs.mode === 'preview'){
       v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
       v.appendChild(el('pre', 'msg', rs.text));
-      rvBtn(v, rs.sending ? '送っています…' : 'この返事をLINEに送る', false, sendReplyNow);
-      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
+      rvBtn(v, rs.sending ? '送っています…' : 'この内容でLINEに送る', false, sendReplyNow);
+      rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
       return;
     }
-    if(rs.mode === 'doneSel'){
-      v.appendChild(el('p', 'sub-h', 'できたものを選んでください'));
-      chipRow(v, kindsWith(o, 'ack').map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }),
-        function(k){ return !!rs.sel[k]; }, function(k){ rs.sel[k] = !rs.sel[k]; renderReply(); }, 'できた種類');
-      rvBtn(v, '内容を確かめる', false, function(){
-        var ks = kindsWith(o, 'ack').filter(function(k){ return rs.sel[k]; });
-        if(!ks.length){ rs.err = '1つ以上、選んでください。'; renderReply(); return; }
-        toPreview('done', setAll(ks, 'done'), doneText(o, ks));
+    var pendingAny = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
+    if(!pendingAny) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
+    else{
+      var anySel = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done' && (rs.ok[k] || rs.c[k]); });
+      var sb = rvBtn(v, 'この返事をLINEに送る', false, function(){
+        var r = buildReply(o);
+        if(typeof r === 'string'){ rs.err = r; renderReply(); return; }
+        rs.mode = 'preview'; rs.kind = r.kind; rs.changes = r.changes; rs.text = r.text; rs.err = ''; renderReply();
       });
-      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
-      return;
+      sb.disabled = !!rs.sending || !anySel;
     }
-    if(rs.mode === 'consult'){
-      v.appendChild(el('p', 'sub-h', '相談・変更の内容'));
-      v.appendChild(el('p', 'note', 'どの種類ですか？'));
-      chipRow(v, KINDS.filter(function(k){ return hasKind(o, k); }).map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }),
-        function(k){ return rs.kind === k; }, function(k){ rs.kind = k; renderReply(); }, '相談する種類');
-      v.appendChild(el('p', 'note', 'わけは？'));
-      chipRow(v, REASONS.map(function(r){ return [r, r]; }),
-        function(r){ return rs.reason === r; }, function(r){ rs.reason = r; renderReply(); }, 'わけ');
-      var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
-      var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = rs.alt || ''; i1.autocomplete = 'off';
-      i1.addEventListener('input', function(){ rs.alt = i1.value; });
-      l1.appendChild(i1); v.appendChild(l1);
-      var l2 = el('label', 'sub-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
-      var i2 = el('input', 'field'); i2.type = 'text'; i2.maxLength = 80; i2.value = rs.note || ''; i2.autocomplete = 'off';
-      i2.addEventListener('input', function(){ rs.note = i2.value; });
-      l2.appendChild(i2); v.appendChild(l2);
-      rvBtn(v, '内容を確かめる', false, function(){
-        if(!rs.kind || !rs.reason){ rs.err = '種類とわけを選んでください。'; renderReply(); return; }
-        toPreview('consult', setAll([rs.kind], 'consult'), consultText(o));
-      });
-      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
-      return;
-    }
-    var nones = kindsWith(o, 'none'), acks = kindsWith(o, 'ack');
-    if(nones.length) rvBtn(v, '全部、承知しました', false, function(){ toPreview('ack', setAll(nones, 'ack'), ackText(o, nones)); });
-    if(acks.length) rvBtn(v, 'できました', false, function(){
-      if(acks.length === 1){ toPreview('done', setAll(acks, 'done'), doneText(o, acks)); return; }
-      var sel = {}; acks.forEach(function(k){ sel[k] = true; });
-      rs = { mode: 'doneSel', sel: sel }; renderReply();
-    });
-    rvBtn(v, '相談・変更があります', true, function(){ rs = { mode: 'consult', alt: '', note: '' }; renderReply(); });
     v.appendChild(el('p', 'note', 'お返事は、ふつうのトークでも大丈夫です'));
+  }
+  function plainCard(o, k, canManual){
+    var card = el('div', 'rv-card'), head = el('div', 'rv-head');
+    head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+    head.appendChild(stBadge(stOf(o, k)));
+    card.appendChild(head);
+    (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+    if(canManual && stOf(o, k) !== 'done'){
+      var bt = el('button', 'mini sub', '済みにする'); bt.type = 'button';
+      bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
+      bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, renderReply); });
+      card.appendChild(bt);
+    }
+    return card;
   }
   function renderReply(){
     var v = $('reply-view');
@@ -3601,32 +3760,27 @@ input[type="time"].field{width:auto;min-width:140px}
     v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
     var expired = o.target.date < dateStr(new Date());
-    KINDS.forEach(function(k){
-      if(!hasKind(o, k)) return;
-      var card = el('div', 'rv-card'), head = el('div', 'rv-head');
-      head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
-      head.appendChild(stBadge(stOf(o, k)));
-      card.appendChild(head);
-      (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
-      if(mine && !expired && stOf(o, k) !== 'done'){
-        var bt = el('button', 'mini sub', '済みにする'); bt.type = 'button';
-        bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
-        bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, renderReply); });
-        card.appendChild(bt);
+    var canSend = liffReady && liffInClient && liffType === 'utou' && sendMode === 'chat';
+    var matsu = liffReady && !mine && !expired && canSend;
+    if(matsu) ensureRs(o);
+    var previewing = matsu && rs.mode === 'preview';
+    if(!previewing){
+      KINDS.forEach(function(k){
+        if(!hasKind(o, k)) return;
+        v.appendChild(matsu ? rowCard(o, k) : plainCard(o, k, mine && !expired));
+      });
+      if(o.memo){ var mc = el('div', 'rv-card'); mc.appendChild(el('p', 'rv-kn', '📝 メモ')); mc.appendChild(el('p', 'rv-line', o.memo)); v.appendChild(mc); }
+      var rp = (o.replies || []).slice(-3);
+      if(rp.length){
+        var hc = el('div', 'rv-card'); hc.appendChild(el('p', 'rv-kn', 'これまでのお返事'));
+        rp.forEach(function(r){ hc.appendChild(el('p', 'rv-line', (hhmm(r.at) ? hhmm(r.at) + '　' : '') + String(r.text || '').split('\n').join(' '))); });
+        v.appendChild(hc);
       }
-      v.appendChild(card);
-    });
-    if(o.memo){ var mc = el('div', 'rv-card'); mc.appendChild(el('p', 'rv-kn', '📝 メモ')); mc.appendChild(el('p', 'rv-line', o.memo)); v.appendChild(mc); }
-    var rp = (o.replies || []).slice(-3);
-    if(rp.length){
-      var hc = el('div', 'rv-card'); hc.appendChild(el('p', 'rv-kn', 'これまでのお返事'));
-      rp.forEach(function(r){ hc.appendChild(el('p', 'rv-line', (hhmm(r.at) ? hhmm(r.at) + '　' : '') + String(r.text || '').split('\n').join(' '))); });
-      v.appendChild(hc);
     }
     if(!liffReady){ v.appendChild(el('p', 'note', 'LINEに接続しています…')); return; }
     if(mine){ v.appendChild(el('p', 'note', 'お嬢様の画面です。「済みにする」で状態を変えられます。')); return; }
     if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
-    if(!(liffInClient && liffType === 'utou' && sendMode === 'chat')){
+    if(!canSend){
       v.appendChild(el('p', 'rv-err', 'お嬢様とのトークから開いてください。'));
       return;
     }
