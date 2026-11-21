@@ -189,6 +189,14 @@ select.field{padding-right:8px}
   .tab .badge{min-width:20px;height:20px;padding:0 5px;line-height:20px;font-size:12px}
 }
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-fg)}
+.tabs-stick{position:sticky;top:env(safe-area-inset-top,0px);z-index:12;margin:0 0 6px;padding:4px 0 6px;background:var(--bg);box-shadow:0 2px 0 var(--line)}
+.tabs-stick .tabs{margin-bottom:0}
+.tabs-stick.stuck .tab-ico{width:24px;height:24px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:13;background:var(--bg)}
+.chip,.inpanel,.sec,.qitem{scroll-margin-top:var(--stick-h,110px)}
+.totop{position:fixed;z-index:11;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(var(--bar-h,72px) + 12px);width:44px;height:44px;padding:0;border:2px solid var(--accent);border-radius:50%;background:var(--surface);color:var(--accent);font-size:22px;line-height:1;font-weight:700;cursor:pointer;opacity:.55;box-shadow:0 2px 6px var(--shadow)}
+.totop:hover,.totop:focus-visible,.totop:active{opacity:1}
+.totop[hidden]{display:none}
 .tab .badge{
   min-width:22px;height:22px;padding:0 6px;border-radius:11px;font-size:13px;line-height:22px;
   background:var(--accent);color:var(--accent-fg);display:none;
@@ -317,6 +325,11 @@ input[type="time"].field{width:auto;min-width:140px}
 .inpanel.withtri::before{content:"";position:absolute;top:-10px;left:var(--tri,24px);margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom:10px solid var(--accent)}
 .sub-title{margin:0 0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
 .recwhy{color:var(--accent)}
+.omakase-row{display:flex;align-items:center;gap:6px}
+.omakase-btn{flex:1;min-height:56px;padding:8px 14px;border:3px solid var(--accent);border-radius:8px;background:var(--surface);color:var(--accent);font:inherit;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 var(--accent)}
+.omakase-btn:active{transform:translateY(2px);box-shadow:none}
+.omakase-btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+#omakase-panel{margin-top:6px;padding:8px 8px 10px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .dgroup{display:inline-flex;align-items:center;max-width:100%}
 .dgroup .chip{min-width:0;overflow-wrap:anywhere}
 .dstar{flex:none;min-width:32px;min-height:32px;margin-left:2px;padding:0;border:0;border-radius:16px;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
@@ -408,10 +421,13 @@ input[type="time"].field{width:auto;min-width:140px}
   </div>
   <p class="lead">お手伝いさんへのお願いを、こちらからお送りいたします。</p>
 
+  <div id="tabs-sentinel" aria-hidden="true" style="height:1px;margin-bottom:-1px"></div>
+  <div class="tabs-stick" id="tabs-stick">
   <div class="tabs" role="tablist" aria-label="お願いの種類">
     <button class="tab" id="tab-meal" role="tab" aria-selected="true" aria-controls="panel-meal" type="button"><img class="tab-ico" src="cat-icons/tab-meal-96.png" width="32" height="32" alt="">ご飯<span class="badge" id="badge-meal"></span></button>
     <button class="tab" id="tab-clean" role="tab" aria-selected="false" aria-controls="panel-clean" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-clean-96.png" width="32" height="32" alt="">掃除<span class="badge" id="badge-clean"></span></button>
     <button class="tab" id="tab-shop" role="tab" aria-selected="false" aria-controls="panel-shop" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-shop-96.png" width="32" height="32" alt="">買い物<span class="badge" id="badge-shop"></span></button>
+  </div>
   </div>
 
   <!-- ご飯 -->
@@ -468,6 +484,18 @@ input[type="time"].field{width:auto;min-width:140px}
       <div class="undo" id="tag-status" role="status" hidden>
         <span id="tag-status-text"></span>
         <button type="button" class="mini sub" id="tag-clear">絞り込みを解除</button>
+      </div>
+    </section>
+
+    <section class="sec" id="omakase-sec">
+      <div class="omakase-row">
+        <button type="button" class="omakase-btn" id="omakase" aria-pressed="false">🍳 松永さんにおまかせ</button>
+        <button type="button" class="dstar" id="omakase-star" aria-pressed="false" aria-label="おまかせをお気に入りにする">☆</button>
+      </div>
+      <div id="omakase-panel" hidden>
+        <p class="note" id="omakase-q" style="margin:8px 0 4px">今の気分（複数可・選ばなくてもOK）</p>
+        <div class="chips" id="omakase-moods" role="group" aria-labelledby="omakase-q"></div>
+        <input type="text" class="field" id="omakase-other" maxlength="40" autocomplete="off" placeholder="その他の希望（例：辛くないもの）" aria-label="その他の希望" style="margin-top:8px">
       </div>
     </section>
 
@@ -575,6 +603,8 @@ input[type="time"].field{width:auto;min-width:140px}
   <p class="liff-status" id="sync-note" role="status" style="margin-top:4px" hidden></p>
 </div>
 
+<button type="button" class="totop" id="totop" aria-label="一番上へ戻る" hidden>↑</button>
+
 <div class="bar">
   <div class="bar-in">
     <button type="button" class="go" id="go" disabled>頼む</button>
@@ -598,6 +628,7 @@ input[type="time"].field{width:auto;min-width:140px}
       </div>
       <div style="margin-top:8px"><button type="button" class="chip" id="daigo" aria-pressed="false">大吾くんもいる</button></div>
       </div>
+      <div id="sheet-subok" style="margin-bottom:12px" hidden><button type="button" class="chip" id="subok" aria-pressed="true">材料や品切れのときは、代わりのものでOK</button></div>
       <pre class="msg" id="sheet-msg"></pre>
       <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
       <div class="btns">
@@ -634,6 +665,8 @@ input[type="time"].field{width:auto;min-width:140px}
 
   var dishes = [];   // 選択順を保持
   var usual = false;   // いつもの掃除
+  var SUBOK_KEY = 'otetsudai-subok-v1', subOk = true;
+  try{ if(window.localStorage.getItem(SUBOK_KEY) === '0') subOk = false; }catch(e){}
   var people = 1, daigo = false, daigoAuto = false;   // daigoAuto: 「大吾くんもいる」で人数を自動で1→2にした
   var when = '夜';
   var tab = 'meal';
@@ -834,6 +867,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   // 料理名＋サブメニューの選択 から、文面と同じラベルを作る
   function labelFor(name, selMap, otherMap){
+    if(name === OMAKASE){ var ot = omakaseText(selMap, otherMap); return ot ? name + '（' + ot + '）' : name; }
     if(!hasSub(name) || !sub[name].length) return name;
     var segs = [], run = null, first = true;
     visibleGroups(name, selMap).forEach(function(g){
@@ -1754,6 +1788,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // 今のサブメニューに存在する分だけに絞る
   function filterEntry(e){
     var fe = { name: e.name, sel: {}, other: {} };
+    if(e.name === OMAKASE){ fe.sel = clone(e.sel || {}); fe.other = clone(e.other || {}); return fe; }
     if(!hasSub(e.name)) return fe;
     sub[e.name].forEach(function(g){
       var vs = (e.sel[g.label] || []).filter(function(v){ return g.options.indexOf(v) >= 0; });
@@ -1764,12 +1799,20 @@ input[type="time"].field{width:auto;min-width:140px}
     });
     return fe;
   }
-  function menuHas(name){ return menu.some(function(g){ return g[1].indexOf(name) >= 0; }); }
+  function menuHas(name){ if(name === OMAKASE) return true;
+     return menu.some(function(g){ return g[1].indexOf(name) >= 0; }); }
   function isPressed(e){
+    if(e.name === OMAKASE) return omakase && keyOf(omakaseEntry()) === keyOf(filterEntry(e));
     return dishes.indexOf(e.name) >= 0 && keyOf(snapFor(e.name)) === keyOf(filterEntry(e));
   }
   function applyEntry(e){
     var msg = $('quick-msg');
+    if(e.name === OMAKASE){
+      msg.textContent = '';
+      if(isPressed(e)){ omakase = false; omakaseMoods = []; omakaseOther = ''; }
+      else{ omakase = true; omakaseMoods = ((e.sel && e.sel['気分']) || []).slice(); omakaseOther = String((e.other && e.other['気分']) || ''); }
+      paintOmakase(); render(); refresh(); return;
+    }
     if(!menuHas(e.name)){ msg.textContent = '「' + e.name + '」は今の献立にありません。'; return; }
     msg.textContent = '';
     if(isPressed(e)){
@@ -1801,6 +1844,63 @@ input[type="time"].field{width:auto;min-width:140px}
     renderQuick();
     favTimer = setTimeout(function(){ hideFavUndo(); renderQuick(); }, 8000);
   }
+  // ---- おまかせ注文（料理を選ばず、気分だけ伝える） ----
+  var OMAKASE = 'おまかせ', omakase = false, omakaseMoods = [], omakaseOther = '';
+  var OMAKASE_MOODS = [['さっぱり','さっぱり'],['がっつり','がっつり'],['肉','肉'],['魚','魚'],['野菜多め','野菜多め'],['軽め','軽め'],['家にあるもので','家にあるもので'],['やさしいもの','やさしいもの（体調）']];
+  function omakaseEntry(){
+    var e = { name: OMAKASE, sel: {}, other: {} };
+    if(omakaseMoods.length) e.sel['気分'] = omakaseMoods.slice();
+    if(omakaseOther.trim()) e.other['気分'] = omakaseOther.trim();
+    return e;
+  }
+  function omakaseText(sel, other){
+    var list = ((sel && sel['気分']) || []).slice(), o = String((other && other['気分']) || '').trim();
+    if(o) list.push(o);
+    return list.join('・');
+  }
+  function omakaseFavSaved(){
+    var k = keyOf(omakaseEntry());
+    return favs.some(function(f){ return f.name === OMAKASE && keyOf(f) === k; });
+  }
+  function paintOmakase(){
+    $('omakase').setAttribute('aria-pressed', omakase ? 'true' : 'false');
+    $('omakase-panel').hidden = !omakase;
+    Array.prototype.forEach.call($('omakase-moods').querySelectorAll('.chip'), function(c){
+      c.setAttribute('aria-pressed', omakaseMoods.indexOf(c.dataset.mood) >= 0 ? 'true' : 'false');
+    });
+    if($('omakase-other').value !== omakaseOther) $('omakase-other').value = omakaseOther;
+    var saved = omakaseFavSaved(), st = $('omakase-star');
+    st.textContent = saved ? '\u2605' : '\u2606';
+    st.setAttribute('aria-pressed', saved ? 'true' : 'false');
+    st.setAttribute('aria-label', saved ? 'おまかせのお気に入りを外す' : 'おまかせをお気に入りにする');
+  }
+  OMAKASE_MOODS.forEach(function(m){
+    var c = el('button', 'chip', m[1]); c.type = 'button'; c.dataset.mood = m[0];
+    c.setAttribute('aria-pressed', 'false');
+    c.addEventListener('click', function(){ toggle(omakaseMoods, m[0]); paintOmakase(); });
+    $('omakase-moods').appendChild(c);
+  });
+  $('omakase').addEventListener('click', function(){
+    omakase = !omakase;
+    if(!omakase){ omakaseMoods = []; omakaseOther = ''; }
+    paintOmakase(); refresh();
+  });
+  $('omakase-other').addEventListener('input', function(){ omakaseOther = this.value; paintOmakase(); });
+  $('omakase-star').addEventListener('click', function(){
+    var e = omakaseEntry(), k = keyOf(e);
+    if(omakaseFavSaved()){
+      hideFavUndo();
+      favSnap = clone(favs);
+      favs = favs.filter(function(f){ return !(f.name === OMAKASE && keyOf(f) === k); });
+      saveFav();
+      $('fav-undo-text').textContent = '「' + labelFor(OMAKASE, e.sel, e.other) + '」をお気に入りから外しました。';
+      $('fav-undo').hidden = false;
+      favTimer = setTimeout(function(){ hideFavUndo(); renderQuick(); }, 8000);
+    }else{
+      e.t = Date.now(); favs.push(e); saveFav();
+    }
+    paintOmakase(); render(); $('omakase-star').focus();
+  });
   function qCard(e, row, extra){
     var fe = filterEntry(e);
     var item = el('div', 'qitem');
@@ -2053,7 +2153,8 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!p || !chip) return;
     var bar = document.querySelector('.bar'), bh = bar ? bar.offsetHeight : 0;
     var need = p.getBoundingClientRect().bottom - (window.innerHeight - bh - 8);
-    var d = Math.min(need, chip.getBoundingClientRect().top - 8);
+    var sbot = Math.max(0, $('tabs-stick').getBoundingClientRect().bottom);
+    var d = Math.min(need, chip.getBoundingClientRect().top - (sbot + 8));
     if(d > 0) window.scrollBy({ top: d, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   // 料理チップの右の☆ボタン（その料理のお気に入りが1件以上あれば★）
@@ -2216,6 +2317,7 @@ input[type="time"].field{width:auto;min-width:140px}
     });
     renderFind();
     renderQuick();
+    paintOmakase();
     placeTriangles();
   }
 
@@ -2373,6 +2475,11 @@ input[type="time"].field{width:auto;min-width:140px}
     pending = buildMessage();
     $('sheet-msg').textContent = pending;
   }
+  $('subok').addEventListener('click', function(){
+    subOk = !subOk; this.setAttribute('aria-pressed', subOk ? 'true' : 'false');
+    try{ window.localStorage.setItem(SUBOK_KEY, subOk ? '1' : '0'); }catch(e){}
+    updateSheetMsg();
+  });
   $('daigo').addEventListener('click', function(){
     daigo = !daigo; this.setAttribute('aria-pressed', daigo ? 'true' : 'false');
     if(daigo){ if(people === 1){ people = 2; daigoAuto = true; } else daigoAuto = false; }
@@ -2561,6 +2668,39 @@ input[type="time"].field{width:auto;min-width:140px}
   $('cw-set').addEventListener('click', function(){ setCleanMode('set'); });
 
   // タブ
+  // ---- タブの固定表示 ----
+  var tabsStick = $('tabs-stick');
+  function safeTop(){ try{ return parseFloat(window.getComputedStyle(document.body, '::before').height) || 0; }catch(e){ return 0; } }
+  function updStick(){ document.documentElement.style.setProperty('--stick-h', (tabsStick.offsetHeight + safeTop() + 8) + 'px'); }
+  updStick();
+  window.addEventListener('resize', updStick);
+  if(window.IntersectionObserver){
+    new IntersectionObserver(function(es){
+      tabsStick.classList.toggle('stuck', !es[0].isIntersecting && es[0].boundingClientRect.top < 0);
+    }, { threshold: 0 }).observe($('tabs-sentinel'));
+  }
+  var totop = $('totop');
+  function updTop(){
+    var bar = document.querySelector('.bar');
+    if(bar) document.documentElement.style.setProperty('--bar-h', bar.offsetHeight + 'px');
+    totop.hidden = window.pageYOffset < 400 || $('scrim').classList.contains('open');
+  }
+  window.addEventListener('scroll', updTop, { passive: true });
+  window.addEventListener('resize', updTop);
+  if(window.MutationObserver) new MutationObserver(updTop).observe($('scrim'), { attributes: true, attributeFilter: ['class'] });
+  totop.addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  });
+  updTop();
+  // タブを切り替えたら、そのタブの中身の先頭（タブのすぐ下）まで戻す
+  function scrollToPanelTop(t){
+    var p = $('panel-' + t);
+    if(!p) return;
+    var target = p.getBoundingClientRect().top + window.pageYOffset - (tabsStick.offsetHeight + safeTop() + 4);
+    if(window.pageYOffset > target + 1){
+      window.scrollTo({ top: Math.max(0, target), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+  }
   function setTab(t){
     tab = t;
     ['meal','clean','shop'].forEach(function(k){
@@ -2569,6 +2709,7 @@ input[type="time"].field{width:auto;min-width:140px}
       $('tab-'+k).tabIndex = on ? 0 : -1;
       $('panel-'+k).hidden = !on;
     });
+    scrollToPanelTop(t);
   }
   $('tab-meal').addEventListener('click', function(){ setTab('meal'); });
   $('tab-clean').addEventListener('click', function(){ setTab('clean'); });
@@ -2590,7 +2731,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }).join('');
   }
   function freeText(){ return $('free-dish').value.trim(); }
-  function mealCount(){ return dishes.length + (freeText() ? 1 : 0); }
+  function mealCount(){ return dishes.length + (freeText() ? 1 : 0) + (omakase ? 1 : 0); }
 
   function refresh(){
     $('people').textContent = people;
@@ -2629,6 +2770,7 @@ input[type="time"].field{width:auto;min-width:140px}
       var ml = ['🍳 ご飯｜' + ds + tm];
       dishes.forEach(function(nm){ ml = ml.concat(dishLines(nm)); });
       if(freeText()) ml.push('・' + freeText());
+      if(omakase){ var ot2 = omakaseText(omakaseEntry().sel, omakaseEntry().other); ml.push((dishes.length || freeText() ? '・ほかはおまかせ' : '・おまかせ') + (ot2 ? '（' + ot2 + '）' : '')); }
       ml.push('→ ' + people + '人分' + (daigo ? '（大吾くんもいます）' : ''));
       blocks.push(ml.join('\n'));
     }
@@ -2641,6 +2783,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(sl.length) blocks.push('🛒 買い物\n' + sl.join('\n'));
     if(!blocks.length) return '';
     if(memo) blocks.push('📝 メモ\n' + memo);
+    if(mealCount() > 0 || sl.length || other) blocks.push(subOk ? '※材料や品物がないときは、代わりのもので大丈夫です' : '※ないものがあれば、相談してください');
     return '🐈 松永便 🐈\n松永さん、お願いします🙇‍♀️\n\n' + blocks.join('\n\n') + '\n\nよろしくお願いします！';
   }
 
@@ -2650,6 +2793,8 @@ input[type="time"].field{width:auto;min-width:140px}
     pending = buildMessage();
     if(!pending) return;
     $('sheet-people').hidden = mealCount() === 0;
+    $('sheet-subok').hidden = !(mealCount() > 0 || shopCount() > 0);
+    $('subok').setAttribute('aria-pressed', subOk ? 'true' : 'false');
     showSheetErr('');
     $('sheet-msg').textContent = pending;
     lastFocus = document.activeElement;
@@ -2667,7 +2812,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!scrim.classList.contains('open')) return;
     if(e.key === 'Escape') closeSheet();
     if(e.key === 'Tab'){ // フォーカスをシート内に留める
-      var f = $('sheet-people').hidden ? [$('sheet-back'), $('sheet-send')] : [$('people-minus'), $('people-plus'), $('daigo'), $('sheet-back'), $('sheet-send')];
+      var f = ($('sheet-people').hidden ? [] : [$('people-minus'), $('people-plus'), $('daigo')]).concat($('sheet-subok').hidden ? [] : [$('subok')], [$('sheet-back'), $('sheet-send')]);
       var i = f.indexOf(document.activeElement);
       e.preventDefault();
       f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
@@ -2704,6 +2849,7 @@ input[type="time"].field{width:auto;min-width:140px}
     try{
       var nowT = Date.now();
       var newHist = [];
+      if(omakase){ var oe = omakaseEntry(); oe.t = nowT; oe.w = whenBucket(); orderHist.push(oe); newHist.push(oe); }
       dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
       saveHist(true); syncAppendHist(newHist);
@@ -2719,7 +2865,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
@@ -2962,6 +3108,7 @@ input[type="time"].field{width:auto;min-width:140px}
     document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') syncTick(); });
   }
 
+  paintOmakase();
   refresh();
   initLiff();
   syncInit();
