@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>松永便</title>
+<meta name="description" content="松永さんへのお願いとお返事">
+<meta property="og:title" content="🐈 松永便">
+<meta property="og:description" content="松永さんへのお願いとお返事">
+<meta property="og:image" content="https://dyesiwasaki-cmd.github.io/matsunaga-bin/cat-icons/og.png">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
@@ -236,6 +241,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-consult-btn[aria-pressed="true"]{border-color:var(--bad,#c62828);color:var(--bad,#c62828);font-weight:700}
 .rv-doneflag{font-weight:700;color:var(--ok,#2e7d32);white-space:nowrap}
 .rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
+.rv-btn.sub[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.st-na{color:var(--muted)}
 .rv-title{margin:12px 0 4px;font-size:20px}
 .rv-big{margin:4px 0 8px;font-size:24px;font-weight:700;line-height:1.35}
 .rv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
@@ -3340,13 +3347,13 @@ input[type="time"].field{width:auto;min-width:140px}
   var KINDS = ['meal', 'clean', 'shop'];
   var KIND_NAME = { meal: 'ご飯', clean: '掃除', shop: '買い物' };
   var KIND_ICON = { meal: '🍳', clean: '🧹', shop: '🛒' };
-  var ST_WORD = { none: 'まだ返事なし', ack: '承知', done: 'できました', consult: '相談あり' };
+  var ST_WORD = { none: 'まだ返事なし', ack: '承知', done: 'できました', consult: '相談あり', na: 'なしになりました' };
   var WD = '日月火水木金土';
   var REASONS = ['品切れでした', '材料がありませんでした', '今日は難しいです', 'その他'];
   var LINK_BASE = 'https://liff.line.me/' + LIFF_ID + '?reply=';
   var liffReady = false, liffType = '', liffInClient = false, myHash = '';
   var replyId = '', replyOrderData = null, replyErr = '', replyNotice = '', rs = { mode: 'main' };
-  var ordersData = [], myHashP = null;
+  var ordersData = [], myHashP = null, answerMode = false;
 
   function pad2(n){ return ('0' + n).slice(-2); }
   function dateStr(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -3515,11 +3522,12 @@ input[type="time"].field{width:auto;min-width:140px}
     if(o.canceled) b.appendChild(el('p', 'ord-cancel', '取り消し'));
     if(ordUi.id === o.id && ordUi.mode) b.appendChild(ordConfirm(o));
     KINDS.forEach(function(k){
-      if(!hasKind(o, k)) return;
+      var dropped = isDropped(o, k);
+      if(!hasKind(o, k) && !dropped) return;
       var row = el('div', 'ord-k');
       row.appendChild(el('span', 'ord-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
       if(!o.canceled) row.appendChild(stBadge(stOf(o, k)));
-      if(!o.canceled && stOf(o, k) !== 'done'){
+      if(!o.canceled && !dropped && stOf(o, k) !== 'done'){
         var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
         bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
         bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh); });
@@ -3559,12 +3567,14 @@ input[type="time"].field{width:auto;min-width:140px}
   // ---- 返事画面（URL に reply=ID があるとき） ----
   function getReplyId(){
     try{
-      var q = new URLSearchParams(location.search), id = q.get('reply');
+      var q = new URLSearchParams(location.search), id = q.get('reply'), ans = false;
+      if(!id){ id = q.get('answer'); if(id) ans = true; }
       if(!id){
         var st = q.get('liff.state');
-        if(st){ var m = /[?&]reply=([A-Za-z0-9]+)/.exec(st); if(m) id = m[1]; }
+        if(st){ var m = /[?&](reply|answer)=([A-Za-z0-9]+)/.exec(st); if(m){ id = m[2]; ans = m[1] === 'answer'; } }
       }
-      return (id && /^[A-Za-z0-9]{10,60}$/.test(id)) ? id : '';
+      if(id && /^[A-Za-z0-9]{10,60}$/.test(id)){ answerMode = ans; return id; }
+      return '';
     }catch(e){ return ''; }
   }
   function enterReply(id){
@@ -3629,7 +3639,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var o = replyOrderData;
     if(!o || rs.sending) return;
     rs.sending = true; rs.err = ''; renderReply();
-    syncPost({ action: 'replyOrder', id: replyId, changes: rs.changes, kind: rs.kind, text: rs.text, by: 'matsunaga' }).then(function(res){
+    syncPost({ action: 'replyOrder', id: replyId, changes: rs.changes, kind: rs.kind, text: rs.text, by: answerMode ? 'orderer' : 'matsunaga' }).then(function(res){
       if(!res || !res.ok) throw new Error((res && res.error) || '送れませんでした');
       if(res.order) replyOrderData = res.order;
       var text = rs.text, failed = getReplyFail();
@@ -3754,7 +3764,9 @@ input[type="time"].field{width:auto;min-width:140px}
     var free = (rs.free || '').trim();
     if(!any && !free) return 'チェックか相談、ひとことのどれかを入れてください。';
     if(free) lines.push('💬 ' + free);
-    return { changes: changes, kind: (hasConsult || !any) ? 'consult' : hasDone ? 'done' : 'ack', text: replyHead(o) + '\n' + lines.join('\n') };
+    var tx = replyHead(o) + '\n' + lines.join('\n');
+    if(hasConsult || free) tx += '\n\nぴーちゃん、お返事はこちら👇\n' + LINK_BASE.replace('reply=', 'answer=') + replyId;
+    return { changes: changes, kind: (hasConsult || !any) ? 'consult' : hasDone ? 'done' : 'ack', text: tx };
   }
   function renderActions(v, o){
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
@@ -3799,14 +3811,100 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     return card;
   }
+  // ---- 答える画面（URL に answer=ID があるとき：ぴーちゃんが松永さんの相談に答える） ----
+  function isDropped(o, k){ return stOf(o, k) === 'na' && (o[k] || []).length > 0; }   // 答えで「なし」になった種類（最初から依頼が無い種類とは区別）
+  var ANS_CHOICES = [['ok', '👌 それで大丈夫です'], ['alt', '🔁 代わりは…でお願いします'], ['na', '🙅 今回はなしで大丈夫です']];
+  function renderAnswer(v, o){
+    v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
+    var expired = o.target.date < dateStr(new Date());
+    var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
+    var last = null;
+    (o.replies || []).forEach(function(r){ if(r && r.by === 'matsunaga') last = r; });
+    if(last){
+      var lc = el('div', 'rv-card');
+      lc.appendChild(el('p', 'rv-kn', '松永さんのお返事' + (hhmm(last.at) ? '（' + hhmm(last.at) + '）' : '')));
+      String(last.text || '').split('\n').forEach(function(ln){
+        if(!ln || ln.indexOf('liff.line.me') >= 0 || ln.indexOf('お返事はこちら') >= 0) return;
+        lc.appendChild(el('p', 'rv-line', ln));
+      });
+      v.appendChild(lc);
+    }
+    if(!liffReady){ v.appendChild(el('p', 'note', 'LINEに接続しています…')); return; }
+    if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
+    if(!canSend){ v.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。')); return; }
+    if(!rs.a) rs.a = {};
+    if(rs.mode === 'preview'){ renderActions(v, o); return; }
+    if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
+    if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
+    if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事はぴーちゃんがしてください（押した人の名前で送られます）'));
+    var cons = kindsWith(o, 'consult');
+    if(!cons.length) v.appendChild(el('p', 'note', 'いま、答えが必要なご相談はありません。ひとことだけ送ることもできます。'));
+    var sb = null;
+    function anyPicked(){ return Object.keys(rs.a).some(function(k){ return cons.indexOf(k) >= 0; }) || !!(rs.free && rs.free.trim()); }
+    cons.forEach(function(k){
+      var card = el('div', 'rv-card'), head = el('div', 'rv-head');
+      head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+      head.appendChild(stBadge('consult'));
+      card.appendChild(head);
+      (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+      ANS_CHOICES.forEach(function(ch){
+        var on = !!(rs.a[k] && rs.a[k].t === ch[0]);
+        var b = el('button', 'rv-btn sub', ch[1]); b.type = 'button';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.addEventListener('click', function(){
+          rs.err = ''; replyNotice = '';
+          if(on) delete rs.a[k]; else rs.a[k] = { t: ch[0], alt: (rs.a[k] && rs.a[k].alt) || '' };
+          renderReply();
+        });
+        card.appendChild(b);
+      });
+      if(rs.a[k] && rs.a[k].t === 'alt'){
+        var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりのもの'));
+        var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = rs.a[k].alt || ''; i1.autocomplete = 'off';
+        i1.placeholder = '例：ミルクティー';
+        i1.addEventListener('input', function(){ rs.a[k].alt = i1.value; });
+        l1.appendChild(i1); card.appendChild(l1);
+      }
+      v.appendChild(card);
+    });
+    var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, '💬 ひとこと（なくてもOK）'));
+    var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
+    ft.placeholder = '例：ありがとうございます';
+    fl.appendChild(ft); v.appendChild(fl);
+    sb = rvBtn(v, 'このお返事をLINEに送る', false, function(){
+      var lines = [], changes = {};
+      for(var i = 0; i < cons.length; i++){
+        var k = cons[i], a = rs.a[k];
+        if(!a) continue;
+        if(a.t === 'alt'){
+          if(!(a.alt && a.alt.trim())){ rs.err = KIND_NAME[k] + 'の代わりのものを入れてください。'; renderReply(); return; }
+          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：代わりは' + a.alt.trim() + 'でお願いします'); changes[k] = 'ack';
+        }else if(a.t === 'na'){
+          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：今回はなしで大丈夫です'); changes[k] = 'na';
+        }else{
+          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：それで大丈夫です'); changes[k] = 'ack';
+        }
+      }
+      var free = (rs.free || '').trim();
+      if(free) lines.push('💬 ' + free);
+      if(!lines.length){ rs.err = '選ぶか、ひとことを書いてください。'; renderReply(); return; }
+      rs.mode = 'preview'; rs.kind = 'answer'; rs.changes = changes; rs.err = '';
+      rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n');
+      renderReply();
+    });
+    sb.disabled = !!rs.sending || !anyPicked();
+    ft.addEventListener('input', function(){ rs.free = ft.value; sb.disabled = !!rs.sending || !anyPicked(); });
+  }
+
   function renderReply(){
     var v = $('reply-view');
     if(!replyId){ return; }
     v.innerHTML = '';
-    v.appendChild(el('h2', 'rv-title', '🐈 松永便のお返事'));
+    v.appendChild(el('h2', 'rv-title', answerMode ? '🐈 松永便｜ぴーちゃんへのご相談' : '🐈 松永便のお返事'));
     var o = replyOrderData;
     if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
     if(o.canceled){ v.appendChild(el('p', 'rv-big', 'このお願いは取り消されました')); return; }
+    if(answerMode){ renderAnswer(v, o); return; }
     v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
     var expired = o.target.date < dateStr(new Date());
