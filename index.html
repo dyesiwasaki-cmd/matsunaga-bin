@@ -300,6 +300,17 @@ input[type="time"].field{width:auto;min-width:140px}
 .bubble{max-width:88%;white-space:pre-wrap;word-break:break-word;background:var(--bubble);color:var(--bubble-fg);padding:10px 14px;border-radius:16px 16px 2px 16px;font-size:15px}
 .chat .stamp{margin:6px 0 0;text-align:right;font-size:12px;color:var(--muted)}
 .liff-status{margin:14px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
+.qh{margin:10px 0 6px !important;font-size:13px;font-weight:700;color:var(--accent)}
+#quick .qh:first-child{margin-top:0 !important}
+.cardrow{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;-webkit-overflow-scrolling:touch;max-width:100%}
+.qitem{flex:none;display:flex;align-items:stretch;max-width:260px;border:2px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
+.qcard{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:44px;padding:6px 10px;border:0;background:transparent;color:var(--fg);font:inherit;font-size:13px;text-align:left;cursor:pointer;word-break:break-all}
+.qcard .qn{font-size:11px;color:var(--muted)}
+.qcard[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.qcard[aria-pressed="true"] .qn{color:var(--accent-fg)}
+.qdel{flex:none;width:36px;border:0;border-left:2px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:18px;font-weight:700;cursor:pointer}
+.favrow{margin:2px 0 8px 6px}
+.favbtn{min-height:40px !important;font-size:13px !important;padding:0 12px !important}
 .notice{margin:0 0 10px;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface);font-size:13px;font-weight:700}
 .sheet-err{margin:0 0 10px;padding:8px 10px;border:2px solid var(--focus);border-radius:4px;background:var(--surface);font-size:14px;font-weight:700}
 .chat .warn{margin:10px 0 0;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;font-size:13px;font-weight:700}
@@ -400,6 +411,26 @@ input[type="time"].field{width:auto;min-width:140px}
         <input class="field" id="meal-time" type="time" value="19:00" aria-label="何時までに">
         <span>まで</span>
       </div>
+    </section>
+
+    <section class="sec" id="quick" hidden>
+      <div id="quick-fav" hidden>
+        <h3 class="qh">お気に入り</h3>
+        <div class="cardrow" id="fav-row"></div>
+      </div>
+      <div id="quick-freq" hidden>
+        <h3 class="qh">よく頼むもの</h3>
+        <div class="cardrow" id="freq-row"></div>
+      </div>
+      <div id="quick-recent" hidden>
+        <h3 class="qh">最近頼んだもの</h3>
+        <div class="cardrow" id="recent-row"></div>
+      </div>
+      <div class="undo" id="fav-undo" role="status" hidden>
+        <span id="fav-undo-text"></span>
+        <button type="button" class="mini sub" id="fav-undo-btn">元に戻す</button>
+      </div>
+      <p class="note" id="quick-msg" role="status"></p>
     </section>
 
     <section class="sec" id="tag-find">
@@ -745,11 +776,11 @@ input[type="time"].field{width:auto;min-width:140px}
   function setSel(name, label, arr){ if(!subSel[name]) subSel[name] = {}; subSel[name][label] = arr; }
   function otherOf(name, label){ return (subOther[name] && subOther[name][label]) || ''; }
   function setOther(name, label, v){ if(!subOther[name]) subOther[name] = {}; subOther[name][label] = v; }
-  // いま表示するグループ（表示条件を満たしたものだけ）
-  function visibleGroups(name){
-    var vis = [], seen = {};
+  // いま表示するグループ（表示条件を満たしたものだけ）。selMap を渡すとその選択を基準にする
+  function visibleGroups(name, selMap){
+    var vis = [], seen = {}, sm = selMap || subSel[name] || {};
     (sub[name] || []).forEach(function(g){
-      var show = !g.showIf || (seen[g.showIf.label] && selOf(name, g.showIf.label).indexOf(g.showIf.value) >= 0);
+      var show = !g.showIf || (seen[g.showIf.label] && (sm[g.showIf.label] || []).indexOf(g.showIf.value) >= 0);
       if(show){ vis.push(g); seen[g.label] = true; }
     });
     return vis;
@@ -762,12 +793,12 @@ input[type="time"].field{width:auto;min-width:140px}
       if(obj[name]) Object.keys(obj[name]).forEach(function(k){ if(!keep[k]) delete obj[name][k]; });
     });
   }
-  function dishLabel(name){
+  // 料理名＋サブメニューの選択 から、文面と同じラベルを作る
+  function labelFor(name, selMap, otherMap){
     if(!hasSub(name) || !sub[name].length) return name;
-    pruneSub(name);
     var segs = [], run = null, first = true;
-    visibleGroups(name).forEach(function(g){
-      var list = selOf(name, g.label).slice(), o = otherOf(name, g.label).trim();
+    visibleGroups(name, selMap).forEach(function(g){
+      var list = ((selMap && selMap[g.label]) || []).slice(), o = String((otherMap && otherMap[g.label]) || '').trim();
       if(o){ if(g.multi) list.push(o); else list = [o]; }
       if(!list.length) return;
       if(!g.multi && first){
@@ -780,6 +811,11 @@ input[type="time"].field{width:auto;min-width:140px}
     });
     var txt = segs.map(function(s){ return (s.label ? s.label + '：' : '') + s.vals.join('・'); }).join('／');
     return name + '（' + (txt || 'おまかせ') + '）';
+  }
+  function dishLabel(name){
+    if(!hasSub(name) || !sub[name].length) return name;
+    pruneSub(name);
+    return labelFor(name, subSel[name] || {}, subOther[name] || {});
   }
   function focusDishChip(name){
     var cs = menuEl.querySelectorAll('.chip[data-v]');
@@ -846,6 +882,7 @@ input[type="time"].field{width:auto;min-width:140px}
       box.appendChild(inp);
       wrap.appendChild(box);
     });
+    wrap.appendChild(favRow(name));
     return wrap;
   }
 
@@ -1299,6 +1336,155 @@ input[type="time"].field{width:auto;min-width:140px}
     return box;
   }
 
+  // ---- 履歴・お気に入り（料理名＋サブメニューの選択） ----
+  var HIST_KEY = 'otetsudai-history-v1', FAV_KEY = 'otetsudai-fav-v1';
+  function loadList(key){
+    try{
+      var raw = window.localStorage.getItem(key);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(Array.isArray(p) && p.every(function(e){
+          return e && typeof e.name === 'string' && e.sel && typeof e.sel === 'object' && e.other && typeof e.other === 'object';
+        })) return p;
+      }
+    }catch(e){}
+    return [];
+  }
+  function saveHist(){ try{ window.localStorage.setItem(HIST_KEY, JSON.stringify(orderHist)); }catch(e){} }
+  function saveFav(){ try{ window.localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }catch(e){} }
+  var orderHist = loadList(HIST_KEY), favs = loadList(FAV_KEY), favSnap = null, favTimer = 0;
+  function stable(o){
+    return JSON.stringify(Object.keys(o).sort().map(function(k){ return [k, o[k]]; }));
+  }
+  function keyOf(e){ return e.name + '|' + stable(e.sel) + '|' + stable(e.other); }
+  // 今の選択を、保存用の形にする（空の選択は除く）
+  function snapFor(name){
+    if(hasSub(name)) pruneSub(name);
+    var sel = {}, other = {}, s = subSel[name] || {}, o = subOther[name] || {};
+    Object.keys(s).forEach(function(k){ if(s[k] && s[k].length) sel[k] = s[k].slice(); });
+    Object.keys(o).forEach(function(k){ if(String(o[k]).trim()) other[k] = String(o[k]).trim(); });
+    return { name: name, sel: sel, other: other };
+  }
+  // 今のサブメニューに存在する分だけに絞る
+  function filterEntry(e){
+    var fe = { name: e.name, sel: {}, other: {} };
+    if(!hasSub(e.name)) return fe;
+    sub[e.name].forEach(function(g){
+      var vs = (e.sel[g.label] || []).filter(function(v){ return g.options.indexOf(v) >= 0; });
+      if(!g.multi) vs = vs.slice(0, 1);
+      if(vs.length) fe.sel[g.label] = vs;
+      var ot = String(e.other[g.label] || '').trim();
+      if(ot) fe.other[g.label] = ot;
+    });
+    return fe;
+  }
+  function menuHas(name){ return menu.some(function(g){ return g[1].indexOf(name) >= 0; }); }
+  function isPressed(e){
+    return dishes.indexOf(e.name) >= 0 && keyOf(snapFor(e.name)) === keyOf(filterEntry(e));
+  }
+  function applyEntry(e){
+    var msg = $('quick-msg');
+    if(!menuHas(e.name)){ msg.textContent = '「' + e.name + '」は今の献立にありません。'; return; }
+    msg.textContent = '';
+    if(isPressed(e)){
+      var k = dishes.indexOf(e.name); if(k >= 0) dishes.splice(k, 1);
+      delete subSel[e.name]; delete subOther[e.name];
+    }else{
+      var fe = filterEntry(e);
+      if(dishes.indexOf(e.name) < 0) dishes.push(e.name);
+      subSel[e.name] = fe.sel; subOther[e.name] = fe.other;
+      if(hasSub(e.name)) pruneSub(e.name);
+    }
+    render(); refresh();
+  }
+  function focusCard(row, key){
+    var bs = $('quick').querySelectorAll('button[data-qrow]');
+    for(var i = 0; i < bs.length; i++){
+      if(bs[i].dataset.qrow === row && bs[i].dataset.qkey === key){ bs[i].focus(); return; }
+    }
+  }
+  function hideFavUndo(){ clearTimeout(favTimer); favSnap = null; $('fav-undo').hidden = true; }
+  function removeFav(e){
+    hideFavUndo();
+    favSnap = clone(favs);
+    var k = keyOf(e), fe = filterEntry(e);
+    favs = favs.filter(function(x){ return keyOf(x) !== k; });
+    saveFav(); render();
+    $('fav-undo-text').textContent = '「' + labelFor(e.name, fe.sel, fe.other) + '」をお気に入りから外しました。';
+    $('fav-undo').hidden = false;
+    renderQuick();
+    favTimer = setTimeout(function(){ hideFavUndo(); renderQuick(); }, 8000);
+  }
+  function qCard(e, row, extra){
+    var fe = filterEntry(e);
+    var item = el('div', 'qitem');
+    var b = el('button', 'qcard'); b.type = 'button';
+    b.dataset.qrow = row; b.dataset.qkey = keyOf(e);
+    b.setAttribute('aria-pressed', isPressed(e) ? 'true' : 'false');
+    var text = row === 'freq' ? e.name : labelFor(e.name, fe.sel, fe.other);
+    b.appendChild(el('span', 'qt', text));
+    if(extra) b.appendChild(el('small', 'qn', extra));
+    b.addEventListener('click', function(){ applyEntry(e); focusCard(row, keyOf(e)); });
+    item.appendChild(b);
+    if(row === 'fav'){
+      var x = el('button', 'qdel', '\u00d7'); x.type = 'button';
+      x.setAttribute('aria-label', '「' + text + '」をお気に入りから外す');
+      x.addEventListener('click', function(){ removeFav(e); });
+      item.appendChild(x);
+    }
+    return item;
+  }
+  function renderQuick(){
+    var sec = $('quick');
+    var empty = !favs.length && !orderHist.length;
+    sec.hidden = editing || (empty && $('fav-undo').hidden);
+    if(editing) return;
+    // お気に入り
+    var fr = $('fav-row'); fr.innerHTML = '';
+    favs.slice().reverse().forEach(function(e){ fr.appendChild(qCard(e, 'fav')); });
+    $('quick-fav').hidden = !favs.length;
+    // よく頼むもの
+    var counts = {}, last = {};
+    orderHist.forEach(function(e, i){ counts[e.name] = (counts[e.name] || 0) + 1; last[e.name] = i; });
+    var names = Object.keys(counts).sort(function(a, b){ return (counts[b] - counts[a]) || (last[b] - last[a]); }).slice(0, 8);
+    var pr = $('freq-row'); pr.innerHTML = '';
+    names.forEach(function(nm){ pr.appendChild(qCard(orderHist[last[nm]], 'freq', '×' + counts[nm] + '回')); });
+    $('quick-freq').hidden = !names.length;
+    // 最近頼んだもの
+    var seen = {}, rec = [];
+    for(var i = orderHist.length - 1; i >= 0 && rec.length < 8; i--){
+      var e = orderHist[i], k = keyOf(filterEntry(e));
+      if(seen[k]) continue;
+      seen[k] = true; rec.push(e);
+    }
+    var rr = $('recent-row'); rr.innerHTML = '';
+    rec.forEach(function(e){ rr.appendChild(qCard(e, 'recent')); });
+    $('quick-recent').hidden = !rec.length;
+  }
+  // 「☆お気に入りに保存」ボタン（選んだ料理の下に出る）
+  function favRow(name){
+    var row = el('div', 'favrow');
+    var cur = snapFor(name), k = keyOf(cur);
+    var saved = favs.some(function(f){ return keyOf(filterEntry(f)) === k; });
+    var b = el('button', 'mini sub favbtn', saved ? '★保存済み' : '☆お気に入りに保存');
+    b.type = 'button'; b.dataset.fav = name;
+    b.setAttribute('aria-pressed', saved ? 'true' : 'false');
+    b.setAttribute('aria-label', name + 'の今の選択をお気に入りに' + (saved ? '保存済み' : '保存する'));
+    b.addEventListener('click', function(){
+      if(saved) return;
+      var e = snapFor(name); e.t = Date.now();
+      favs.push(e); saveFav(); render();
+      var bs = menuEl.querySelectorAll('button[data-fav]');
+      for(var i = 0; i < bs.length; i++) if(bs[i].dataset.fav === name){ bs[i].focus(); break; }
+    });
+    row.appendChild(b);
+    return row;
+  }
+  $('fav-undo-btn').addEventListener('click', function(){
+    if(!favSnap) return;
+    favs = favSnap; saveFav(); hideFavUndo(); render();
+  });
+
   // ---- 名前の変更（料理・分類） ----
   var renameSt = null;   // { k: 'dish' | 'cat', gi: 分類の番号, old: 元の名前 }
   function focusRename(k, key){
@@ -1335,7 +1521,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(menu.some(function(g, i){ return i !== st.gi && g[0] === v; })){ setMsg('分類「' + v + '」はすでにあります。'); return; }
     }
     hideUndo();
-    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags) };
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), sub: clone(sub), subSel: clone(subSel), subOther: clone(subOther), tags: clone(tags), hist: clone(orderHist), favs: clone(favs) };
     if(st.k === 'dish'){
       var arr = menu[st.gi][1], ix = arr.indexOf(st.old);
       if(ix >= 0) arr[ix] = v;
@@ -1347,6 +1533,9 @@ input[type="time"].field{width:auto;min-width:140px}
         moveKey(subSel, st.old, v); moveKey(subOther, st.old, v);
         moveKey(subEditOpen, st.old, v); moveKey(subRemoveAsk, st.old, v);
         saveSub();
+        orderHist.forEach(function(x){ if(x.name === st.old) x.name = v; });
+        favs.forEach(function(x){ if(x.name === st.old) x.name = v; });
+        saveHist(); saveFav();
         if(!Object.prototype.hasOwnProperty.call(tags, v) && !TAG_DEFAULT[v]) tags[v] = tagsOf(st.old).slice();
         delete tags[st.old]; saveTags();
         moveKey(tagEditOpen, st.old, v);
@@ -1471,8 +1660,8 @@ input[type="time"].field{width:auto;min-width:140px}
         if(editing){
           if(subEditOpen[name]) menuEl.appendChild(subEditPanel(name));
           if(tagEditOpen[name]) menuEl.appendChild(tagEditPanel(name));
-        }else if(hasSub(name) && dishes.indexOf(name) >= 0){
-          menuEl.appendChild(subPanel(name));
+        }else if(dishes.indexOf(name) >= 0){
+          menuEl.appendChild(hasSub(name) && sub[name].length ? subPanel(name) : favRow(name));
         }
       });
       if(editing){
@@ -1493,6 +1682,7 @@ input[type="time"].field{width:auto;min-width:140px}
       }
     });
     renderFind();
+    renderQuick();
   }
 
   function setMsg(t){ $('edit-msg').textContent = t; }
@@ -1541,6 +1731,7 @@ input[type="time"].field{width:auto;min-width:140px}
       saveSub();
     }
     if(undoSnap.tags){ tags = undoSnap.tags; saveTags(); }
+    if(undoSnap.hist){ orderHist = undoSnap.hist; favs = undoSnap.favs; saveHist(); saveFav(); }
     saveMenu(); hideUndo(); render(); refresh();
     $('edit-toggle').focus();
   });
@@ -1934,6 +2125,12 @@ input[type="time"].field{width:auto;min-width:140px}
   // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
   function finishSend(text, sent){
     $('chat-warn').textContent = sent ? '送りました。' : '試作のため、実際には送られていません。';
+    try{
+      var nowT = Date.now();
+      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; orderHist.push(he); });
+      if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
+      saveHist();
+    }catch(err){}
     var line = document.createElement('div'); line.className = 'bubble-line';
     line.innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 36, 32);
     var bub = document.createElement('div'); bub.className = 'bubble'; bub.textContent = text;
