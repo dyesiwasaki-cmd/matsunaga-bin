@@ -511,10 +511,10 @@ input[type="time"].field{width:auto;min-width:140px}
         <button type="button" class="chip" id="day-tomorrow" role="radio" aria-pressed="false" aria-checked="false">明日</button>
       </div>
       <div class="seg" id="when-group" role="radiogroup" aria-label="いつ">
-        <button type="button" class="chip" id="when-now" role="radio" aria-pressed="false" aria-checked="false" data-v="すぐに">すぐに</button>
+        <button type="button" class="chip" id="when-now" role="radio" aria-pressed="true" aria-checked="true" data-v="すぐに">すぐに</button>
         <button type="button" class="chip" id="when-morning" role="radio" aria-pressed="false" aria-checked="false" data-v="朝">朝</button>
         <button type="button" class="chip" id="when-noon" role="radio" aria-pressed="false" aria-checked="false" data-v="昼">昼</button>
-        <button type="button" class="chip" id="when-night" role="radio" aria-pressed="true" aria-checked="true" data-v="夜">夜</button>
+        <button type="button" class="chip" id="when-night" role="radio" aria-pressed="false" aria-checked="false" data-v="夜">夜</button>
         <button type="button" class="chip" id="when-time" role="radio" aria-pressed="false" aria-checked="false" data-v="時間指定">時間指定</button>
       </div>
       <div class="row" id="meal-time-row" style="margin-top:12px" hidden>
@@ -615,8 +615,8 @@ input[type="time"].field{width:auto;min-width:140px}
     <section class="sec">
       <h2>時間</h2>
       <div class="seg" id="clean-when" role="radiogroup" aria-label="掃除の時間">
-        <button type="button" class="chip" id="clean-now" role="radio" aria-pressed="false" aria-checked="false">すぐに</button>
-        <button type="button" class="chip" id="cw-any" role="radio" aria-pressed="true" aria-checked="true">いつでも</button>
+        <button type="button" class="chip" id="clean-now" role="radio" aria-pressed="true" aria-checked="true">すぐに</button>
+        <button type="button" class="chip" id="cw-any" role="radio" aria-pressed="false" aria-checked="false">いつでも</button>
         <button type="button" class="chip" id="cw-set" role="radio" aria-pressed="false" aria-checked="false">時間を指定</button>
       </div>
       <div class="row" id="clean-time-row" style="margin-top:12px" hidden>
@@ -741,7 +741,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var SUBOK_KEY = 'otetsudai-subok-v1', subOk = true;
   try{ if(window.localStorage.getItem(SUBOK_KEY) === '0') subOk = false; }catch(e){}
   var people = 1, daigo = false, daigoAuto = false;   // daigoAuto: 「大吾くんもいる」で人数を自動で1→2にした
-  var when = '夜';
+  var when = 'すぐに';
   var tab = 'meal';
 
   function $(id){ return document.getElementById(id); }
@@ -2835,7 +2835,7 @@ input[type="time"].field{width:auto;min-width:140px}
   renderShop();
 
   // 掃除の時間（すぐに／いつでも／時間を指定）
-  var cleanMode = 'any';
+  var cleanMode = 'now';
   function setCleanMode(m){
     cleanMode = m;
     [['clean-now','now'],['cw-any','any'],['cw-set','set']].forEach(function(p){
@@ -3053,19 +3053,19 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
     Array.prototype.forEach.call(document.querySelectorAll('.chip[aria-pressed]'), function(x){
-      var on = x.id === 'when-night';
+      var on = x.id === 'when-now';
       x.setAttribute('aria-pressed', 'false');
       if(x.closest('#when-group')){ x.setAttribute('aria-pressed', on?'true':'false'); x.setAttribute('aria-checked', on?'true':'false'); }
     });
     $('meal-time-row').hidden = true;
     setDay(false);
     render();
-    setCleanAny(true);
+    setCleanMode('now');
     refresh();
     scrim.classList.remove('open');
     lastFocus = null;
