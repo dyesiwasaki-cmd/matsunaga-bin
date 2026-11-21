@@ -532,7 +532,8 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var lineMode = false, sending = false;
+  var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'picker'=送り先を選んで送信 / 'proto'=試作モード
+  var sending = false;
 
   var MENU = [
     ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯']],
@@ -1269,6 +1270,7 @@ input[type="time"].field{width:auto;min-width:140px}
     pending = buildMessage();
     if(!pending) return;
     showSheetErr('');
+    $('sheet-send').textContent = sendMode === 'picker' ? '送り先を選んで送る' : '送る';
     $('sheet-msg').textContent = pending;
     $('sheet-cats').innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 44, 39);
     lastFocus = document.activeElement;
@@ -1295,7 +1297,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function showSheetErr(t){ var e = $('sheet-err'); e.textContent = t; e.hidden = !t; }
   $('sheet-send').addEventListener('click', function(){
     var text = pending;
-    if(!lineMode){ finishSend(text, false); return; }
+    if(sendMode === 'proto'){ finishSend(text, false); return; }
     if(sending) return;
     if(text.length > 5000){
       showSheetErr('文字数が多すぎます（' + text.length + '字）。LINEで送れるのは5000字までです。内容を減らしてください。');
@@ -1305,10 +1307,20 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sheet-send').disabled = true;
     function done(){ sending = false; $('sheet-send').disabled = false; }
     var p;
-    try{ p = window.liff.sendMessages([{ type: 'text', text: text }]); }
+    try{
+      p = sendMode === 'picker'
+        ? window.liff.shareTargetPicker([{ type: 'text', text: text }], { isMultiple: false })
+        : window.liff.sendMessages([{ type: 'text', text: text }]);
+    }
     catch(e){ p = Promise.reject(e); }
-    p.then(function(){
-      done(); finishSend(text, true);
+    p.then(function(res){
+      done();
+      if(sendMode === 'picker' && !(res && res.status === 'success')){
+        showSheetErr('送り先が選ばれなかったので、送っていません。');
+        $('sheet-send').focus();
+        return;
+      }
+      finishSend(text, true);
     }).catch(function(e){
       done();
       showSheetErr('送れませんでした。もう一度お試しください（理由：' + ((e && (e.message || e.code)) || '不明') + '）');
@@ -1365,15 +1377,30 @@ input[type="time"].field{width:auto;min-width:140px}
           try{ os = window.liff.getOS() || '不明'; }catch(e){}
           try{ ver = window.liff.getLineVersion() || '不明'; }catch(e){}
           var type = (ctx && ctx.type) ? ctx.type : '不明';
-          if(inClient && ['utou', 'group', 'room'].indexOf(type) >= 0){
-            lineMode = true;
-          }else{
-            $('liff-notice').hidden = false;
-            if(!inClient){
-              $('liff-notice').textContent = '松永さんとのトークに貼ったリンクから開くと、そのまま送れます。スマホのLINEアプリで、トークに貼ったリンクを押して開いてください（パソコン版LINEやブラウザでは送れません）。';
+          var stp = false;
+          try{ stp = !!window.liff.isApiAvailable('shareTargetPicker'); }catch(e){}
+          if(!inClient){
+            var logged = false;
+            try{ logged = !!window.liff.isLoggedIn(); }catch(e){}
+            if(!logged){
+              status('LINEにログインします…');
+              window.liff.login({ redirectUri: location.href });
+              return;
             }
           }
-          status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・OS=' + os + '・LINE=' + ver + (lineMode ? ' → 送信できます' : ' → 試作モード'));
+          if(inClient && ['utou', 'group', 'room'].indexOf(type) >= 0){
+            sendMode = 'chat';
+          }else if(stp){
+            sendMode = 'picker';
+          }
+          if(sendMode === 'proto'){
+            $('liff-notice').hidden = false;
+            if(!inClient){
+              $('liff-notice').textContent = '松永さんとのトークに貼ったリンクから開くと、そのまま送れます。スマホのLINEアプリで、トークに貼ったリンクを押して開いてください（パソコン版LINEやブラウザでは送れません）。LINEの設定で『シェアターゲットピッカー』がオフの可能性もあります。';
+            }
+          }
+          var tail = sendMode === 'chat' ? ' → このトークに送れます' : sendMode === 'picker' ? ' → 送り先を選んで送れます' : ' → 試作モード';
+          status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・STP=' + (stp ? '可' : '不可') + '・OS=' + os + '・LINE=' + ver + tail);
         }).catch(function(e){
           status('初期化に失敗（code=' + ((e && e.code) || '不明') + '、message=' + ((e && e.message) || String(e)) + '）');
         });
