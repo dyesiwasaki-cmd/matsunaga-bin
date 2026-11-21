@@ -111,7 +111,7 @@ button,input,textarea{font:inherit;color:inherit}
 .logo{flex:none;display:block;width:56px;height:56px;border-radius:12px;border:1px solid var(--line);object-fit:cover}
 .logo{flex:none}
 .cat{flex:none;display:block}
-.sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sec-head{flex-wrap:wrap;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .sec-head h2{margin:0}
 .edit-btn{flex:none;min-height:44px;padding:4px 14px;border:2px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 0 var(--line)}
 .edit-btn.on{background:var(--accent);color:var(--accent-fg)}
@@ -311,6 +311,15 @@ input[type="time"].field{width:auto;min-width:140px}
 .qdel{flex:none;width:36px;border:0;border-left:2px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:18px;font-weight:700;cursor:pointer}
 .favrow{margin:2px 0 8px 6px}
 .favbtn{min-height:40px !important;font-size:13px !important;padding:0 12px !important}
+.addlist{max-height:280px;overflow-y:auto;margin:6px 0;padding:4px 10px;border:2px solid var(--line);border-radius:4px;background:var(--surface)}
+.addcat{margin:8px 0 2px;font-size:12px;font-weight:700;color:var(--accent)}
+.checkrow{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
+.checkrow input{flex:none;width:22px;height:22px;accent-color:var(--accent)}
+.tag-add{border-style:dashed;color:var(--accent);font-weight:700}
+#tag-add-panel .row{margin-top:8px}
+.head-btns{display:flex;align-items:center;gap:6px;flex:none}
+.sort-btn{min-height:44px;padding:4px 10px;border:2px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font-weight:700;font-size:12px;cursor:pointer}
+.dcnt{position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:1px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:11px;font-weight:700;line-height:16px;text-align:center}
 .notice{margin:0 0 10px;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface);font-size:13px;font-weight:700}
 .sheet-err{margin:0 0 10px;padding:8px 10px;border:2px solid var(--focus);border-radius:4px;background:var(--surface);font-size:14px;font-weight:700}
 .chat .warn{margin:10px 0 0;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;font-size:13px;font-weight:700}
@@ -437,6 +446,8 @@ input[type="time"].field{width:auto;min-width:140px}
       <h2>食材で探す</h2>
       <input class="field" id="tag-search" type="search" placeholder="料理名や食材で探す（例：鶏肉）" autocomplete="off" aria-label="料理名や食材で探す">
       <div class="chips" id="tag-chips" style="margin-top:10px"></div>
+      <div class="subbox" id="tag-add-panel" role="group" aria-label="食材を追加" hidden></div>
+      <p class="note" id="tag-note" role="status"></p>
       <div class="undo" id="tag-status" role="status" hidden>
         <span id="tag-status-text"></span>
         <button type="button" class="mini sub" id="tag-clear">絞り込みを解除</button>
@@ -446,7 +457,7 @@ input[type="time"].field{width:auto;min-width:140px}
     <section class="sec">
       <div class="sec-head">
         <h2 id="menu-h">献立をお選びください（複数可）</h2>
-        <button type="button" class="edit-btn" id="edit-toggle">編集</button>
+        <div class="head-btns"><button type="button" class="sort-btn" id="sort-toggle">よく頼む順</button><button type="button" class="edit-btn" id="edit-toggle">編集</button></div>
       </div>
       <div class="undo" id="edit-undo" role="status" hidden>
         <span id="edit-undo-text"></span>
@@ -581,7 +592,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'picker'=送り先を選んで送信 / 'proto'=試作モード
+  var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
 
   var MENU = [
@@ -1238,16 +1249,221 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     return true;
   }
+  // ---- 食材（タグ）の一括操作 ----
+  var CUSTOM_KEY = 'otetsudai-customtags-v1';
+  function loadCustom(){
+    try{
+      var raw = window.localStorage.getItem(CUSTOM_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(Array.isArray(p) && p.every(function(s){ return typeof s === 'string'; })) return p;
+      }
+    }catch(e){}
+    return [];
+  }
+  function saveCustom(){ try{ window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTags)); }catch(e){} }
+  var customTags = loadCustom(), tagAddOpen = false, tagAdd = null, tagRenameSt = null;
+  function allDishNames(){
+    var seen = {}, out = [];
+    menu.forEach(function(g){ g[1].forEach(function(nm){ if(!seen[nm]){ seen[nm] = true; out.push(nm); } }); });
+    return out;
+  }
+  function stripHash(s){ return String(s).trim().replace(/^[#\uff03]+/, '').trim(); }
+  function setTagNote(t){ $('tag-note').textContent = t; }
+  function snapTags(){
+    hideUndo();
+    undoSnap = { menu: clone(menu), dishes: dishes.slice(), tags: clone(tags), ctags: clone(customTags) };
+  }
+  // 全料理のタグを書き換える（fn は配列を受け取って新しい配列を返す）
+  function mapAllTags(fn){
+    allDishNames().forEach(function(nm){
+      var cur = tagsOf(nm), nx = fn(cur.slice());
+      if(JSON.stringify(cur) !== JSON.stringify(nx)) tags[nm] = nx;
+    });
+    Object.keys(tags).forEach(function(nm){
+      var nx = fn(tags[nm].slice());
+      if(JSON.stringify(tags[nm]) !== JSON.stringify(nx)) tags[nm] = nx;
+    });
+  }
+  function removeTagEverywhere(t){
+    snapTags();
+    mapAllTags(function(l){ return l.filter(function(x){ return x !== t; }); });
+    customTags = customTags.filter(function(x){ return x !== t; });
+    if(tagFilter === t) tagFilter = '';
+    saveTags(); saveCustom(); setTagNote(''); render();
+    showUndo('「#' + t + '」を全料理から外しました。');
+  }
+  function startTagRename(t){
+    tagRenameSt = t; setTagNote(''); renderFind();
+    var ins = $('tag-chips').querySelectorAll('input.rename-in');
+    if(ins.length){ ins[0].focus(); ins[0].select(); }
+  }
+  function focusTagName(t){
+    var bs = $('tag-chips').querySelectorAll('button[data-tagname]');
+    for(var i = 0; i < bs.length; i++) if(bs[i].dataset.tagname === t){ bs[i].focus(); return; }
+  }
+  function cancelTagRename(){
+    var t = tagRenameSt; tagRenameSt = null; renderFind(); if(t) focusTagName(t);
+  }
+  function commitTagRename(raw){
+    var old = tagRenameSt;
+    if(old === null) return;
+    var v = stripHash(raw);
+    if(v === old){ cancelTagRename(); return; }
+    if(!v){ setTagNote('食材名を入力してください。'); return; }
+    snapTags();
+    mapAllTags(function(l){
+      var out = [];
+      l.forEach(function(x){ var y = x === old ? v : x; if(out.indexOf(y) < 0) out.push(y); });
+      return out;
+    });
+    customTags = customTags.map(function(x){ return x === old ? v : x; }).filter(function(x, i, a){ return a.indexOf(x) === i; });
+    if(tagFilter === old) tagFilter = v;
+    tagRenameSt = null;
+    saveTags(); saveCustom(); setTagNote(''); render();
+    showUndo('「#' + old + '」を「#' + v + '」に変えました。');
+    focusTagName(v);
+  }
+  function tagRenameInput(old){
+    var inp = el('input', 'rename-in');
+    inp.type = 'text'; inp.maxLength = 16; inp.autocomplete = 'off'; inp.value = '#' + old;
+    inp.setAttribute('aria-label', '「#' + old + '」の新しい名前');
+    inp.addEventListener('keydown', function(e){
+      if(e.isComposing) return;
+      if(e.key === 'Enter'){ e.preventDefault(); commitTagRename(inp.value); }
+      else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); cancelTagRename(); }
+    });
+    inp.addEventListener('blur', function(){ commitTagRename(inp.value); });
+    return inp;
+  }
+  function tagEditItem(t, n){
+    var it = el('div', 'edit-item');
+    if(tagRenameSt === t){
+      it.appendChild(tagRenameInput(t));
+    }else{
+      var nb = el('button', 'name-btn'); nb.type = 'button';
+      nb.dataset.tagname = t;
+      nb.setAttribute('aria-label', '「#' + t + '」の名前を変える');
+      nb.appendChild(el('span', null, '#' + t));
+      nb.appendChild(el('small', 'submark', n + '品'));
+      nb.appendChild(el('span', 'pen', '✎'));
+      nb.addEventListener('click', function(){ startTagRename(t); });
+      it.appendChild(nb);
+    }
+    var x = el('button', 'del', '\u00d7'); x.type = 'button';
+    x.setAttribute('aria-label', '「#' + t + '」を全料理から外す');
+    x.addEventListener('click', function(){ removeTagEverywhere(t); });
+    it.appendChild(x);
+    return it;
+  }
+
+  // 「＋食材を追加」パネル
+  function focusAddChip(){
+    var b = $('tag-chips').querySelector('.tag-add');
+    if(b) b.focus();
+  }
+  function closeTagAdd(){
+    tagAddOpen = false; tagAdd = null;
+    $('tag-add-panel').innerHTML = ''; $('tag-add-panel').hidden = true;
+    renderFind(); focusAddChip();
+  }
+  function buildTagAdd(){
+    var p = $('tag-add-panel'); p.innerHTML = ''; p.hidden = false;
+    p.appendChild(el('p', 'sub-h', '食材を追加'));
+    var nl = el('label', 'sub-lab');
+    nl.appendChild(el('span', null, '食材名'));
+    var ni = el('input', 'field');
+    ni.type = 'text'; ni.maxLength = 16; ni.autocomplete = 'off'; ni.placeholder = '例：しいたけ';
+    nl.appendChild(ni);
+    p.appendChild(nl);
+    p.appendChild(el('p', 'sub-h', 'この食材を使う料理（選ばなくても登録できます）'));
+    var si = el('input', 'field');
+    si.type = 'search'; si.autocomplete = 'off'; si.placeholder = '料理名で絞り込む';
+    si.setAttribute('aria-label', '料理名で絞り込む');
+    p.appendChild(si);
+    var cnt = el('p', 'note', '0品を選んでいます');
+    cnt.setAttribute('role', 'status');
+    p.appendChild(cnt);
+    var list = el('div', 'addlist');
+    p.appendChild(list);
+    var err = el('p', 'note'); err.setAttribute('role', 'alert');
+    p.appendChild(err);
+    function updCount(){ cnt.textContent = Object.keys(tagAdd.picked).length + '品を選んでいます'; }
+    function paintList(){
+      list.innerHTML = '';
+      var q = normText(tagAdd.query.trim());
+      menu.forEach(function(g){
+        var names = g[1].filter(function(nm){
+          return !q || normText(nm).indexOf(q) >= 0 || tagsOf(nm).some(function(t){ return normText(t).indexOf(q) >= 0; });
+        });
+        if(!names.length) return;
+        list.appendChild(el('h4', 'addcat', g[0]));
+        names.forEach(function(nm){
+          var lab = el('label', 'checkrow');
+          var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!tagAdd.picked[nm];
+          cb.addEventListener('change', function(){
+            if(cb.checked) tagAdd.picked[nm] = true; else delete tagAdd.picked[nm];
+            updCount();
+          });
+          lab.appendChild(cb); lab.appendChild(el('span', null, nm));
+          list.appendChild(lab);
+        });
+      });
+      if(!list.firstChild) list.appendChild(el('p', 'note', '該当する料理がありません。'));
+    }
+    si.addEventListener('input', function(){ tagAdd.query = si.value; paintList(); });
+    paintList(); updCount();
+    function doAdd(){
+      var v = stripHash(ni.value);
+      if(!v){ err.textContent = '食材名を入力してください。'; ni.focus(); return; }
+      var picked = Object.keys(tagAdd.picked);
+      var existed = allDishNames().some(function(nm){ return tagsOf(nm).indexOf(v) >= 0; });
+      picked.forEach(function(nm){
+        var cur = tagsOf(nm).slice();
+        if(cur.indexOf(v) < 0){ cur.push(v); tags[nm] = cur; }
+      });
+      var note;
+      if(picked.length){
+        saveTags();
+        note = '「#' + v + '」を' + picked.length + '品に付けました。';
+      }else if(existed){
+        note = '「#' + v + '」はすでにある食材です。';
+      }else{
+        if(customTags.indexOf(v) < 0){ customTags.push(v); saveCustom(); }
+        note = '「#' + v + '」を食材として登録しました（この食材を使う料理はまだありません）。';
+      }
+      tagAddOpen = false; tagAdd = null;
+      p.innerHTML = ''; p.hidden = true;
+      setTagNote(note); render(); focusAddChip();
+    }
+    ni.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); doAdd(); }
+    });
+    var row = el('div', 'row');
+    var ab = el('button', 'mini', '追加'); ab.type = 'button';
+    var cb2 = el('button', 'mini sub', 'やめる'); cb2.type = 'button';
+    ab.addEventListener('click', doAdd);
+    cb2.addEventListener('click', closeTagAdd);
+    row.appendChild(ab); row.appendChild(cb2);
+    p.appendChild(row);
+    ni.focus();
+  }
   function renderFind(){
-    $('tag-find').hidden = editing;
-    if(editing) return;
     var cnt = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){ tagsOf(nm).forEach(function(t){ cnt[t] = (cnt[t] || 0) + 1; }); }); });
+    customTags.forEach(function(t){ if(!Object.prototype.hasOwnProperty.call(cnt, t)) cnt[t] = 0; });
     var all = Object.keys(cnt).sort(function(a, b){ return (cnt[b] - cnt[a]) || (a < b ? -1 : a > b ? 1 : 0); });
-    var top = tagsOpen ? all.slice() : all.slice(0, 12);
-    if(tagFilter && top.indexOf(tagFilter) < 0) top.push(tagFilter);
+    $('tag-search').hidden = editing;
+    var top;
+    if(editing || tagsOpen) top = all.slice();
+    else{
+      top = all.slice(0, 12);
+      all.slice(12).forEach(function(t){ if(cnt[t] === 0) top.push(t); });
+    }
+    if(!editing && tagFilter && top.indexOf(tagFilter) < 0) top.push(tagFilter);
     var box = $('tag-chips'); box.innerHTML = '';
     top.forEach(function(t){
+      if(editing){ box.appendChild(tagEditItem(t, cnt[t])); return; }
       var b = el('button', 'chip sub-chip tag-chip', '#' + t);
       b.type = 'button'; b.dataset.tag = t;
       b.setAttribute('aria-pressed', tagFilter === t ? 'true' : 'false');
@@ -1259,8 +1475,8 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       box.appendChild(b);
     });
-    if(all.length > 12){
-      var more = el('button', 'chip sub-chip tag-chip tag-more', tagsOpen ? '閉じる' : 'もっと見る（あと' + (all.length - 12) + '個）');
+    if(!editing && all.length > 12){
+      var more = el('button', 'chip sub-chip tag-chip tag-more', tagsOpen ? '閉じる' : 'もっと見る（あと' + (all.length - top.length) + '個）');
       more.type = 'button';
       more.setAttribute('aria-expanded', tagsOpen ? 'true' : 'false');
       more.addEventListener('click', function(){
@@ -1271,14 +1487,26 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       box.appendChild(more);
     }
+    var addc = el('button', 'chip sub-chip tag-chip tag-add', '＋食材を追加');
+    addc.type = 'button';
+    addc.setAttribute('aria-expanded', tagAddOpen ? 'true' : 'false');
+    addc.addEventListener('click', function(){
+      if(tagAddOpen){ closeTagAdd(); return; }
+      tagAddOpen = true; tagAdd = { picked: {}, query: '' };
+      setTagNote(''); renderFind(); buildTagAdd();
+    });
+    box.appendChild(addc);
+    $('tag-add-panel').hidden = !tagAddOpen;
     var st = $('tag-status');
-    if(!filterActive()){ st.hidden = true; return; }
+    if(editing || !filterActive()){ st.hidden = true; return; }
     var vis = 0, hid = 0;
     menu.forEach(function(g){ g[1].forEach(function(nm){
       if(tagMatch(nm)) vis++; else if(dishes.indexOf(nm) >= 0) hid++;
     }); });
     var label = (tagFilter ? '#' + tagFilter : '') + (tagFilter && tagQuery.trim() ? ' ＋ ' : '') + (tagQuery.trim() ? '「' + tagQuery.trim() + '」' : '');
-    $('tag-status-text').textContent = label + ' の料理：' + vis + '品' + (hid ? '（選んだ料理のうち' + hid + '品は隠れています）' : '');
+    var extra = '';
+    if(vis === 0 && tagFilter && !tagQuery.trim() && cnt[tagFilter] === 0) extra = '（この食材を使う料理はまだありません）';
+    $('tag-status-text').textContent = label + ' の料理：' + vis + '品' + extra + (hid ? '（選んだ料理のうち' + hid + '品は隠れています）' : '');
     st.hidden = false;
   }
   function focusTagAdd(name){
@@ -1560,15 +1788,41 @@ input[type="time"].field{width:auto;min-width:140px}
     return inp;
   }
 
+  // ---- 並び順（よく頼む順／登録順） ----
+  var SORT_KEY = 'otetsudai-sort-v1';
+  var sortMode = 'freq';
+  try{ if(window.localStorage.getItem(SORT_KEY) === 'reg') sortMode = 'reg'; }catch(e){}
+  function updSort(){
+    var b = $('sort-toggle');
+    b.hidden = editing;
+    b.textContent = sortMode === 'freq' ? 'よく頼む順' : '登録順';
+    b.setAttribute('aria-label', '並び順：' + (sortMode === 'freq' ? 'よく頼む順（押すと登録順に切り替え）' : '登録順（押すとよく頼む順に切り替え）'));
+  }
+  function sortByFreq(names, hc){
+    return names.map(function(nm, i){ return { nm: nm, i: i }; }).sort(function(a, b){
+      return ((hc[b.nm] || 0) - (hc[a.nm] || 0)) || (a.i - b.i);
+    }).map(function(x){ return x.nm; });
+  }
+  $('sort-toggle').addEventListener('click', function(){
+    sortMode = sortMode === 'freq' ? 'reg' : 'freq';
+    try{ window.localStorage.setItem(SORT_KEY, sortMode); }catch(e){}
+    render();
+    $('sort-toggle').focus();
+  });
+
   // メニュー表を描画
   function render(){
     Object.keys(subSel).forEach(function(k){
       if(dishes.indexOf(k) < 0){ delete subSel[k]; delete subOther[k]; }
     });
     menuEl.innerHTML = ''; n = 0;
+    updSort();
     var filt = !editing && filterActive();
+    var histCounts = {};
+    orderHist.forEach(function(he){ histCounts[he.name] = (histCounts[he.name] || 0) + 1; });
     menu.forEach(function(g, gi){
       var names = filt ? g[1].filter(tagMatch) : g[1];
+      if(!editing && sortMode === 'freq') names = sortByFreq(names, histCounts);
       if(filt && names.length === 0) return;
       var head = el('div', 'cat-head');
       var h3 = el('h3');
@@ -1642,6 +1896,13 @@ input[type="time"].field{width:auto;min-width:140px}
           return;
         }
         var b = el('button', 'chip', name);
+        var hc = histCounts[name] || 0;
+        if(hc > 0){
+          var badge = el('small', 'dcnt', String(hc));
+          badge.setAttribute('aria-hidden', 'true');
+          b.appendChild(badge);
+          b.setAttribute('aria-label', name + '（' + hc + '回）');
+        }
         b.type = 'button'; b.id = 'dish-' + (n++);
         b.setAttribute('aria-pressed', dishes.indexOf(name) >= 0 ? 'true' : 'false'); b.dataset.v = name;
         b.addEventListener('click', function(){
@@ -1731,6 +1992,7 @@ input[type="time"].field{width:auto;min-width:140px}
       saveSub();
     }
     if(undoSnap.tags){ tags = undoSnap.tags; saveTags(); }
+    if(undoSnap.ctags){ customTags = undoSnap.ctags; saveCustom(); }
     if(undoSnap.hist){ orderHist = undoSnap.hist; favs = undoSnap.favs; saveHist(); saveFav(); }
     saveMenu(); hideUndo(); render(); refresh();
     $('edit-toggle').focus();
@@ -1746,6 +2008,8 @@ input[type="time"].field{width:auto;min-width:140px}
     sub = clone(SUB_DEFAULT); subSel = {}; subOther = {}; subEditOpen = {}; subRemoveAsk = {};
     saveSub();
     tags = {}; saveTags(); tagEditOpen = {}; tagFilter = ''; tagQuery = ''; $('tag-search').value = '';
+    customTags = []; saveCustom(); tagAddOpen = false; tagAdd = null; tagRenameSt = null;
+    $('tag-add-panel').innerHTML = ''; $('tag-add-panel').hidden = true; setTagNote('');
     dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
     try{ window.localStorage.removeItem(MENU_KEY); }catch(e){}
     hideUndo(); $('reset-confirm').hidden = true; setMsg('初期の献立に戻しました。');
@@ -1757,7 +2021,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('edit-toggle').classList.toggle('on', editing);
     $('edit-tools').hidden = !editing;
     $('reset-confirm').hidden = true;
-    hideUndo(); setMsg(''); renameSt = null;
+    hideUndo(); setMsg(''); renameSt = null; tagRenameSt = null;
     render();
   });
   $('tag-search').addEventListener('input', function(){ tagQuery = this.value; render(); });
@@ -2063,7 +2327,6 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!pending) return;
     $('sheet-people').hidden = mealCount() === 0;
     showSheetErr('');
-    $('sheet-send').textContent = sendMode === 'picker' ? '送り先を選んで送る' : '送る';
     $('sheet-msg').textContent = pending;
     $('sheet-cats').innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 44, 39);
     lastFocus = document.activeElement;
@@ -2101,20 +2364,10 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sheet-send').disabled = true;
     function done(){ sending = false; $('sheet-send').disabled = false; }
     var p;
-    try{
-      p = sendMode === 'picker'
-        ? window.liff.shareTargetPicker([{ type: 'text', text: text }], { isMultiple: false })
-        : window.liff.sendMessages([{ type: 'text', text: text }]);
-    }
+    try{ p = window.liff.sendMessages([{ type: 'text', text: text }]); }
     catch(e){ p = Promise.reject(e); }
-    p.then(function(res){
-      done();
-      if(sendMode === 'picker' && !(res && res.status === 'success')){
-        showSheetErr('送り先が選ばれなかったので、送っていません。');
-        $('sheet-send').focus();
-        return;
-      }
-      finishSend(text, true);
+    p.then(function(){
+      done(); finishSend(text, true);
     }).catch(function(e){
       done();
       showSheetErr('送れませんでした。もう一度お試しください（理由：' + ((e && (e.message || e.code)) || '不明') + '）');
@@ -2180,30 +2433,14 @@ input[type="time"].field{width:auto;min-width:140px}
           try{ os = window.liff.getOS() || '不明'; }catch(e){}
           try{ ver = window.liff.getLineVersion() || '不明'; }catch(e){}
           var type = (ctx && ctx.type) ? ctx.type : '不明';
-          var stp = false;
-          try{ stp = !!window.liff.isApiAvailable('shareTargetPicker'); }catch(e){}
-          if(!inClient){
-            var logged = false;
-            try{ logged = !!window.liff.isLoggedIn(); }catch(e){}
-            if(!logged){
-              status('LINEにログインします…');
-              window.liff.login({ redirectUri: location.href });
-              return;
-            }
-          }
           if(inClient && ['utou', 'group', 'room'].indexOf(type) >= 0){
             sendMode = 'chat';
-          }else if(stp){
-            sendMode = 'picker';
-          }
-          if(sendMode === 'proto'){
+          }else{
             $('liff-notice').hidden = false;
-            if(!inClient){
-              $('liff-notice').textContent = '松永さんとのトークに貼ったリンクから開くと、そのまま送れます。スマホのLINEアプリで、トークに貼ったリンクを押して開いてください（パソコン版LINEやブラウザでは送れません）。LINEの設定で『シェアターゲットピッカー』がオフの可能性もあります。';
-            }
+            $('liff-notice').textContent = '松永さんとのトークに貼ったリンクから開いてください。';
           }
-          var tail = sendMode === 'chat' ? ' → このトークに送れます' : sendMode === 'picker' ? ' → 送り先を選んで送れます' : ' → 試作モード';
-          status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・STP=' + (stp ? '可' : '不可') + '・OS=' + os + '・LINE=' + ver + tail);
+          var tail = sendMode === 'chat' ? ' → このトークに送れます' : ' → 試作モード';
+          status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・OS=' + os + '・LINE=' + ver + tail);
         }).catch(function(e){
           status('初期化に失敗（code=' + ((e && e.code) || '不明') + '、message=' + ((e && e.message) || String(e)) + '）');
         });
