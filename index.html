@@ -554,6 +554,8 @@ input[type="time"].field{width:auto;min-width:140px}
   </section>
 
   <p class="liff-status" id="liff-status" role="status">LINE接続：確認中…</p>
+  <p class="liff-status" id="sync-status" role="status" style="margin-top:4px" hidden></p>
+  <p class="liff-status" id="sync-note" role="status" style="margin-top:4px" hidden></p>
 </div>
 
 <div class="bar">
@@ -567,7 +569,8 @@ input[type="time"].field{width:auto;min-width:140px}
     <div class="sheet-in">
       <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"></div></div>
       <p class="sub">内容をご確認ください。</p>
-      <div class="row" id="sheet-people" style="margin-bottom:12px" hidden>
+      <div id="sheet-people" style="margin-bottom:12px" hidden>
+      <div class="row">
         <span id="people-q" style="font-weight:700">何人分ですか？</span>
         <div class="stepper" role="group" aria-labelledby="people-q">
           <button type="button" id="people-minus" aria-label="人数を減らす">&minus;</button>
@@ -575,6 +578,8 @@ input[type="time"].field{width:auto;min-width:140px}
           <button type="button" id="people-plus" aria-label="人数を増やす">+</button>
         </div>
         <span>人分</span>
+      </div>
+      <div style="margin-top:8px"><button type="button" class="chip" id="daigo" aria-pressed="false">大吾くんもいる</button></div>
       </div>
       <pre class="msg" id="sheet-msg"></pre>
       <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
@@ -594,21 +599,25 @@ input[type="time"].field{width:auto;min-width:140px}
   var LIFF_ID = '2012740410-E7o8LimO';
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
+  // 献立を端末どうしで共有する Google Apps Script のURL（…/exec）。空のままなら、この端末の保存だけで動きます。
+  var SYNC_URL = '';
 
   var MENU = [
-    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯']],
-    ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ']],
-    ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏']],
-    ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん']],
-    ['丼もの',['親子丼','牛丼','カツ丼','海鮮丼','天丼','中華丼','ネギトロ丼','ビビンバ']],
-    ['汁物',['味噌汁','豚汁','ミネストローネ','中華スープ','けんちん汁','わかめスープ','コーンスープ','クラムチャウダー']],
-    ['副菜',['サラダ','玉ねぎサラダ','ほうれん草のおひたし','きんぴら','ポテトサラダ','キムチになる前のキャベツ','野菜スティック','だし巻き卵','冷奴','ひじき煮','切り干し大根','春雨サラダ','枝豆','茶碗蒸し']]
+    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
+    ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ']],
+    ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し']],
+    ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺']],
+    ['丼もの',['親子丼','牛丼','カツ丼','海鮮丼','天丼','中華丼','ネギトロ丼','ビビンバ','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼']],
+    ['ご飯もの',['おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯']],
+    ['汁物',['味噌汁','豚汁','ミネストローネ','中華スープ','けんちん汁','わかめスープ','コーンスープ','クラムチャウダー','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ']],
+    ['鍋',['寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋']],
+    ['副菜',['サラダ','玉ねぎサラダ','ほうれん草のおひたし','きんぴら','ポテトサラダ','キムチになる前のキャベツ','野菜スティック','だし巻き卵','冷奴','ひじき煮','切り干し大根','春雨サラダ','枝豆','茶碗蒸し','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー']]
   ];
   var MENU_KEY = 'otetsudai-menu-v1';
 
   var dishes = [];   // 選択順を保持
   var usual = false;   // いつもの掃除
-  var people = 1;
+  var people = 1, daigo = false;
   var when = '夜';
   var tab = 'meal';
 
@@ -633,6 +642,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function saveMenu(){
     try{ window.localStorage.setItem(MENU_KEY, JSON.stringify(menu)); }catch(e){}
+    syncMark(MENU_KEY);
   }
   var menu = loadMenu(), editing = false, undoSnap = null, undoTimer = 0;
 
@@ -773,6 +783,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function saveSub(){
     try{ window.localStorage.setItem(SUBG_KEY, JSON.stringify(sub)); }catch(e){}
+    syncMark(SUBG_KEY);
   }
   var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {};
   function hasSub(name){ return Object.prototype.hasOwnProperty.call(sub, name) && Array.isArray(sub[name]); }
@@ -1205,7 +1216,88 @@ input[type="time"].field{width:auto;min-width:140px}
     '切り干し大根': ['大根','にんじん','油揚げ'],
     '春雨サラダ': ['春雨','きゅうり','ハム','卵'],
     '枝豆': ['枝豆'],
-    '茶碗蒸し': ['卵','鶏肉','きのこ']
+    '茶碗蒸し': ['卵','鶏肉','きのこ'],
+    'お好み焼き': ['キャベツ','豚肉','卵'],
+    '焼き鳥': ['鶏肉','ねぎ'],
+    'たこ焼き': ['たこ','ねぎ'],
+    '鶏そぼろ': ['鶏肉','卵','ご飯'],
+    'あじの南蛮漬け': ['魚','あじ','玉ねぎ','にんじん'],
+    '揚げ出し豆腐': ['豆腐','大根','ねぎ'],
+    '鮭のホイル焼き': ['魚','鮭','きのこ','玉ねぎ'],
+    '肉豆腐': ['牛肉','豆腐','玉ねぎ','ねぎ'],
+    'いわしの蒲焼き': ['魚','いわし'],
+    'かぼちゃのそぼろ煮': ['かぼちゃ','ひき肉'],
+    'オムレツ': ['卵','チーズ','牛乳'],
+    'ピザ': ['チーズ','トマト','ピーマン','ベーコン'],
+    'サンドイッチ': ['パン','卵','ハム','レタス'],
+    'ポークソテー': ['豚肉','玉ねぎ'],
+    'チキンカツ': ['鶏肉','パン粉','キャベツ'],
+    '白身魚のムニエル': ['魚','じゃがいも'],
+    'ピカタ': ['豚肉','卵','チーズ'],
+    'マカロニチーズ': ['パスタ','チーズ','牛乳'],
+    '麻婆茄子': ['なす','ひき肉','ねぎ','しょうが'],
+    'ニラレバ炒め': ['にら','レバー','もやし'],
+    'かに玉': ['卵','かに','ねぎ'],
+    '油淋鶏': ['鶏肉','ねぎ','しょうが'],
+    '肉野菜炒め': ['豚肉','キャベツ','にんじん','もやし'],
+    'エビマヨ': ['エビ','レタス'],
+    'ニラ玉': ['にら','卵'],
+    '木須肉': ['豚肉','卵','きのこ','にら'],
+    '鶏肉のカシューナッツ炒め': ['鶏肉','ナッツ','ピーマン','ねぎ'],
+    '豚肉ともやしの中華蒸し': ['豚肉','もやし','ねぎ'],
+    '焼きうどん': ['麺','豚肉','キャベツ','にんじん'],
+    'ちゃんぽん': ['麺','豚肉','エビ','キャベツ','練り物'],
+    '担々麺': ['麺','ひき肉','ねぎ'],
+    '皿うどん': ['麺','豚肉','エビ','キャベツ','にんじん'],
+    '焼きビーフン': ['麺','豚肉','キャベツ','にんじん','ピーマン'],
+    'ジャージャー麺': ['麺','ひき肉','きゅうり','ねぎ'],
+    '冷麺': ['麺','きゅうり','卵','キムチ'],
+    '豚丼': ['豚肉','玉ねぎ','ご飯'],
+    'そぼろ丼': ['ひき肉','卵','ご飯'],
+    'うな丼': ['うなぎ','ご飯'],
+    'マグロの漬け丼': ['魚','まぐろ','ご飯'],
+    '玉子丼': ['卵','玉ねぎ','ご飯'],
+    'ロコモコ丼': ['ひき肉','卵','レタス','トマト','ご飯'],
+    'しらす丼': ['しらす','ご飯','ねぎ'],
+    'スタミナ丼': ['豚肉','にんにく','にら','ご飯'],
+    'おにぎり': ['ご飯','鮭'],
+    '手巻き寿司': ['ご飯','魚','きゅうり','卵'],
+    'ちらし寿司': ['ご飯','エビ','卵','きゅうり'],
+    'お茶漬け': ['ご飯','鮭'],
+    'いなり寿司': ['ご飯','油揚げ','にんじん'],
+    '雑炊': ['ご飯','卵','ねぎ'],
+    'おかゆ': ['ご飯','卵'],
+    '赤飯': ['ご飯','小豆'],
+    '焼きおにぎり': ['ご飯','ねぎ'],
+    '栗ご飯': ['ご飯','栗'],
+    'お吸い物': ['豆腐','わかめ','ねぎ'],
+    'かきたま汁': ['卵','ねぎ'],
+    'ワンタンスープ': ['ひき肉','ねぎ','わかめ'],
+    'オニオンスープ': ['玉ねぎ','ベーコン'],
+    'つみれ汁': ['魚','大根','ねぎ'],
+    'あら汁': ['魚','大根','ねぎ'],
+    'すいとん': ['鶏肉','大根','にんじん','ねぎ'],
+    'かぼちゃのポタージュ': ['かぼちゃ','玉ねぎ','牛乳'],
+    '寄せ鍋': ['魚','エビ','白菜','豆腐','ねぎ'],
+    'キムチ鍋': ['豚肉','キムチ','豆腐','白菜','にら'],
+    '水炊き': ['鶏肉','白菜','豆腐','ねぎ'],
+    '湯豆腐': ['豆腐','ねぎ'],
+    'ちゃんこ鍋': ['鶏肉','白菜','豆腐','ねぎ','練り物'],
+    '豆乳鍋': ['豚肉','白菜','豆腐','きのこ'],
+    'もつ鍋': ['もつ','キャベツ','にら','にんにく'],
+    'ミルフィーユ鍋': ['豚肉','白菜'],
+    '鶏団子鍋': ['ひき肉','白菜','ねぎ','きのこ'],
+    '石狩鍋': ['魚','鮭','豆腐','白菜'],
+    'きゅうりとわかめの酢の物': ['きゅうり','わかめ'],
+    'ほうれん草のごま和え': ['ほうれん草'],
+    'かぼちゃの煮物': ['かぼちゃ'],
+    'もやしのナムル': ['もやし','にんじん'],
+    'きゅうりの浅漬け': ['きゅうり'],
+    'なすの煮びたし': ['なす'],
+    'こんにゃくの煮物': ['こんにゃく','にんじん'],
+    '小松菜と油揚げの煮びたし': ['小松菜','油揚げ'],
+    '白和え': ['豆腐','こんにゃく','にんじん'],
+    'ほうれん草とベーコンのソテー': ['ほうれん草','ベーコン']
   };
   var TAGS_KEY = 'otetsudai-tags-v1';
   function loadTags(){
@@ -1223,6 +1315,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function saveTags(){
     try{ window.localStorage.setItem(TAGS_KEY, JSON.stringify(tags)); }catch(e){}
+    syncMark(TAGS_KEY);
   }
   var tags = loadTags(), tagEditOpen = {}, tagFilter = '', tagQuery = '';
   var TAGS_OPEN_KEY = 'otetsudai-tagsopen-v1';
@@ -1261,7 +1354,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }catch(e){}
     return [];
   }
-  function saveCustom(){ try{ window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTags)); }catch(e){} }
+  function saveCustom(){ try{ window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTags)); }catch(e){} syncMark(CUSTOM_KEY); }
   var customTags = loadCustom(), tagAddOpen = false, tagAdd = null, tagRenameSt = null;
   function allDishNames(){
     var seen = {}, out = [];
@@ -1578,8 +1671,8 @@ input[type="time"].field{width:auto;min-width:140px}
     }catch(e){}
     return [];
   }
-  function saveHist(){ try{ window.localStorage.setItem(HIST_KEY, JSON.stringify(orderHist)); }catch(e){} }
-  function saveFav(){ try{ window.localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }catch(e){} }
+  function saveHist(noSync){ try{ window.localStorage.setItem(HIST_KEY, JSON.stringify(orderHist)); }catch(e){} if(!noSync) syncMark(HIST_KEY); }
+  function saveFav(){ try{ window.localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }catch(e){} syncMark(FAV_KEY); }
   var orderHist = loadList(HIST_KEY), favs = loadList(FAV_KEY), favSnap = null, favTimer = 0;
   function stable(o){
     return JSON.stringify(Object.keys(o).sort().map(function(k){ return [k, o[k]]; }));
@@ -2012,6 +2105,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('tag-add-panel').innerHTML = ''; $('tag-add-panel').hidden = true; setTagNote('');
     dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
     try{ window.localStorage.removeItem(MENU_KEY); }catch(e){}
+    syncMark(MENU_KEY);
     hideUndo(); $('reset-confirm').hidden = true; setMsg('初期の献立に戻しました。');
     render(); refresh(); $('reset-ask').focus();
   });
@@ -2072,6 +2166,9 @@ input[type="time"].field{width:auto;min-width:140px}
     pending = buildMessage();
     $('sheet-msg').textContent = pending;
   }
+  $('daigo').addEventListener('click', function(){
+    daigo = !daigo; this.setAttribute('aria-pressed', daigo ? 'true' : 'false'); updateSheetMsg();
+  });
   $('people-minus').addEventListener('click', function(){ if(people>1){ people--; refresh(); updateSheetMsg(); } });
   $('people-plus').addEventListener('click', function(){ if(people<20){ people++; refresh(); updateSheetMsg(); } });
 
@@ -2126,6 +2223,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function saveShop(){
     try{ window.localStorage.setItem(SHOP_KEY, JSON.stringify(shop)); }catch(e){}
+    syncMark(SHOP_KEY);
   }
   var shop = loadShop(), qty = {}, shopEditing = false, shopSnap = null, shopTimer = 0;
   var shopListEl = $('shop-list');
@@ -2220,6 +2318,7 @@ input[type="time"].field{width:auto;min-width:140px}
     shop = SHOP_DEFAULT.slice();
     Object.keys(qty).forEach(function(k){ if(shop.indexOf(k) < 0) delete qty[k]; });
     try{ window.localStorage.removeItem(SHOP_KEY); }catch(e){}
+    syncMark(SHOP_KEY);
     hideShopUndo(); $('shop-reset-confirm').hidden = true; setShopMsg('初期のリストに戻しました。');
     renderShop(); refresh(); $('shop-reset-ask').focus();
   });
@@ -2297,27 +2396,42 @@ input[type="time"].field{width:auto;min-width:140px}
     go.textContent = total === 0 ? '頼む' : '頼む（' + total + '件）';
   }
 
+  // 注文文面用：料理を1行（複数選択の項目は次の行）にする
+  function dishLines(name){
+    if(!hasSub(name) || !sub[name].length) return ['・' + name];
+    pruneSub(name);
+    var sm = subSel[name] || {}, om = subOther[name] || {}, singles = [], multis = [];
+    visibleGroups(name, sm).forEach(function(g){
+      var list = (sm[g.label] || []).slice(), o = String(om[g.label] || '').trim();
+      if(o){ if(g.multi) list.push(o); else list = [o]; }
+      if(!list.length) return;
+      if(g.multi) multis.push('　' + g.label + '：' + list.join('・'));
+      else singles.push(list.join('・'));
+    });
+    return ['・' + name + (singles.length ? '（' + singles.join('・') + '）' : '')].concat(multis);
+  }
   function buildMessage(){
-    var parts = [], memo = $('memo').value.trim();
-    var items = dishes.map(dishLabel);
-    if(freeText()) items.push(freeText());
-    if(items.length){
-      parts.push('【ご飯のお願い】\n' + (tomorrow ? '明日の' : '') + (when === '時間指定' ? ($('meal-time').value || '時間未指定') + 'までに' : when) + '：' + items.join('、') + '\n' + people + '人分' + (when === 'すぐに' ? '／できるだけ早くお願いします' : ''));
+    var blocks = [], memo = $('memo').value.trim();
+    if(mealCount() > 0){
+      var d = new Date(); if(tomorrow) d.setDate(d.getDate() + 1);
+      var ds = (tomorrow ? '明日' : '今日') + '（' + (d.getMonth() + 1) + '/' + d.getDate() + '・' + '日月火水木金土'.charAt(d.getDay()) + '）';
+      var tm = when === 'すぐに' ? 'すぐに' : when === '時間指定' ? ($('meal-time').value || '時間未指定') + 'までに' : 'の' + when;
+      var ml = ['🍳 ご飯｜' + ds + tm];
+      dishes.forEach(function(nm){ ml = ml.concat(dishLines(nm)); });
+      if(freeText()) ml.push('・' + freeText());
+      ml.push('→ ' + people + '人分' + (daigo ? '（大吾くんもいます）' : ''));
+      blocks.push(ml.join('\n'));
     }
     if(usual){
-      parts.push('【掃除のお願い】\nいつもの掃除\n' + (cleanMode === 'now' ? 'できるだけ早くお願いします' : cleanMode === 'any' ? '時間はいつでも大丈夫です' : ($('clean-time').value || '時間未指定') + 'まで'));
+      blocks.push('🧹 掃除｜' + (cleanMode === 'now' ? 'できるだけ早くお願いします' : cleanMode === 'any' ? '時間はいつでも大丈夫です' : ($('clean-time').value || '時間未指定') + 'まで') + '\n・いつもの掃除');
     }
-    var lines = [], other = shopOther();
-    shop.forEach(function(nm){ if((qty[nm] || 0) >= 1) lines.push(nm + '\u00d7' + qty[nm]); });
-    if(lines.length || other){
-      var sb = '【買い物のお願い】';
-      if(lines.length) sb += '\n' + lines.join('、');
-      if(other) sb += '\nその他：' + other;
-      parts.push(sb);
-    }
-    var text = parts.join('\n\n');
-    if(memo) text += '\nメモ：' + memo;
-    return text;
+    var sl = [], other = shopOther();
+    shop.forEach(function(nm){ if((qty[nm] || 0) >= 1) sl.push('・' + nm + ' ×' + qty[nm]); });
+    if(other) sl.push('・その他：' + other);
+    if(sl.length) blocks.push('🛒 買い物\n' + sl.join('\n'));
+    if(!blocks.length) return '';
+    if(memo) blocks.push('📝 メモ\n' + memo);
+    return '🐈 松永便 🐈\n松永さん、お願いします🙇‍♀️\n\n' + blocks.join('\n\n') + '\n\nよろしくお願いします！';
   }
 
   // 確認シート
@@ -2344,7 +2458,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!scrim.classList.contains('open')) return;
     if(e.key === 'Escape') closeSheet();
     if(e.key === 'Tab'){ // フォーカスをシート内に留める
-      var f = $('sheet-people').hidden ? [$('sheet-back'), $('sheet-send')] : [$('people-minus'), $('people-plus'), $('sheet-back'), $('sheet-send')];
+      var f = $('sheet-people').hidden ? [$('sheet-back'), $('sheet-send')] : [$('people-minus'), $('people-plus'), $('daigo'), $('sheet-back'), $('sheet-send')];
       var i = f.indexOf(document.activeElement);
       e.preventDefault();
       f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
@@ -2380,9 +2494,10 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat-warn').textContent = sent ? '送りました。' : '試作のため、実際には送られていません。';
     try{
       var nowT = Date.now();
-      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; orderHist.push(he); });
+      var newHist = [];
+      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
-      saveHist();
+      saveHist(true); syncAppendHist(newHist);
     }catch(err){}
     var line = document.createElement('div'); line.className = 'bubble-line';
     line.innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 36, 32);
@@ -2395,7 +2510,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; when = '夜';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; daigo = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
@@ -2452,8 +2567,193 @@ input[type="time"].field{width:auto;min-width:140px}
     document.head.appendChild(s);
   }
 
+  // ---- 初期献立の追加分を、保存済みの献立へ自動で足す ----
+  // 'otetsudai-menu-seen-v1' に「もう確認した初期料理」を覚える。初期献立にあり、まだ確認しておらず、
+  // 保存済みの献立にも無い料理だけを足す（利用者が削除・名前変更した料理は確認済みなので戻らない）。
+  // 初めてこの仕組みが動く端末では、今回追加した料理以外を確認済みとみなす。
+  var SEEN_KEY = 'otetsudai-menu-seen-v1';
+  var MENU_ADDED_NOW = ['お好み焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼','おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー'];
+  function loadSeen(){
+    try{
+      var raw = window.localStorage.getItem(SEEN_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(Array.isArray(p) && p.every(function(s){ return typeof s === 'string'; })) return p;
+      }
+    }catch(e){}
+    return null;
+  }
+  function mergeDefaults(){
+    var seen = loadSeen(), seenSet = {}, defNames = [];
+    MENU.forEach(function(g){ g[1].forEach(function(n){ defNames.push(n); }); });
+    if(seen) seen.forEach(function(n){ seenSet[n] = true; });
+    else defNames.forEach(function(n){ if(MENU_ADDED_NOW.indexOf(n) < 0) seenSet[n] = true; });
+    var present = {}, changed = false;
+    menu.forEach(function(g){ g[1].forEach(function(n){ present[n] = true; }); });
+    function catIndex(label){ for(var i = 0; i < menu.length; i++) if(menu[i][0] === label) return i; return -1; }
+    MENU.forEach(function(dg, di){
+      dg[1].forEach(function(n){
+        if(seenSet[n] || present[n]) return;
+        var gi = catIndex(dg[0]);
+        if(gi < 0){
+          var at = menu.length;
+          for(var j = di - 1; j >= 0; j--){ var pi = catIndex(MENU[j][0]); if(pi >= 0){ at = pi + 1; break; } }
+          menu.splice(at, 0, [dg[0], []]); gi = at;
+        }
+        menu[gi][1].push(n); present[n] = true; changed = true;
+      });
+    });
+    var union = {}, list = [];
+    (seen || []).concat(defNames).forEach(function(n){ if(!union[n]){ union[n] = true; list.push(n); } });
+    if(!seen || list.length !== seen.length){
+      try{ window.localStorage.setItem(SEEN_KEY, JSON.stringify(list)); }catch(e){}
+      syncMark(SEEN_KEY);
+    }
+    if(changed) saveMenu();
+    return changed;
+  }
+
+  // ---- 献立の共有（Google Apps Script 経由。SYNC_URL が空なら何もしない） ----
+  var SYNC_KEYS = {};
+  SYNC_KEYS[MENU_KEY] = { get: function(){ return menu; }, load: function(){ menu = loadMenu(); } };
+  SYNC_KEYS[SUBG_KEY] = { get: function(){ return sub; }, load: function(){ sub = loadSub(); } };
+  SYNC_KEYS[TAGS_KEY] = { get: function(){ return tags; }, load: function(){ tags = loadTags(); } };
+  SYNC_KEYS[CUSTOM_KEY] = { get: function(){ return customTags; }, load: function(){ customTags = loadCustom(); } };
+  SYNC_KEYS[SHOP_KEY] = { get: function(){ return shop; }, load: function(){ shop = loadShop(); } };
+  SYNC_KEYS[HIST_KEY] = { get: function(){ return orderHist; }, load: function(){ orderHist = loadList(HIST_KEY); } };
+  SYNC_KEYS[SEEN_KEY] = { get: function(){ return loadSeen() || []; }, load: function(){} };
+  SYNC_KEYS[FAV_KEY] = { get: function(){ return favs; }, load: function(){ favs = loadList(FAV_KEY); } };
+  var syncVer = {}, syncDirty = {}, syncTimer = 0, syncChain = Promise.resolve();
+  var syncHistQ = [], syncBusyKey = {}, syncReady = false, syncLoaded = false, syncLast = '', syncNoteTimer = 0;
+
+  function syncPaint(state){
+    if(!SYNC_URL) return;
+    var t = '';
+    if(state === 'loading') t = '献立を読み込み中…';
+    else if(state === 'on') t = '献立の共有：オン（最終同期 ' + syncLast + '）';
+    else if(state === 'err') t = '献立の共有：エラー（通信できませんでした。あとで自動でやり直します）';
+    else if(state === 'loadfail') t = '共有の献立を読み込めませんでした（この端末の献立で表示しています）';
+    var e = $('sync-status'); e.hidden = false; e.textContent = t;
+  }
+  function syncOk(){
+    var d = new Date();
+    syncLast = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    syncPaint('on');
+  }
+  function syncNote(t){
+    var e = $('sync-note'); e.textContent = t; e.hidden = !t;
+    setMsg(t); setShopMsg(t);
+    clearTimeout(syncNoteTimer);
+    if(t) syncNoteTimer = setTimeout(function(){ syncNote(''); }, 20000);
+  }
+  function syncMark(k){
+    if(!SYNC_URL) return;
+    syncDirty[k] = true;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncFlush, 1000);
+  }
+  function syncAppendHist(entries){
+    if(!SYNC_URL || !entries.length) return;
+    syncHistQ = syncHistQ.concat(entries);
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncFlush, 1000);
+  }
+  function syncPost(obj){
+    return fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(obj) })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  function syncApply(k, value){
+    try{ window.localStorage.setItem(k, JSON.stringify(value)); }catch(e){}
+    SYNC_KEYS[k].load();
+  }
+  function syncRedraw(){
+    dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
+    render(); renderShop(); refresh();
+  }
+  function syncFlush(){
+    syncTimer = 0;
+    if(!SYNC_URL || !syncReady) return;
+    Object.keys(syncDirty).forEach(function(k){
+      syncChain = syncChain.then(function(){ return syncSet(k); });
+    });
+    if(syncHistQ.length) syncChain = syncChain.then(syncSendHist);
+  }
+  function syncSet(k){
+    if(!syncDirty[k]) return Promise.resolve();
+    delete syncDirty[k]; syncBusyKey[k] = true;
+    return syncPost({ action: 'set', key: k, value: SYNC_KEYS[k].get(), baseVersion: syncVer[k] || 0 }).then(function(res){
+      syncBusyKey[k] = false;
+      if(res && res.ok){ syncVer[k] = Number(res.version) || 0; syncOk(); }
+      else if(res && res.conflict && res.current){
+        syncVer[k] = Number(res.current.version) || 0;
+        if(res.current.value != null){ syncApply(k, res.current.value); syncRedraw(); }
+        syncNote('ほかの人が先に献立を変えたので、最新に入れ替えました。もう一度操作してください');
+        syncOk();
+      }else throw new Error((res && res.error) || 'error');
+    }).catch(function(e){ syncBusyKey[k] = false; syncDirty[k] = true; syncPaint('err'); });
+  }
+  function syncSendHist(){
+    if(!syncHistQ.length) return Promise.resolve();
+    var entries = syncHistQ; syncHistQ = []; syncBusyKey[HIST_KEY] = true;
+    return syncPost({ action: 'appendHistory', entries: entries }).then(function(res){
+      syncBusyKey[HIST_KEY] = false;
+      if(!res || !res.ok) throw new Error((res && res.error) || 'error');
+      syncVer[HIST_KEY] = Number(res.version) || 0;
+      if(Array.isArray(res.value) && !syncHistQ.length){ syncApply(HIST_KEY, res.value); render(); }
+      syncOk();
+    }).catch(function(e){ syncBusyKey[HIST_KEY] = false; syncHistQ = entries.concat(syncHistQ); syncPaint('err'); });
+  }
+  function syncLocalHas(k){ try{ return window.localStorage.getItem(k) !== null; }catch(e){ return false; } }
+  function syncGet(){
+    if(!SYNC_URL) return Promise.resolve();
+    var first = !syncLoaded;
+    return fetch(SYNC_URL + (SYNC_URL.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){
+        if(!data || typeof data !== 'object' || data.ok === false) throw new Error('bad response');
+        var ae = document.activeElement, typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+        if(!first && (typing || $('scrim').classList.contains('open'))){ syncOk(); return; }   // 入力中・確認中は次回に回す
+        var changed = false;
+        Object.keys(SYNC_KEYS).forEach(function(k){
+          var r = data[k];
+          if(!r || typeof r !== 'object'){
+            if(first && syncLocalHas(k)){
+              if(k === HIST_KEY) syncAppendHist(orderHist.slice()); else syncMark(k);   // 共有側が空なら、この端末の内容を最初の共有にする
+            }
+            return;
+          }
+          var v = Number(r.version) || 0;
+          if((syncVer[k] || 0) >= v) return;
+          if(syncDirty[k] || syncBusyKey[k] || (k === HIST_KEY && syncHistQ.length)) return;
+          syncVer[k] = v; syncApply(k, r.value); changed = true;
+        });
+        syncLoaded = true;
+        if((first || changed) && mergeDefaults()) changed = true;
+        if(changed) syncRedraw();
+        syncOk();
+      }).catch(function(e){
+        if(first && mergeDefaults()) syncRedraw();
+        syncPaint(first ? 'loadfail' : 'err');
+      }).then(function(){
+        if(!syncReady){ syncReady = true; syncFlush(); }
+      });
+  }
+  function syncTick(){
+    if(!SYNC_URL) return;
+    syncFlush();
+    syncChain = syncChain.then(syncGet);
+  }
+  function syncInit(){
+    if(!SYNC_URL){ if(mergeDefaults()) syncRedraw(); return; }
+    syncPaint('loading');
+    syncChain = syncChain.then(syncGet);
+    setInterval(function(){ if(document.visibilityState === 'visible') syncTick(); }, 30000);
+    document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') syncTick(); });
+  }
+
   refresh();
   initLiff();
+  syncInit();
 })();
 </script>
 </body>
