@@ -197,6 +197,35 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .totop{position:fixed;z-index:11;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(var(--bar-h,72px) + 12px);width:44px;height:44px;padding:0;border:2px solid var(--accent);border-radius:50%;background:var(--surface);color:var(--accent);font-size:22px;line-height:1;font-weight:700;cursor:pointer;opacity:.55;box-shadow:0 2px 6px var(--shadow)}
 .totop:hover,.totop:focus-visible,.totop:active{opacity:1}
 .totop[hidden]{display:none}
+.ord,.rv-card{border:2px solid var(--line);border-radius:8px;background:var(--surface);padding:8px 12px;margin:8px 0}
+.ord.consult{border-color:var(--bad,#c62828);box-shadow:0 0 0 2px var(--bad,#c62828)}
+.ord-h{margin:0 0 4px;font-weight:700}
+.ord-k{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0}
+.ord-kn{font-size:14px}
+.ord-done{min-height:32px;padding:2px 10px;font-size:13px}
+.ord-last{margin:4px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
+.ord-all{margin:4px 0;font-weight:700;color:var(--ok,#2e7d32)}
+.ord-old summary{cursor:pointer;margin:8px 0;color:var(--muted);font-size:14px}
+.stbadge{display:inline-block;padding:1px 10px;border-radius:12px;border:2px solid currentColor;font-size:13px;font-weight:700;white-space:nowrap}
+.st-none{color:var(--muted)}
+.st-ack{color:var(--accent)}
+.st-done{color:var(--ok,#2e7d32)}
+.st-consult{color:var(--bad,#c62828)}
+:root[data-theme="dark"] .st-done,:root[data-theme="dark"] .ord-all{color:#7bd88f}
+:root[data-theme="dark"] .st-consult,:root[data-theme="dark"] .rv-err{color:#ff8a80}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .st-done,:root:not([data-theme="light"]) .ord-all{color:#7bd88f}:root:not([data-theme="light"]) .st-consult,:root:not([data-theme="light"]) .rv-err{color:#ff8a80}}
+.rv-title{margin:12px 0 4px;font-size:20px}
+.rv-big{margin:4px 0 8px;font-size:24px;font-weight:700;line-height:1.35}
+.rv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.rv-kn{margin:0;font-weight:700}
+.rv-line{margin:2px 0;word-break:break-all}
+.rv-btn{display:block;width:100%;min-height:60px;margin:10px 0;padding:8px 12px;border:3px solid var(--accent);border-radius:8px;background:var(--accent);color:var(--accent-fg);font:inherit;font-size:19px;font-weight:700;cursor:pointer}
+.rv-btn.sub{min-height:48px;background:var(--surface);color:var(--accent);font-size:16px}
+.rv-btn:disabled{opacity:.5;cursor:not-allowed}
+.rv-ok{margin:8px 0;padding:8px 12px;border-left:4px solid var(--ok,#2e7d32);background:var(--accent-soft);font-weight:700}
+.rv-err{margin:8px 0;color:var(--bad,#c62828);font-weight:700}
+body.reply-mode .wrap > *:not(#reply-view):not(.titlebar){display:none !important}
+body.reply-mode .bar,body.reply-mode .totop{display:none !important}
 .tab .badge{
   min-width:22px;height:22px;padding:0 6px;border-radius:11px;font-size:13px;line-height:22px;
   background:var(--accent);color:var(--accent-fg);display:none;
@@ -420,6 +449,9 @@ input[type="time"].field{width:auto;min-width:140px}
   <button type="button" class="theme-btn" id="theme-btn"></button>
   </div>
   <p class="lead">お手伝いさんへのお願いを、こちらからお送りいたします。</p>
+
+  <div class="sec" id="orders-card" hidden></div>
+  <div id="reply-view" hidden></div>
 
   <div id="tabs-sentinel" aria-hidden="true" style="height:1px;margin-bottom:-1px"></div>
   <div class="tabs-stick" id="tabs-stick">
@@ -2831,11 +2863,15 @@ input[type="time"].field{width:auto;min-width:140px}
     sending = true; showSheetErr('');
     $('sheet-send').disabled = true;
     function done(){ sending = false; $('sheet-send').disabled = false; }
-    var p;
-    try{ p = window.liff.sendMessages([{ type: 'text', text: text }]); }
-    catch(e){ p = Promise.reject(e); }
-    p.then(function(){
-      done(); finishSend(text, true);
+    var order = SYNC_URL ? buildOrderData() : null;
+    var pre = order ? getMyHash().then(function(h){ order.ordererHash = h; return syncPost({ action: 'createOrder', order: order }); })
+      .then(function(r){ return !!(r && r.ok); }).catch(function(){ return false; }) : Promise.resolve(false);
+    pre.then(function(created){
+      var finalText = (created && text.length < 4800) ? text + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + order.id : text;
+      return Promise.resolve().then(function(){ return window.liff.sendMessages([{ type: 'text', text: finalText }]); }).then(function(){
+        if(created) syncPost({ action: 'markOrderSent', id: order.id }).catch(function(){});
+        done(); finishSend(finalText, true);
+      });
     }).catch(function(e){
       done();
       showSheetErr('送れませんでした。もう一度お試しください（理由：' + ((e && (e.message || e.code)) || '不明') + '）');
@@ -2888,9 +2924,9 @@ input[type="time"].field{width:auto;min-width:140px}
   function initLiff(){
     function status(t){ $('liff-status').textContent = 'LINE接続：' + t; }
     try{
-      if(new URLSearchParams(location.search).get('proto') === '1'){ status('確認用の試作モード'); return; }
+      if(new URLSearchParams(location.search).get('proto') === '1'){ status('確認用の試作モード'); liffDone(); return; }
     }catch(e){}
-    if(!LIFF_ID){ status('未設定（試作モード）'); return; }
+    if(!LIFF_ID){ status('未設定（試作モード）'); liffDone(); return; }
     status('準備中…');
     var s = document.createElement('script');
     s.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
@@ -2903,6 +2939,7 @@ input[type="time"].field{width:auto;min-width:140px}
           try{ os = window.liff.getOS() || '不明'; }catch(e){}
           try{ ver = window.liff.getLineVersion() || '不明'; }catch(e){}
           var type = (ctx && ctx.type) ? ctx.type : '不明';
+          liffType = type; liffInClient = inClient;
           if(inClient && ['utou', 'group', 'room'].indexOf(type) >= 0){
             sendMode = 'chat';
           }else{
@@ -2911,14 +2948,17 @@ input[type="time"].field{width:auto;min-width:140px}
           }
           var tail = sendMode === 'chat' ? ' → このトークに送れます' : ' → 試作モード';
           status('LINE内=' + (inClient ? 'はい' : 'いいえ') + '・トーク種別=' + type + '・OS=' + os + '・LINE=' + ver + tail);
+          liffDone();
         }).catch(function(e){
           status('初期化に失敗（code=' + ((e && e.code) || '不明') + '、message=' + ((e && e.message) || String(e)) + '）');
+          liffDone();
         });
       }catch(e){
         status('初期化に失敗（' + ((e && e.message) || String(e)) + '）');
+        liffDone();
       }
     };
-    s.onerror = function(){ status('部品を読み込めませんでした'); };
+    s.onerror = function(){ status('部品を読み込めませんでした'); liffDone(); };
     document.head.appendChild(s);
   }
 
@@ -3156,8 +3196,379 @@ input[type="time"].field{width:auto;min-width:140px}
     document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') syncTick(); });
   }
 
+  // ================= 返事機能（松永さんのお返事・今日のお願い） =================
+  var KINDS = ['meal', 'clean', 'shop'];
+  var KIND_NAME = { meal: 'ご飯', clean: '掃除', shop: '買い物' };
+  var KIND_ICON = { meal: '🍳', clean: '🧹', shop: '🛒' };
+  var ST_WORD = { none: 'まだ返事なし', ack: '承知', done: 'できました', consult: '相談あり' };
+  var WD = '日月火水木金土';
+  var REASONS = ['品切れでした', '材料がありませんでした', '今日は難しいです', 'その他'];
+  var LINK_BASE = 'https://liff.line.me/' + LIFF_ID + '?reply=';
+  var liffReady = false, liffType = '', liffInClient = false, myHash = '';
+  var replyId = '', replyOrderData = null, replyErr = '', replyNotice = '', rs = { mode: 'main' };
+  var ordersData = [], myHashP = null;
+
+  function pad2(n){ return ('0' + n).slice(-2); }
+  function dateStr(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function mdw(ds){
+    var p = String(ds).split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return (d.getMonth() + 1) + '/' + d.getDate() + '（' + WD.charAt(d.getDay()) + '）';
+  }
+  function labelRest(label){ return String(label || '').replace(/^(今日|明日)（[^）]*）/, '').replace(/^の/, ''); }
+  function shortTarget(o){ return mdw(o.target.date) + labelRest(o.target.label); }
+  function peopleText(o){ return o.people != null ? o.people + '人分' + (o.daigo ? '（大吾くんもいます）' : '') : ''; }
+  function hhmm(iso){ var d = new Date(iso); return isNaN(d.getTime()) ? '' : pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function stOf(o, k){ return (o.status && o.status[k]) || 'none'; }
+  function hasKind(o, k){ return stOf(o, k) !== 'na' && (o[k] || []).length > 0; }
+  function kindsWith(o, st){ return KINDS.filter(function(k){ return hasKind(o, k) && stOf(o, k) === st; }); }
+  function isProtoUrl(){ try{ return new URLSearchParams(location.search).get('proto') === '1'; }catch(e){ return false; } }
+
+  // ---- 注文の記録（お嬢様側） ----
+  function randomId(n){
+    var cs = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789', a = new Uint8Array(n), s = '';
+    window.crypto.getRandomValues(a);
+    for(var i = 0; i < n; i++) s += cs.charAt(a[i] % cs.length);
+    return s;
+  }
+  function sha256Hex(str){
+    return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function getMyHash(){
+    if(myHashP) return myHashP;
+    myHashP = (function(){
+      try{
+        if(!window.liff) return Promise.resolve('');
+        var id = '';
+        try{ var c = window.liff.getContext(); id = (c && c.userId) || ''; }catch(e){}
+        var p = id ? Promise.resolve(id) : window.liff.getProfile().then(function(pr){ return (pr && pr.userId) || ''; });
+        return p.then(function(uid){ return uid ? sha256Hex(uid) : ''; }).catch(function(){ return ''; });
+      }catch(e){ return Promise.resolve(''); }
+    })();
+    return myHashP;
+  }
+  // いまの選択から、返事機能用の注文データを作る
+  function buildOrderData(){
+    var d = new Date(); if(tomorrow && mealCount() > 0) d.setDate(d.getDate() + 1);
+    var dow = WD.charAt(d.getDay()), md = (d.getMonth() + 1) + '/' + d.getDate() + '・' + dow;
+    var dayWord = (tomorrow && mealCount() > 0) ? '明日' : '今日';
+    var label;
+    if(mealCount() > 0){
+      label = dayWord + '（' + md + '）' + (when === 'すぐに' ? 'すぐに' : when === '時間指定' ? ($('meal-time').value || '時間未指定') + 'までに' : 'の' + when);
+    }else if(usual){
+      label = '今日（' + md + '）' + (cleanMode === 'now' ? 'すぐに' : cleanMode === 'any' ? 'いつでも' : ($('clean-time').value || '時間未指定') + 'まで');
+    }else{
+      label = '今日（' + md + '）';
+    }
+    var meal = dishes.map(dishLabel);
+    if(freeText()) meal.push(freeText());
+    if(omakase) meal.push(labelFor(OMAKASE, omakaseEntry().sel, omakaseEntry().other));
+    var sl = [], other = shopOther();
+    shop.forEach(function(nm){ if((qty[nm] || 0) >= 1) sl.push(nm + ' ×' + qty[nm]); });
+    if(other) sl.push('その他：' + other);
+    return {
+      id: randomId(24), createdAt: new Date().toISOString(),
+      target: { date: dateStr(d), label: label },
+      people: mealCount() > 0 ? people : null, daigo: mealCount() > 0 ? !!daigo : false,
+      meal: meal, clean: usual ? ['いつもの掃除'] : [], shop: sl,
+      memo: $('memo').value.trim(), ordererHash: ''
+    };
+  }
+
+  // ---- 状態の表示（言葉＋色） ----
+  function stBadge(st){ return el('span', 'stbadge st-' + st, ST_WORD[st] || st); }
+  function manualDone(id, kind, after){
+    var ch = {}; ch[kind] = 'done';
+    syncPost({ action: 'replyOrder', id: id, changes: ch, kind: 'manual', text: KIND_NAME[kind] + 'を「済み」にしました', by: 'orderer' })
+      .then(function(res){ if(res && res.ok && res.order && replyId === id) replyOrderData = res.order; }).catch(function(){})
+      .then(after);
+  }
+
+  // ---- 「今日のお願い」カード（通常画面） ----
+  function ordersEnabled(){ return !!SYNC_URL && !replyId && liffReady && (sendMode === 'chat' || isProtoUrl()); }
+  function ordersRefresh(){
+    var card = $('orders-card');
+    if(!ordersEnabled()){ card.hidden = true; return; }
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    syncPost({ action: 'listOrders', since: dateStr(y) }).then(function(res){
+      if(res && res.ok && Array.isArray(res.orders)){ ordersData = res.orders; renderOrders(); }
+    }).catch(function(){});
+  }
+  function orderIncomplete(o){
+    return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
+  }
+  function orderBlock(o){
+    var b = el('div', 'ord');
+    var hasConsult = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) === 'consult'; });
+    if(hasConsult) b.classList.add('consult');
+    var head = shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '');
+    b.appendChild(el('p', 'ord-h', head));
+    KINDS.forEach(function(k){
+      if(!hasKind(o, k)) return;
+      var row = el('div', 'ord-k');
+      row.appendChild(el('span', 'ord-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+      row.appendChild(stBadge(stOf(o, k)));
+      if(stOf(o, k) !== 'done'){
+        var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
+        bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
+        bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh); });
+        row.appendChild(bt);
+      }
+      b.appendChild(row);
+    });
+    var rp = o.replies || [];
+    if(rp.length){
+      var last = rp[rp.length - 1];
+      b.appendChild(el('p', 'ord-last', (hhmm(last.at) ? hhmm(last.at) + '　' : '') + String(last.text || '').split('\n').join(' ')));
+    }
+    return b;
+  }
+  function renderOrders(){
+    var card = $('orders-card');
+    if(!ordersEnabled()){ card.hidden = true; return; }
+    var today = dateStr(new Date());
+    var sent = ordersData.filter(function(o){ return o && o.sent !== false && o.target; })
+      .sort(function(a, b){ return String(b.createdAt).localeCompare(String(a.createdAt)); });
+    var shown = sent.filter(function(o){ return o.target.date >= today || orderIncomplete(o); });
+    var old = sent.filter(function(o){ return shown.indexOf(o) < 0; });
+    card.innerHTML = '';
+    if(!shown.length && !old.length){ card.hidden = true; return; }
+    card.hidden = false;
+    card.appendChild(el('h2', null, '今日のお願い'));
+    if(shown.length && !shown.some(orderIncomplete)) card.appendChild(el('p', 'ord-all', '✔ すべて完了'));
+    shown.forEach(function(o){ card.appendChild(orderBlock(o)); });
+    if(old.length){
+      var dt = document.createElement('details'); dt.className = 'ord-old';
+      dt.appendChild(el('summary', null, '昨日以前の完了済み（' + old.length + '件）'));
+      old.forEach(function(o){ dt.appendChild(orderBlock(o)); });
+      card.appendChild(dt);
+    }
+  }
+
+  // ---- 返事画面（URL に reply=ID があるとき） ----
+  function getReplyId(){
+    try{
+      var q = new URLSearchParams(location.search), id = q.get('reply');
+      if(!id){
+        var st = q.get('liff.state');
+        if(st){ var m = /[?&]reply=([A-Za-z0-9]+)/.exec(st); if(m) id = m[1]; }
+      }
+      return (id && /^[A-Za-z0-9]{10,60}$/.test(id)) ? id : '';
+    }catch(e){ return ''; }
+  }
+  function enterReply(id){
+    replyId = id;
+    document.body.classList.add('reply-mode');
+    $('reply-view').hidden = false;
+    $('orders-card').hidden = true;
+    loadReply();
+  }
+  function loadReply(){
+    if(!replyId) return;
+    if(!SYNC_URL){ replyErr = '返事の機能が設定されていません。'; renderReply(); return; }
+    syncPost({ action: 'getOrder', id: replyId }).then(function(res){
+      if(res && res.ok && res.order){ replyOrderData = res.order; replyErr = ''; }
+      else replyErr = (res && res.error) || 'お願いを読み込めませんでした。';
+    }).catch(function(){ replyErr = 'お願いを読み込めませんでした。通信を確かめてください。'; }).then(renderReply);
+  }
+  function liffDone(){
+    liffReady = true;
+    if(!replyId){ var id = getReplyId(); if(id) enterReply(id); }
+    if(replyId){
+      if(window.liff && liffInClient) getMyHash().then(function(h){ myHash = h; renderReply(); });
+      renderReply();
+    }
+    ordersRefresh();
+  }
+  function replyHead(o){ return '🐈 松永便のお返事｜' + shortTarget(o) + 'のご依頼'; }
+  function ackText(o, kinds){ return replyHead(o) + '\n' + kinds.map(function(k){ return KIND_NAME[k]; }).join('・') + '、承知しました☺️'; }
+  function doneText(o, kinds){
+    var w = { meal: 'ご飯ができました☺️', clean: '掃除が終わりました。', shop: '買い物から戻りました。' };
+    return replyHead(o) + '\n' + kinds.map(function(k){ return w[k]; }).join('\n');
+  }
+  function consultText(o){
+    var t = replyHead(o) + '\n' + KIND_NAME[rs.kind] + '：' + rs.reason;
+    t += (rs.alt && rs.alt.trim()) ? '\n' + rs.alt.trim() + 'にしました。' : '\nどうしましょうか？';
+    if(rs.note && rs.note.trim()) t += '\n' + rs.note.trim();
+    return t;
+  }
+  function toPreview(kind, changes, text){ rs = { mode: 'preview', kind: kind, changes: changes, text: text }; replyNotice = ''; renderReply(); }
+  function setAll(kinds, st){ var c = {}; kinds.forEach(function(k){ c[k] = st; }); return c; }
+  function permissionHint(e){
+    var m = String((e && (e.message || e.code)) || '');
+    return /permission|scope|chat_message|403|許可/i.test(m);
+  }
+  // 「記録は済んだがLINEへの送信に失敗した」印（画面内の変数＋sessionStorage、注文IDごと）
+  var replyFailMem = {};
+  function getReplyFail(){
+    if(replyFailMem[replyId]) return replyFailMem[replyId];
+    try{
+      var raw = window.sessionStorage.getItem('otetsudai-replyfail-v1:' + replyId);
+      if(raw){ var p = JSON.parse(raw); if(p && typeof p.text === 'string') return p; }
+    }catch(e){}
+    return null;
+  }
+  function setReplyFail(v){
+    if(v) replyFailMem[replyId] = v; else delete replyFailMem[replyId];
+    try{
+      if(v) window.sessionStorage.setItem('otetsudai-replyfail-v1:' + replyId, JSON.stringify(v));
+      else window.sessionStorage.removeItem('otetsudai-replyfail-v1:' + replyId);
+    }catch(e){}
+  }
+  function sendReplyNow(){
+    var o = replyOrderData;
+    if(!o || rs.sending) return;
+    rs.sending = true; rs.err = ''; renderReply();
+    syncPost({ action: 'replyOrder', id: replyId, changes: rs.changes, kind: rs.kind, text: rs.text, by: 'matsunaga' }).then(function(res){
+      if(!res || !res.ok) throw new Error((res && res.error) || '送れませんでした');
+      if(res.order) replyOrderData = res.order;
+      var text = rs.text, failed = getReplyFail();
+      if(res.duplicate && !(failed && failed.text === text)){ rs = { mode: 'main' }; replyNotice = 'さっき同じお返事を送っています。'; renderReply(); return; }
+      return Promise.resolve().then(function(){ return window.liff.sendMessages([{ type: 'text', text: text }]); }).then(function(){
+        setReplyFail(null);
+        rs = { mode: 'main' }; replyNotice = 'お返事を送りました。'; renderReply();
+      }).catch(function(e){
+        setReplyFail({ text: text });
+        rs.sending = false;
+        rs.err = permissionHint(e)
+          ? 'LINEへの送信の許可が必要です。許可の画面が出たら「許可」を押して、もう一度お試しください。（お返事の記録は済んでいます）'
+          : 'LINEへ送れませんでした（理由：' + ((e && (e.message || e.code)) || '不明') + '）。お返事の記録は済んでいます。ふつうのトークでお返事をお願いします。';
+        renderReply();
+      });
+    }).catch(function(e){
+      rs.sending = false; rs.err = '送れませんでした（理由：' + ((e && e.message) || '不明') + '）。もう一度お試しください。'; renderReply();
+    });
+  }
+  function chipRow(parent, labels, isOn, onClick, group){
+    var row = el('div', 'chips'); row.setAttribute('role', 'group'); row.setAttribute('aria-label', group);
+    labels.forEach(function(lb){
+      var c = el('button', 'chip', lb[1]); c.type = 'button';
+      c.setAttribute('aria-pressed', isOn(lb[0]) ? 'true' : 'false');
+      c.addEventListener('click', function(){ rs.err = ''; onClick(lb[0]); });
+      row.appendChild(c);
+    });
+    parent.appendChild(row);
+  }
+  function rvBtn(parent, text, sub, fn){
+    var b = el('button', 'rv-btn' + (sub ? ' sub' : ''), text); b.type = 'button';
+    if(rs.sending) b.disabled = true;
+    b.addEventListener('click', function(){ replyNotice = ''; fn(); });
+    parent.appendChild(b);
+    return b;
+  }
+  function renderActions(v, o){
+    if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
+    if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
+    if(rs.mode === 'preview'){
+      v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
+      v.appendChild(el('pre', 'msg', rs.text));
+      rvBtn(v, rs.sending ? '送っています…' : 'この返事をLINEに送る', false, sendReplyNow);
+      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
+      return;
+    }
+    if(rs.mode === 'doneSel'){
+      v.appendChild(el('p', 'sub-h', 'できたものを選んでください'));
+      chipRow(v, kindsWith(o, 'ack').map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }),
+        function(k){ return !!rs.sel[k]; }, function(k){ rs.sel[k] = !rs.sel[k]; renderReply(); }, 'できた種類');
+      rvBtn(v, '内容を確かめる', false, function(){
+        var ks = kindsWith(o, 'ack').filter(function(k){ return rs.sel[k]; });
+        if(!ks.length){ rs.err = '1つ以上、選んでください。'; renderReply(); return; }
+        toPreview('done', setAll(ks, 'done'), doneText(o, ks));
+      });
+      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
+      return;
+    }
+    if(rs.mode === 'consult'){
+      v.appendChild(el('p', 'sub-h', '相談・変更の内容'));
+      v.appendChild(el('p', 'note', 'どの種類ですか？'));
+      chipRow(v, KINDS.filter(function(k){ return hasKind(o, k); }).map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }),
+        function(k){ return rs.kind === k; }, function(k){ rs.kind = k; renderReply(); }, '相談する種類');
+      v.appendChild(el('p', 'note', 'わけは？'));
+      chipRow(v, REASONS.map(function(r){ return [r, r]; }),
+        function(r){ return rs.reason === r; }, function(r){ rs.reason = r; renderReply(); }, 'わけ');
+      var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
+      var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = rs.alt || ''; i1.autocomplete = 'off';
+      i1.addEventListener('input', function(){ rs.alt = i1.value; });
+      l1.appendChild(i1); v.appendChild(l1);
+      var l2 = el('label', 'sub-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
+      var i2 = el('input', 'field'); i2.type = 'text'; i2.maxLength = 80; i2.value = rs.note || ''; i2.autocomplete = 'off';
+      i2.addEventListener('input', function(){ rs.note = i2.value; });
+      l2.appendChild(i2); v.appendChild(l2);
+      rvBtn(v, '内容を確かめる', false, function(){
+        if(!rs.kind || !rs.reason){ rs.err = '種類とわけを選んでください。'; renderReply(); return; }
+        toPreview('consult', setAll([rs.kind], 'consult'), consultText(o));
+      });
+      rvBtn(v, 'もどる', true, function(){ rs = { mode: 'main' }; renderReply(); });
+      return;
+    }
+    var nones = kindsWith(o, 'none'), acks = kindsWith(o, 'ack');
+    if(nones.length) rvBtn(v, '全部、承知しました', false, function(){ toPreview('ack', setAll(nones, 'ack'), ackText(o, nones)); });
+    if(acks.length) rvBtn(v, 'できました', false, function(){
+      if(acks.length === 1){ toPreview('done', setAll(acks, 'done'), doneText(o, acks)); return; }
+      var sel = {}; acks.forEach(function(k){ sel[k] = true; });
+      rs = { mode: 'doneSel', sel: sel }; renderReply();
+    });
+    rvBtn(v, '相談・変更があります', true, function(){ rs = { mode: 'consult', alt: '', note: '' }; renderReply(); });
+    v.appendChild(el('p', 'note', 'お返事は、ふつうのトークでも大丈夫です'));
+  }
+  function renderReply(){
+    var v = $('reply-view');
+    if(!replyId){ return; }
+    v.innerHTML = '';
+    v.appendChild(el('h2', 'rv-title', '🐈 松永便のお返事'));
+    var o = replyOrderData;
+    if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
+    v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
+    var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
+    var expired = o.target.date < dateStr(new Date());
+    KINDS.forEach(function(k){
+      if(!hasKind(o, k)) return;
+      var card = el('div', 'rv-card'), head = el('div', 'rv-head');
+      head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+      head.appendChild(stBadge(stOf(o, k)));
+      card.appendChild(head);
+      (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+      if(mine && !expired && stOf(o, k) !== 'done'){
+        var bt = el('button', 'mini sub', '済みにする'); bt.type = 'button';
+        bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
+        bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, renderReply); });
+        card.appendChild(bt);
+      }
+      v.appendChild(card);
+    });
+    if(o.memo){ var mc = el('div', 'rv-card'); mc.appendChild(el('p', 'rv-kn', '📝 メモ')); mc.appendChild(el('p', 'rv-line', o.memo)); v.appendChild(mc); }
+    var rp = (o.replies || []).slice(-3);
+    if(rp.length){
+      var hc = el('div', 'rv-card'); hc.appendChild(el('p', 'rv-kn', 'これまでのお返事'));
+      rp.forEach(function(r){ hc.appendChild(el('p', 'rv-line', (hhmm(r.at) ? hhmm(r.at) + '　' : '') + String(r.text || '').split('\n').join(' '))); });
+      v.appendChild(hc);
+    }
+    if(!liffReady){ v.appendChild(el('p', 'note', 'LINEに接続しています…')); return; }
+    if(mine){ v.appendChild(el('p', 'note', 'お嬢様の画面です。「済みにする」で状態を変えられます。')); return; }
+    if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
+    if(!(liffInClient && liffType === 'utou' && sendMode === 'chat')){
+      v.appendChild(el('p', 'rv-err', 'お嬢様とのトークから開いてください。'));
+      return;
+    }
+    renderActions(v, o);
+  }
+
+  function replyInit(){
+    var id = getReplyId();
+    if(id) enterReply(id);
+    function tick(){
+      if(document.visibilityState !== 'visible') return;
+      if(replyId){ if(rs.mode === 'main' && !rs.sending) loadReply(); }
+      else ordersRefresh();
+    }
+    setInterval(tick, 30000);
+    document.addEventListener('visibilitychange', tick);
+  }
+
   paintOmakase();
   refresh();
+  replyInit();
   initLiff();
   syncInit();
 })();
