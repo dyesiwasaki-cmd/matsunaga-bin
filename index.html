@@ -205,6 +205,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ord-done{min-height:32px;padding:2px 10px;font-size:13px}
 .ord-last{margin:4px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
 .ord-all{margin:4px 0;font-weight:700;color:var(--ok,#2e7d32)}
+.ord-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.ord-top .ord-h{flex:1;min-width:0}
+.ord-tools{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.ord-tool{min-height:32px;padding:2px 8px;font-size:12px}
+.ord.canceled{background:var(--disabled-bg,#e0e0e0);color:var(--muted)}
+.ord-cancel{margin:2px 0;font-weight:700;color:var(--muted)}
+.ord-confirm{margin:6px 0;padding:8px;border:2px dashed var(--muted);border-radius:6px;background:var(--surface)}
+.ord-confirm .mini{margin:4px 6px 0 0}
 .ord-old summary{cursor:pointer;margin:8px 0;color:var(--muted);font-size:14px}
 .stbadge{display:inline-block;padding:1px 10px;border-radius:12px;border:2px solid currentColor;font-size:13px;font-weight:700;white-space:nowrap}
 .st-none{color:var(--muted)}
@@ -3296,20 +3304,90 @@ input[type="time"].field{width:auto;min-width:140px}
     }).catch(function(){});
   }
   function orderIncomplete(o){
+    if(o.canceled) return false;
     return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
+  }
+  var ordUi = { id: '', mode: '', err: '', sending: false };   // 「片付ける」「取り消しを伝える」の確認中の注文
+  function ordUiClear(){ ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders(); }
+  function cancelText(o){ return '🐈 松永便｜' + shortTarget(o) + 'のご依頼\n先ほどのお願いは取り消しです🙏\nお手数をおかけしました。'; }
+  function ordArchive(o){
+    ordUi.sending = true; ordUi.err = ''; renderOrders();
+    syncPost({ action: 'archiveOrder', id: o.id }).then(function(res){
+      if(!res || !res.ok) throw new Error((res && res.error) || '片付けられませんでした');
+      ordersData = ordersData.filter(function(x){ return x.id !== o.id; });
+      ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders();
+    }).catch(function(e){ ordUi.sending = false; ordUi.err = '片付けられませんでした（' + ((e && e.message) || '通信エラー') + '）'; renderOrders(); });
+  }
+  function ordCancel(o){
+    ordUi.sending = true; ordUi.err = ''; renderOrders();
+    var text = cancelText(o);
+    Promise.resolve().then(function(){ return window.liff.sendMessages([{ type: 'text', text: text }]); }).then(function(){
+      return syncPost({ action: 'cancelOrder', id: o.id }).then(function(res){
+        if(!res || !res.ok) throw new Error('RECORD:' + ((res && res.error) || ''));
+        var i = ordersData.indexOf(o);
+        ordersData = ordersData.map(function(x){ return x.id === o.id ? (res.order || Object.assign({}, x, { canceled: true })) : x; });
+        ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders();
+      });
+    }).catch(function(e){
+      ordUi.sending = false;
+      var m = String((e && e.message) || '');
+      ordUi.err = m.indexOf('RECORD:') === 0
+        ? '取り消しは送りましたが、記録の更新ができませんでした。もう一度「取り消しを送る」ではなく、あとで画面を開き直してください。'
+        : '取り消しを送れませんでした（' + (m || '不明') + '）。もう一度お試しください。';
+      renderOrders();
+    });
+  }
+  function ordConfirm(o){
+    var box = el('div', 'ord-confirm');
+    if(ordUi.mode === 'archive'){
+      box.appendChild(el('p', 'note', 'この依頼を一覧から消しますか？（記録は残ります。松永さんには何も送りません）'));
+      var y = el('button', 'mini', 'はい'); y.type = 'button'; y.disabled = ordUi.sending;
+      y.addEventListener('click', function(){ ordArchive(o); });
+      var n = el('button', 'mini sub', 'やめる'); n.type = 'button'; n.disabled = ordUi.sending;
+      n.addEventListener('click', ordUiClear);
+      box.appendChild(y); box.appendChild(n);
+    }else{
+      box.appendChild(el('p', 'note', '松永さんにこの内容を送ります'));
+      box.appendChild(el('pre', 'msg', cancelText(o)));
+      if(sendMode !== 'chat') box.appendChild(el('p', 'rv-err', '松永さんとのトークから開いてください。'));
+      var go2 = el('button', 'mini', ordUi.sending ? '送っています…' : '取り消しを送る'); go2.type = 'button';
+      go2.disabled = ordUi.sending || sendMode !== 'chat';
+      go2.addEventListener('click', function(){ ordCancel(o); });
+      var no2 = el('button', 'mini sub', 'やめる'); no2.type = 'button'; no2.disabled = ordUi.sending;
+      no2.addEventListener('click', ordUiClear);
+      box.appendChild(go2); box.appendChild(no2);
+    }
+    if(ordUi.err){ var er = el('p', 'rv-err', ordUi.err); er.setAttribute('role', 'alert'); box.appendChild(er); }
+    return box;
   }
   function orderBlock(o){
     var b = el('div', 'ord');
-    var hasConsult = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) === 'consult'; });
+    var hasConsult = !o.canceled && KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) === 'consult'; });
     if(hasConsult) b.classList.add('consult');
+    if(o.canceled) b.classList.add('canceled');
+    var top = el('div', 'ord-top');
     var head = shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '');
-    b.appendChild(el('p', 'ord-h', head));
+    top.appendChild(el('p', 'ord-h', head));
+    var tools = el('div', 'ord-tools');
+    var finished = !!o.canceled || !orderIncomplete(o);
+    if(!finished){
+      var cb = el('button', 'mini sub ord-tool', '取り消しを伝える'); cb.type = 'button';
+      cb.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'cancel', err: '', sending: false }; renderOrders(); });
+      tools.appendChild(cb);
+    }
+    var ab = el('button', 'mini sub ord-tool', '片付ける'); ab.type = 'button';
+    ab.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'archive', err: '', sending: false }; renderOrders(); });
+    tools.appendChild(ab);
+    top.appendChild(tools);
+    b.appendChild(top);
+    if(o.canceled) b.appendChild(el('p', 'ord-cancel', '取り消し'));
+    if(ordUi.id === o.id && ordUi.mode) b.appendChild(ordConfirm(o));
     KINDS.forEach(function(k){
       if(!hasKind(o, k)) return;
       var row = el('div', 'ord-k');
       row.appendChild(el('span', 'ord-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
-      row.appendChild(stBadge(stOf(o, k)));
-      if(stOf(o, k) !== 'done'){
+      if(!o.canceled) row.appendChild(stBadge(stOf(o, k)));
+      if(!o.canceled && stOf(o, k) !== 'done'){
         var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
         bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
         bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh); });
@@ -3519,6 +3597,7 @@ input[type="time"].field{width:auto;min-width:140px}
     v.appendChild(el('h2', 'rv-title', '🐈 松永便のお返事'));
     var o = replyOrderData;
     if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
+    if(o.canceled){ v.appendChild(el('p', 'rv-big', 'このお願いは取り消されました')); return; }
     v.appendChild(el('p', 'rv-big', shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '')));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
     var expired = o.target.date < dateStr(new Date());
