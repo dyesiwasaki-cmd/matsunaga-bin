@@ -1737,6 +1737,26 @@ input[type="time"].field{width:auto;min-width:140px}
     ni.focus();
   }
   var PRIMARY_TAGS = ['鶏肉','豚肉','牛肉','ひき肉','ベーコン','ウィンナー','魚','鮭','さば','まぐろ','エビ','イカ','タコ','卵','豆腐'];
+  // 食べた回数＝履歴の各注文の料理について、その料理の食材タグを数えた合計（おまかせは数えない）。
+  // 食材を押している最中に並びが動かないよう、数え直すのは「開き直した時・送信後・同期で描き直す時」だけ
+  var eatenCache = null;
+  function invalidateEaten(){ eatenCache = null; }
+  function eatenCounts(){
+    if(eatenCache) return eatenCache;
+    var inMenu = {}, c = {};
+    allDishNames().forEach(function(nm){ inMenu[nm] = true; });
+    orderHist.forEach(function(e){
+      if(!e || e.name === OMAKASE || !inMenu[e.name]) return;
+      tagsOf(e.name).forEach(function(t){ c[t] = (c[t] || 0) + 1; });
+    });
+    eatenCache = c;
+    return c;
+  }
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState !== 'visible') return;
+    invalidateEaten();
+    if(!editing && !tagAddOpen) renderFind();
+  });
   function renderFind(){
     var cnt = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){ tagsOf(nm).forEach(function(t){ cnt[t] = (cnt[t] || 0) + 1; }); }); });
@@ -1759,12 +1779,17 @@ input[type="time"].field{width:auto;min-width:140px}
     // 1段目：お肉・お魚・たまご（使われているものだけ・この順・常に全部）／2段目：野菜・その他
     var prim = PRIMARY_TAGS.filter(function(t){ return Object.prototype.hasOwnProperty.call(cnt, t); });
     var restAll = all.filter(function(t){ return prim.indexOf(t) < 0; });
+    var eat = eatenCounts();
+    prim = prim.map(function(t, i){ return { t: t, i: i }; }).sort(function(a, b){ return ((eat[b.t] || 0) - (eat[a.t] || 0)) || (a.i - b.i); }).map(function(x){ return x.t; });
+    restAll.sort(function(a, b){ return (eat[b] || 0) - (eat[a] || 0); });   // 同数は、献立で使われている件数の順のまま
     var top;
     if(editing || tagsOpen) top = restAll.slice();
     else{
       top = restAll.slice(0, 12);
       restAll.slice(12).forEach(function(t){ if(cnt[t] === 0) top.push(t); });
     }
+    // 「にんにく」は「もっと見る」に隠さず、2段目に常に出す（上位12個の枠の外なら、12個の直後に置く）
+    if(!editing && restAll.indexOf('にんにく') >= 0 && top.indexOf('にんにく') < 0) top.splice(Math.min(12, top.length), 0, 'にんにく');
     if(!editing && tagFilter && top.indexOf(tagFilter) < 0 && prim.indexOf(tagFilter) < 0) top.push(tagFilter);
     var box = $('tag-chips'); box.innerHTML = '';
     if(prim.length) box.appendChild(el('p', 'tag-sub', 'お肉・お魚・たまご'));
@@ -2996,7 +3021,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(omakase){ var oe = omakaseEntry(); oe.t = nowT; oe.w = whenBucket(); orderHist.push(oe); newHist.push(oe); }
       dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
-      saveHist(true); syncAppendHist(newHist);
+      saveHist(true); syncAppendHist(newHist); invalidateEaten();
     }catch(err){}
     var line = document.createElement('div'); line.className = 'bubble-line';
     line.innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 36, 32);
@@ -3226,6 +3251,7 @@ input[type="time"].field{width:auto;min-width:140px}
     SYNC_KEYS[k].load();
   }
   function syncRedraw(){
+    invalidateEaten();
     dishes = dishes.filter(function(d){ return menu.some(function(g){ return g[1].indexOf(d) >= 0; }); });
     render(); renderShop(); refresh();
   }
