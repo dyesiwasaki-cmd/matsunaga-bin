@@ -763,7 +763,7 @@ input[type="time"].field{width:auto;min-width:140px}
     '味噌汁': [ G('具', true, ['豆腐','わかめ','ねぎ','油揚げ','なめこ','大根','じゃがいも','玉ねぎ','しじみ']) ],
     'サラダ': [ G('ドレッシング', false, ['和風','ごま','シーザー','フレンチ','青じそ']) ],
     '冷やし中華': [ G('たれ', false, ['醤油','ごまだれ']) ],
-    'アヒージョ': [ G('具材', true, ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー']) ],
+    'アヒージョ': [ G('具材', true, ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー','キャベツ','はんぺん']) ],
     'おでん': [ G('具', true, ['大根','たまご','こんにゃく','しらたき','ちくわ','ちくわぶ','はんぺん','ごぼう天','さつま揚げ','つみれ','厚揚げ','がんもどき','餅巾着','牛すじ','タコ','じゃがいも','ロールキャベツ','結び昆布']) ]
   };
   // 旧版（料理ごとに1つの見出し＋選択肢）の初期設定。移行時にだけ使う
@@ -2967,8 +2967,55 @@ input[type="time"].field{width:auto;min-width:140px}
       syncMark(SEEN_KEY);
     }
     if(changed) saveMenu();
+    var subChanged = mergeSubDefaults();
+    return changed || subChanged;
+  }
+
+  // ---- 初期サブメニューの追加分を、保存済みのサブメニューへ自動で足す ----
+  // 'otetsudai-subopts-seen-v1' に「確認済みの初期選択肢（料理名・見出し・選択肢）」を覚える。
+  // 保存済みの同じ料理・同じ見出しのグループに、未確認で、まだ無い選択肢だけを末尾へ足す。
+  // 利用者が消した選択肢、消した・見出しを変えたグループには足さない。
+  var SUBSEEN_KEY = 'otetsudai-subopts-seen-v1';
+  var SUB_ADDED_NOW = ['アヒージョ	具材	キャベツ', 'アヒージョ	具材	はんぺん'];   // 今回の追加分（初めて動く端末では未確認扱い）
+  function loadSubSeen(){
+    try{
+      var raw = window.localStorage.getItem(SUBSEEN_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(Array.isArray(p) && p.every(function(s){ return typeof s === 'string'; })) return p;
+      }
+    }catch(e){}
+    return null;
+  }
+  function mergeSubDefaults(){
+    var seen = loadSubSeen(), seenSet = {}, allKeys = [], changed = false;
+    Object.keys(SUB_DEFAULT).forEach(function(d){
+      SUB_DEFAULT[d].forEach(function(g){ g.options.forEach(function(o){ allKeys.push(d + '	' + g.label + '	' + o); }); });
+    });
+    if(seen) seen.forEach(function(k){ seenSet[k] = true; });
+    else allKeys.forEach(function(k){ if(SUB_ADDED_NOW.indexOf(k) < 0) seenSet[k] = true; });
+    Object.keys(SUB_DEFAULT).forEach(function(d){
+      if(!hasSub(d)) return;
+      SUB_DEFAULT[d].forEach(function(dg){
+        var mine = null;
+        sub[d].forEach(function(g){ if(!mine && g.label === dg.label) mine = g; });
+        if(!mine) return;
+        dg.options.forEach(function(o){
+          if(seenSet[d + '	' + dg.label + '	' + o] || mine.options.indexOf(o) >= 0) return;
+          mine.options.push(o); changed = true;
+        });
+      });
+    });
+    var union = {}, list = [];
+    (seen || []).concat(allKeys).forEach(function(k){ if(!union[k]){ union[k] = true; list.push(k); } });
+    if(!seen || list.length !== seen.length){
+      try{ window.localStorage.setItem(SUBSEEN_KEY, JSON.stringify(list)); }catch(e){}
+      syncMark(SUBSEEN_KEY);
+    }
+    if(changed) saveSub();
     return changed;
   }
+
 
   // ---- 献立の共有（Google Apps Script 経由。SYNC_URL が空なら何もしない） ----
   var SYNC_KEYS = {};
@@ -2978,6 +3025,7 @@ input[type="time"].field{width:auto;min-width:140px}
   SYNC_KEYS[CUSTOM_KEY] = { get: function(){ return customTags; }, load: function(){ customTags = loadCustom(); } };
   SYNC_KEYS[SHOP_KEY] = { get: function(){ return shop; }, load: function(){ shop = loadShop(); } };
   SYNC_KEYS[HIST_KEY] = { get: function(){ return orderHist; }, load: function(){ orderHist = loadList(HIST_KEY); } };
+  SYNC_KEYS[SUBSEEN_KEY] = { get: function(){ return loadSubSeen() || []; }, load: function(){} };
   SYNC_KEYS[SEEN_KEY] = { get: function(){ return loadSeen() || []; }, load: function(){} };
   SYNC_KEYS[FAV_KEY] = { get: function(){ return favs; }, load: function(){ favs = loadList(FAV_KEY); } };
   var syncVer = {}, syncDirty = {}, syncTimer = 0, syncChain = Promise.resolve();
