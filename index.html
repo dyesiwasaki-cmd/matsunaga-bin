@@ -3751,8 +3751,10 @@ input[type="time"].field{width:auto;min-width:140px}
         any = true;
       }
     }
-    if(!any) return 'チェックか相談を選んでください。';
-    return { changes: changes, kind: hasConsult ? 'consult' : hasDone ? 'done' : 'ack', text: replyHead(o) + '\n' + lines.join('\n') };
+    var free = (rs.free || '').trim();
+    if(!any && !free) return 'チェックか相談、ひとことのどれかを入れてください。';
+    if(free) lines.push('💬 ' + free);
+    return { changes: changes, kind: (hasConsult || !any) ? 'consult' : hasDone ? 'done' : 'ack', text: replyHead(o) + '\n' + lines.join('\n') };
   }
   function renderActions(v, o){
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
@@ -3767,15 +3769,20 @@ input[type="time"].field{width:auto;min-width:140px}
     if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事は松永さんがしてください（押した人の名前で送られます）'));
     var pendingAny = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
     if(!pendingAny) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
-    else{
-      var anySel = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done' && (rs.ok[k] || rs.c[k]); });
-      var sb = rvBtn(v, 'この返事をLINEに送る', false, function(){
-        var r = buildReply(o);
-        if(typeof r === 'string'){ rs.err = r; renderReply(); return; }
-        rs.mode = 'preview'; rs.kind = r.kind; rs.changes = r.changes; rs.text = r.text; rs.err = ''; renderReply();
-      });
-      sb.disabled = !!rs.sending || !anySel;
-    }
+    var anySel = function(){
+      return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done' && (rs.ok[k] || rs.c[k]); }) || !!(rs.free && rs.free.trim());
+    };
+    var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, 'ひとこと（確認したいこと・伝えたいこと）'));
+    var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
+    ft.placeholder = '例：卵が少ないので、明日買ってきますね';
+    fl.appendChild(ft); v.appendChild(fl);
+    var sb = rvBtn(v, 'この返事をLINEに送る', false, function(){
+      var r = buildReply(o);
+      if(typeof r === 'string'){ rs.err = r; renderReply(); return; }
+      rs.mode = 'preview'; rs.kind = r.kind; rs.changes = r.changes; rs.text = r.text; rs.err = ''; renderReply();
+    });
+    sb.disabled = !!rs.sending || !anySel();
+    ft.addEventListener('input', function(){ rs.free = ft.value; sb.disabled = !!rs.sending || !anySel(); });
     v.appendChild(el('p', 'note', 'お返事は、ふつうのトークでも大丈夫です'));
   }
   function plainCard(o, k, canManual){
