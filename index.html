@@ -284,6 +284,8 @@ input[type="time"].field{width:auto;min-width:140px}
 .sheet h2{margin:0 0 4px;font-size:18px}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .cats{display:flex;gap:4px;align-items:flex-end}
+.confirm-cat{display:block;width:72px;height:72px}
+@media (max-width:480px){.confirm-cat{width:60px;height:60px}}
 .sheet p.sub{margin:0 0 10px;color:var(--muted);font-size:13px}
 .msg{white-space:pre-wrap;word-break:break-word;margin:0 0 16px;padding:12px;background:var(--accent-soft);border-left:5px solid var(--accent);border-radius:2px;font-family:inherit;font-size:15px}
 .btns{display:flex;gap:10px}
@@ -310,6 +312,16 @@ input[type="time"].field{width:auto;min-width:140px}
 .qcard[aria-pressed="true"] .qn{color:var(--accent-fg)}
 .qdel{flex:none;width:36px;border:0;border-left:2px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:18px;font-weight:700;cursor:pointer}
 .favrow{margin:2px 0 8px 6px}
+.chips > .inpanel{flex:1 1 100%;min-width:0}
+.inpanel.withtri{position:relative;margin-top:12px}
+.inpanel.withtri::before{content:"";position:absolute;top:-10px;left:var(--tri,24px);margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom:10px solid var(--accent)}
+.sub-title{margin:0 0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
+.recwhy{color:var(--accent)}
+.dgroup{display:inline-flex;align-items:center;max-width:100%}
+.dgroup .chip{min-width:0;overflow-wrap:anywhere}
+.dstar{flex:none;min-width:32px;min-height:32px;margin-left:2px;padding:0;border:0;border-radius:16px;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.dstar[aria-pressed="true"]{color:#d9a400}
+.dstar:active{transform:scale(.9)}
 .favbtn{min-height:40px !important;font-size:13px !important;padding:0 12px !important}
 .addlist{max-height:280px;overflow-y:auto;margin:6px 0;padding:4px 10px;border:2px solid var(--line);border-radius:4px;background:var(--surface)}
 .addcat{margin:8px 0 2px;font-size:12px;font-weight:700;color:var(--accent)}
@@ -317,6 +329,7 @@ input[type="time"].field{width:auto;min-width:140px}
 .checkrow input{flex:none;width:22px;height:22px;accent-color:var(--accent)}
 .tag-add{border-style:dashed;color:var(--accent);font-weight:700}
 #tag-add-panel .row{margin-top:8px}
+.aimark{margin-left:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px;background:var(--accent);color:var(--accent-fg)}
 .head-btns{display:flex;align-items:center;gap:6px;flex:none}
 .sort-btn{min-height:44px;padding:4px 10px;border:2px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font-weight:700;font-size:12px;cursor:pointer}
 .dcnt{position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:1px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:11px;font-weight:700;line-height:16px;text-align:center}
@@ -423,6 +436,10 @@ input[type="time"].field{width:auto;min-width:140px}
     </section>
 
     <section class="sec" id="quick" hidden>
+      <div id="quick-rec" hidden>
+        <h3 class="qh">今日のおすすめ</h3>
+        <div class="cardrow" id="rec-row"></div>
+      </div>
       <div id="quick-fav" hidden>
         <h3 class="qh">お気に入り</h3>
         <div class="cardrow" id="fav-row"></div>
@@ -567,7 +584,7 @@ input[type="time"].field{width:auto;min-width:140px}
 <div class="scrim" id="scrim">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
     <div class="sheet-in">
-      <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"></div></div>
+      <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"><img class="confirm-cat" src="cat-icons/confirm-160.png" width="72" height="72" alt=""></div></div>
       <p class="sub">内容をご確認ください。</p>
       <div id="sheet-people" style="margin-bottom:12px" hidden>
       <div class="row">
@@ -603,7 +620,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var SYNC_URL = '';
 
   var MENU = [
-    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
+    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
     ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ']],
     ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し']],
     ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺']],
@@ -617,7 +634,7 @@ input[type="time"].field{width:auto;min-width:140px}
 
   var dishes = [];   // 選択順を保持
   var usual = false;   // いつもの掃除
-  var people = 1, daigo = false;
+  var people = 1, daigo = false, daigoAuto = false;   // daigoAuto: 「大吾くんもいる」で人数を自動で1→2にした
   var when = '夜';
   var tab = 'meal';
 
@@ -865,6 +882,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function subPanel(name){
     pruneSub(name);
     var wrap = el('div', 'subwrap');
+    wrap.appendChild(el('p', 'sub-title', name + 'の種類'));
     visibleGroups(name).forEach(function(g){
       var box = el('div', 'subbox');
       box.setAttribute('role', 'group');
@@ -1218,6 +1236,7 @@ input[type="time"].field{width:auto;min-width:140px}
     '枝豆': ['枝豆'],
     '茶碗蒸し': ['卵','鶏肉','きのこ'],
     'お好み焼き': ['キャベツ','豚肉','卵'],
+    'もんじゃ焼き': ['キャベツ','小麦粉','桜えび','天かす'],
     '焼き鳥': ['鶏肉','ねぎ'],
     'たこ焼き': ['たこ','ねぎ'],
     '鶏そぼろ': ['鶏肉','卵','ご飯'],
@@ -1469,6 +1488,47 @@ input[type="time"].field{width:auto;min-width:140px}
     ni.type = 'text'; ni.maxLength = 16; ni.autocomplete = 'off'; ni.placeholder = '例：しいたけ';
     nl.appendChild(ni);
     p.appendChild(nl);
+    // AIまたは名前の一致で、この食材を使う料理を自動で選ぶ（最終的に「追加」を押すのは人）
+    var aiRow = el('div', 'row');
+    var aiBtn = el('button', 'mini sub', SYNC_URL ? 'AIに選んでもらう' : '名前で料理を選ぶ'); aiBtn.type = 'button';
+    aiRow.appendChild(aiBtn); p.appendChild(aiRow);
+    var aiNote = el('p', 'note'); aiNote.setAttribute('role', 'status'); p.appendChild(aiNote);
+    var myTa = tagAdd, lastAutoV = '', aiSeq = 0;
+    if(!tagAdd.ai) tagAdd.ai = {};
+    function nameHit(nm, nv){
+      if(normText(nm).indexOf(nv) >= 0) return true;
+      return (hasSub(nm) ? sub[nm] : []).some(function(g){
+        return g.options.some(function(o){ return normText(o).indexOf(nv) >= 0; });
+      });
+    }
+    function runPick(){
+      var v = stripHash(ni.value);
+      if(!v){ err.textContent = '食材名を入力してください。'; ni.focus(); return; }
+      err.textContent = ''; lastAutoV = v;
+      var nv = normText(v), dn = allDishNames();
+      dn.forEach(function(nm){ if(nameHit(nm, nv)) tagAdd.picked[nm] = true; });
+      paintList(); updCount();
+      if(!SYNC_URL){ aiNote.textContent = ''; return; }
+      var my = ++aiSeq;
+      aiNote.textContent = 'AIが考えています…'; aiBtn.disabled = true;
+      syncPost({ action: 'aiMatchIngredient', ingredient: v, dishes: dn.filter(function(nm){ return nm.length <= 40; }).slice(0, 400) }).then(function(res){
+        if(my !== aiSeq || tagAdd !== myTa) return;
+        aiBtn.disabled = false;
+        if(!res || !res.ok || !Array.isArray(res.dishes)) throw new Error((res && res.error) || '');
+        var added = 0;
+        res.dishes.forEach(function(nm){
+          if(dn.indexOf(nm) >= 0 && !tagAdd.picked[nm]){ tagAdd.picked[nm] = true; tagAdd.ai[nm] = true; added++; }
+        });
+        aiNote.textContent = 'AIが' + added + '品を選びました（チェックは外せます）。';
+        paintList(); updCount();
+      }).catch(function(e){
+        if(my !== aiSeq || tagAdd !== myTa) return;
+        aiBtn.disabled = false;
+        var why = e && e.message && !/^(HTTP|Failed|NetworkError|Load failed)/.test(e.message) ? '　理由：' + e.message : '';
+        aiNote.textContent = 'AIの提案を受け取れませんでした（名前が一致する料理だけ選んでいます）' + why;
+      });
+    }
+    aiBtn.addEventListener('click', runPick);
     p.appendChild(el('p', 'sub-h', 'この食材を使う料理（選ばなくても登録できます）'));
     var si = el('input', 'field');
     si.type = 'search'; si.autocomplete = 'off'; si.placeholder = '料理名で絞り込む';
@@ -1499,6 +1559,7 @@ input[type="time"].field{width:auto;min-width:140px}
             updCount();
           });
           lab.appendChild(cb); lab.appendChild(el('span', null, nm));
+          if(tagAdd.ai && tagAdd.ai[nm] && tagAdd.picked[nm]) lab.appendChild(el('span', 'aimark', 'AI'));
           list.appendChild(lab);
         });
       });
@@ -1530,7 +1591,11 @@ input[type="time"].field{width:auto;min-width:140px}
       setTagNote(note); render(); focusAddChip();
     }
     ni.addEventListener('keydown', function(e){
-      if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); doAdd(); }
+      if(e.key === 'Enter' && !e.isComposing){
+        e.preventDefault();
+        if(stripHash(ni.value) && stripHash(ni.value) !== lastAutoV) runPick();   // 1回目のEnterで自動選択、もう一度Enterで追加
+        else doAdd();
+      }
     });
     var row = el('div', 'row');
     var ab = el('button', 'mini', '追加'); ab.type = 'button';
@@ -1742,9 +1807,9 @@ input[type="time"].field{width:auto;min-width:140px}
     var b = el('button', 'qcard'); b.type = 'button';
     b.dataset.qrow = row; b.dataset.qkey = keyOf(e);
     b.setAttribute('aria-pressed', isPressed(e) ? 'true' : 'false');
-    var text = row === 'freq' ? e.name : labelFor(e.name, fe.sel, fe.other);
+    var text = (row === 'freq' || row === 'rec') ? e.name : labelFor(e.name, fe.sel, fe.other);
     b.appendChild(el('span', 'qt', text));
-    if(extra) b.appendChild(el('small', 'qn', extra));
+    if(extra) b.appendChild(el('small', row === 'rec' ? 'qn recwhy' : 'qn', extra));
     b.addEventListener('click', function(){ applyEntry(e); focusCard(row, keyOf(e)); });
     item.appendChild(b);
     if(row === 'fav'){
@@ -1755,11 +1820,66 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     return item;
   }
+  // ---- 今日のおすすめ（履歴から計算。AIは使わない） ----
+  function hourBucket(h){ return h < 10 ? '朝' : h < 15 ? '昼' : '夜'; }
+  // いま選ばれている「いつ」を 朝／昼／夜 にする（すぐに・時間指定は時刻から）
+  function whenBucket(){
+    if(when === '朝' || when === '昼' || when === '夜') return when;
+    var h = new Date().getHours();
+    if(when === '時間指定'){ var m = /^(\d{1,2}):/.exec($('meal-time').value || ''); if(m) h = +m[1]; }
+    return hourBucket(h);
+  }
+  function recommend(){
+    if(orderHist.length < 5) return [];
+    var DAY = 86400000, now = Date.now(), bucket = whenBucket();
+    var info = {}, order = [];
+    orderHist.forEach(function(e, i){
+      var x = info[e.name];
+      if(!x){ x = info[e.name] = { n: 0, last: 0, idx: i, w: {} }; order.push(e.name); }
+      x.n++; x.idx = i;
+      if(typeof e.t === 'number' && e.t > x.last) x.last = e.t;
+      var w = e.w || (typeof e.t === 'number' ? hourBucket(new Date(e.t).getHours()) : '');
+      if(w) x.w[w] = (x.w[w] || 0) + 1;
+    });
+    var excl = {};   // 直近2日に頼んだ料理は除く
+    orderHist.forEach(function(e){ if(typeof e.t === 'number' && e.t > now - 2 * DAY) excl[e.name] = true; });
+    var byCount = order.slice().sort(function(a, b){ return (info[b].n - info[a].n) || (info[b].idx - info[a].idx); });
+    var favTop = {};
+    byCount.slice(0, 5).forEach(function(nm){ if(info[nm].n >= 2) favTop[nm] = true; });
+    var cands = order.filter(function(nm){ return menuHas(nm) && !excl[nm]; }).map(function(nm){
+      var x = info[nm], tc = x.w[bucket] || 0, s = tc * 3, why = '';
+      if(favTop[nm] && x.last && now - x.last >= 5 * DAY){ s += 6; why = 'しばらく頼んでいません'; }
+      if(!why && tc >= 2) why = bucket + 'によく頼む';
+      if(!why) why = tc ? bucket + 'に頼んだことがあります' : '×' + x.n + '回頼んでいます';
+      return { nm: nm, s: s, why: why };
+    }).sort(function(a, b){ return (b.s - a.s) || (info[b.nm].n - info[a.nm].n) || (info[b.nm].idx - info[a.nm].idx); });
+    var out = [], used = {};
+    function addOld(c){ used[c.nm] = true; out.push({ e: orderHist[info[c.nm].idx], why: c.why }); }
+    cands.forEach(function(c){ if(out.length < 4 && c.s > 0) addOld(c); });
+    // 好きな食材から、まだ頼んでいない料理を1品
+    var tagCount = {};
+    orderHist.forEach(function(e){ tagsOf(e.name).forEach(function(t){ tagCount[t] = (tagCount[t] || 0) + 1; }); });
+    var topTags = Object.keys(tagCount).sort(function(a, b){ return tagCount[b] - tagCount[a]; }).slice(0, 5);
+    var day = Math.floor(now / DAY), picked = null;
+    for(var ti = 0; ti < topTags.length && !picked; ti++){
+      var tg = topTags[ti];
+      var cs = allDishNames().filter(function(nm){ return !info[nm] && tagsOf(nm).indexOf(tg) >= 0; });
+      if(cs.length) picked = { name: cs[day % cs.length], tag: tg };
+    }
+    if(picked) out.push({ e: { name: picked.name, sel: {}, other: {} }, why: '#' + picked.tag + ' がお好きなら' });
+    // 3品に満たないときは、残りの候補で埋める
+    cands.forEach(function(c){ if(out.length < 3 && !used[c.nm]) addOld(c); });
+    return out.slice(0, 5);
+  }
   function renderQuick(){
     var sec = $('quick');
     var empty = !favs.length && !orderHist.length;
     sec.hidden = editing || (empty && $('fav-undo').hidden);
     if(editing) return;
+    // 今日のおすすめ
+    var rcs = recommend(), rcr = $('rec-row'); rcr.innerHTML = '';
+    rcs.forEach(function(r){ rcr.appendChild(qCard(r.e, 'rec', r.why)); });
+    $('quick-rec').hidden = !rcs.length;
     // お気に入り
     var fr = $('fav-row'); fr.innerHTML = '';
     favs.slice().reverse().forEach(function(e){ fr.appendChild(qCard(e, 'fav')); });
@@ -1903,6 +2023,67 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sort-toggle').focus();
   });
 
+  // 料理チップのすぐ後ろに入れるパネルの印（幅いっぱい・三角つき）
+  function inPanel(p, name, kind){
+    p.classList.add('inpanel');
+    if(kind){ p.classList.add('withtri'); p.dataset.kind = kind; }
+    p.dataset.for = name;
+    return p;
+  }
+  function placeTriangles(){
+    var ps = menuEl.querySelectorAll('.inpanel.withtri');
+    for(var i = 0; i < ps.length; i++){
+      var p = ps[i], prev = p.previousElementSibling;
+      while(prev && prev.classList.contains('inpanel')) prev = prev.previousElementSibling;
+      if(!prev) continue;
+      var t = prev;
+      if(p.dataset.kind === 'chip') t = prev.querySelector('.chip[data-v]') || prev;
+      else if(p.dataset.kind === 'sub') t = prev.querySelector('[data-subbtn]') || prev;
+      else if(p.dataset.kind === 'tag') t = prev.querySelector('[data-tagbtn]') || prev;
+      var tr = t.getBoundingClientRect(), pr = p.getBoundingClientRect();
+      p.style.setProperty('--tri', Math.max(14, Math.round(tr.left + tr.width / 2 - pr.left)) + 'px');
+    }
+  }
+  window.addEventListener('resize', placeTriangles);
+  // 開いたパネルが画面の下に隠れるときは、押したチップが見える範囲でスクロールする
+  function revealPanel(name){
+    var p = null, chip = null, ps = menuEl.querySelectorAll('.inpanel'), cs = menuEl.querySelectorAll('.chip[data-v]'), i;
+    for(i = 0; i < ps.length; i++) if(ps[i].dataset['for'] === name){ p = ps[i]; break; }
+    for(i = 0; i < cs.length; i++) if(cs[i].dataset.v === name){ chip = cs[i]; break; }
+    if(!p || !chip) return;
+    var bar = document.querySelector('.bar'), bh = bar ? bar.offsetHeight : 0;
+    var need = p.getBoundingClientRect().bottom - (window.innerHeight - bh - 8);
+    var d = Math.min(need, chip.getBoundingClientRect().top - 8);
+    if(d > 0) window.scrollBy({ top: d, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  // 料理チップの右の☆ボタン（その料理のお気に入りが1件以上あれば★）
+  function dishStar(name){
+    var has = favs.some(function(f){ return f.name === name; });
+    var b = el('button', 'dstar', has ? '\u2605' : '\u2606'); b.type = 'button';
+    b.dataset.star = name;
+    b.setAttribute('aria-pressed', has ? 'true' : 'false');
+    b.setAttribute('aria-label', has ? '\u300c' + name + '\u300d\u306e\u304a\u6c17\u306b\u5165\u308a\u3092\u3059\u3079\u3066\u5916\u3059' : '\u300c' + name + '\u300d\u3092\u304a\u6c17\u306b\u5165\u308a\u306b\u3059\u308b');
+    b.addEventListener('click', function(){
+      if(has){
+        hideFavUndo();
+        favSnap = clone(favs);
+        favs = favs.filter(function(f){ return f.name !== name; });
+        saveFav(); render();
+        $('fav-undo-text').textContent = '\u300c' + name + '\u300d\u306e\u304a\u6c17\u306b\u5165\u308a\u3092\u3059\u3079\u3066\u5916\u3057\u307e\u3057\u305f\u3002';
+        $('fav-undo').hidden = false;
+        renderQuick();
+        favTimer = setTimeout(function(){ hideFavUndo(); renderQuick(); }, 8000);
+      }else{
+        var e = snapFor(name), k = keyOf(e);
+        if(!favs.some(function(f){ return keyOf(f) === k; })){ e.t = Date.now(); favs.push(e); saveFav(); }
+        render();
+      }
+      var bs = menuEl.querySelectorAll('button[data-star]');
+      for(var i = 0; i < bs.length; i++) if(bs[i].dataset.star === name){ bs[i].focus(); break; }
+    });
+    return b;
+  }
+
   // メニュー表を描画
   function render(){
     Object.keys(subSel).forEach(function(k){
@@ -1986,6 +2167,8 @@ input[type="time"].field{width:auto;min-width:140px}
           x.addEventListener('click', function(){ deleteDish(gi, name); });
           it.appendChild(x);
           box.appendChild(it);
+          if(subEditOpen[name]) box.appendChild(inPanel(subEditPanel(name), name, 'sub'));
+          if(tagEditOpen[name]) box.appendChild(inPanel(tagEditPanel(name), name, 'tag'));
           return;
         }
         var b = el('button', 'chip', name);
@@ -2004,20 +2187,16 @@ input[type="time"].field{width:auto;min-width:140px}
           if(hasSub(name)){
             if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
             render(); focusDishChip(name);
+            if(dishes.indexOf(name) >= 0) revealPanel(name);
           }
           refresh();
         });
-        box.appendChild(b);
-      });
-      menuEl.appendChild(box);
-      names.forEach(function(name){
-        if(editing){
-          if(subEditOpen[name]) menuEl.appendChild(subEditPanel(name));
-          if(tagEditOpen[name]) menuEl.appendChild(tagEditPanel(name));
-        }else if(dishes.indexOf(name) >= 0){
-          menuEl.appendChild(hasSub(name) && sub[name].length ? subPanel(name) : favRow(name));
+        var gp = el('span', 'dgroup'); gp.appendChild(b); gp.appendChild(dishStar(name)); box.appendChild(gp);
+        if(dishes.indexOf(name) >= 0){
+          box.appendChild(hasSub(name) && sub[name].length ? inPanel(subPanel(name), name, 'chip') : inPanel(favRow(name), name, ''));
         }
       });
+      menuEl.appendChild(box);
       if(editing){
         var row = el('div', 'add-row');
         var inp = el('input', 'field');
@@ -2037,6 +2216,7 @@ input[type="time"].field{width:auto;min-width:140px}
     });
     renderFind();
     renderQuick();
+    placeTriangles();
   }
 
   function setMsg(t){ $('edit-msg').textContent = t; }
@@ -2058,12 +2238,37 @@ input[type="time"].field{width:auto;min-width:140px}
     showUndo('「' + name + '」を削除しました。');
     focusAdd(gi);
   }
+  // 新しい料理に、AI（共有用のGAS経由）で食材のタグを自動で付ける。失敗したら何もしない
+  function aiTagNew(name){
+    if(!SYNC_URL || tagsOf(name).length) return;
+    var known = {};
+    allDishNames().forEach(function(nm){ tagsOf(nm).forEach(function(t){ known[t] = true; }); });
+    customTags.forEach(function(t){ known[t] = true; });
+    syncPost({ action: 'aiTagDish', dish: name, knownTags: Object.keys(known).slice(0, 300) }).then(function(res){
+      if(!res || !res.ok || !Array.isArray(res.tags)) return;
+      var t = res.tags.map(stripHash).filter(function(x){ return x; }).slice(0, 6);
+      if(!t.length) return;
+      if(!menu.some(function(g){ return g[1].indexOf(name) >= 0; })) return;   // 途中で消された
+      if(tagsOf(name).length) return;                                         // 途中で人がタグを付けた
+      tags[name] = t; saveTags();
+      var msg = 'AIが食材のタグを付けました（タグから直せます）';
+      setMsg(msg);
+      setTimeout(function(){ if($('edit-msg').textContent === msg) setMsg(''); }, 6000);
+      var tries = 0;
+      (function paint(){
+        var ae = document.activeElement;
+        if(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && tries++ < 10){ setTimeout(paint, 1000); return; }   // 入力中は描き直さない
+        render();
+      })();
+    }).catch(function(){});
+  }
   function addDish(gi, raw){
     var v = raw.trim();
     if(!v){ setMsg('料理名を入力してください。'); focusAdd(gi); return; }
     if(menu[gi][1].indexOf(v) >= 0){ setMsg('「' + v + '」は「' + menu[gi][0] + '」に入っています。'); focusAdd(gi); return; }
     hideUndo();
     menu[gi][1].push(v); saveMenu(); setMsg(''); render(); focusAdd(gi);
+    aiTagNew(v);
   }
   function addCat(){
     var inp = $('cat-add-input'), v = inp.value.trim();
@@ -2135,6 +2340,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var whenBtns = document.querySelectorAll('#when-group .chip');
   function setWhen(v){
     when = v;
+    renderQuick();
     $('meal-time-row').hidden = when !== '時間指定';
     Array.prototype.forEach.call(whenBtns, function(x){
       var on = x.dataset.v === v;
@@ -2142,6 +2348,7 @@ input[type="time"].field{width:auto;min-width:140px}
       x.setAttribute('aria-checked', on ? 'true':'false');
     });
   }
+  $('meal-time').addEventListener('change', function(){ renderQuick(); });
   Array.prototype.forEach.call(whenBtns, function(b){
     b.addEventListener('click', function(){ setWhen(b.dataset.v); });
   });
@@ -2167,10 +2374,13 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sheet-msg').textContent = pending;
   }
   $('daigo').addEventListener('click', function(){
-    daigo = !daigo; this.setAttribute('aria-pressed', daigo ? 'true' : 'false'); updateSheetMsg();
+    daigo = !daigo; this.setAttribute('aria-pressed', daigo ? 'true' : 'false');
+    if(daigo){ if(people === 1){ people = 2; daigoAuto = true; } else daigoAuto = false; }
+    else{ if(daigoAuto && people === 2) people = 1; daigoAuto = false; }
+    refresh(); updateSheetMsg();
   });
-  $('people-minus').addEventListener('click', function(){ if(people>1){ people--; refresh(); updateSheetMsg(); } });
-  $('people-plus').addEventListener('click', function(){ if(people<20){ people++; refresh(); updateSheetMsg(); } });
+  $('people-minus').addEventListener('click', function(){ if(people>1){ people--; daigoAuto = false; refresh(); updateSheetMsg(); } });
+  $('people-plus').addEventListener('click', function(){ if(people<20){ people++; daigoAuto = false; refresh(); updateSheetMsg(); } });
 
   $('free-dish').addEventListener('input', refresh);
 
@@ -2442,7 +2652,6 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sheet-people').hidden = mealCount() === 0;
     showSheetErr('');
     $('sheet-msg').textContent = pending;
-    $('sheet-cats').innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 44, 39);
     lastFocus = document.activeElement;
     scrim.classList.add('open');
     $('sheet-send').focus();
@@ -2495,7 +2704,7 @@ input[type="time"].field{width:auto;min-width:140px}
     try{
       var nowT = Date.now();
       var newHist = [];
-      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; orderHist.push(he); newHist.push(he); });
+      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
       saveHist(true); syncAppendHist(newHist);
     }catch(err){}
@@ -2510,7 +2719,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; daigo = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = '夜';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
@@ -2572,7 +2781,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // 保存済みの献立にも無い料理だけを足す（利用者が削除・名前変更した料理は確認済みなので戻らない）。
   // 初めてこの仕組みが動く端末では、今回追加した料理以外を確認済みとみなす。
   var SEEN_KEY = 'otetsudai-menu-seen-v1';
-  var MENU_ADDED_NOW = ['お好み焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼','おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー'];
+  var MENU_ADDED_NOW = ['お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼','おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー'];
   function loadSeen(){
     try{
       var raw = window.localStorage.getItem(SEEN_KEY);
@@ -2600,7 +2809,9 @@ input[type="time"].field{width:auto;min-width:140px}
           for(var j = di - 1; j >= 0; j--){ var pi = catIndex(MENU[j][0]); if(pi >= 0){ at = pi + 1; break; } }
           menu.splice(at, 0, [dg[0], []]); gi = at;
         }
-        menu[gi][1].push(n); present[n] = true; changed = true;
+        var arr = menu[gi][1], pos = arr.length, di2 = dg[1].indexOf(n);
+        for(var j2 = di2 - 1; j2 >= 0; j2--){ var pj = arr.indexOf(dg[1][j2]); if(pj >= 0){ pos = pj + 1; break; } }
+        arr.splice(pos, 0, n); present[n] = true; changed = true;
       });
     });
     var union = {}, list = [];
