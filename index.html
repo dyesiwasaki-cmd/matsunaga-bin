@@ -163,6 +163,9 @@ button,input,textarea{font:inherit;color:inherit}
 .rv-lab>span{display:block;margin-bottom:4px;overflow-wrap:anywhere}
 .rv-lab .field{display:block;width:100%;max-width:100%;box-sizing:border-box;min-width:0;margin-top:0}
 .sheet-send-sub{margin-top:8px;width:100%}
+.update-bar{position:sticky;top:0;z-index:40;margin:0 0 8px;border-radius:8px;background:var(--accent);color:var(--accent-fg)}
+.update-bar[hidden]{display:none}
+.update-bar button{display:block;width:100%;min-height:40px;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer}
 .souta{position:relative;margin:0 0 12px;padding:10px 40px 10px 12px;border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--fg)}
 .souta[hidden]{display:none}
 .souta-head{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:12px;font-weight:700;color:var(--accent)}
@@ -345,7 +348,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-btn:disabled{opacity:.5;cursor:not-allowed}
 .rv-ok{margin:8px 0;padding:8px 12px;border-left:4px solid var(--ok,#2e7d32);background:var(--accent-soft);font-weight:700}
 .rv-err{margin:8px 0;color:var(--bad,#c62828);font-weight:700}
-body.reply-mode .wrap > *:not(#reply-view):not(.titlebar){display:none !important}
+body.reply-mode .wrap > *:not(#reply-view):not(.titlebar):not(#update-bar){display:none !important}
 body.reply-mode .bar,body.reply-mode .totop{display:none !important}
 .tab .badge{
   min-width:22px;height:22px;padding:0 6px;border-radius:11px;font-size:13px;line-height:22px;
@@ -586,6 +589,7 @@ input[type="time"].field{width:auto;min-width:140px}
 </g></symbol></svg>
 
 <div class="wrap">
+  <div class="update-bar" id="update-bar" role="status" hidden><button type="button" id="update-go">新しい版があります（開き直す）</button></div>
   <div class="souta" id="souta-card" role="note" hidden>
     <div class="souta-head"><img class="souta-icon" src="cat-icons/souta-160.png" width="32" height="32" alt=""><span>執事 颯太より</span><span class="souta-test" id="souta-test" hidden>試し表示</span></div>
     <p class="souta-text" id="souta-text"></p>
@@ -856,6 +860,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
+  var APP_VER = 44;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -5061,6 +5066,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     ordersRefresh();
     try{ soutaTry(); }catch(e){}
+    verCheck();   // LIFF の初期化が済んでから版を確かめる
   }
   // 頼んだ人の呼び名（依頼に保存した LINE の表示名。無い時は「頼んだ方」）
   function ordName(o){ var n = o && o.ordererName ? String(o.ordererName).trim() : ''; return n ? n + 'さん' : '頼んだ方'; }
@@ -6005,6 +6011,57 @@ input[type="time"].field{width:auto;min-width:140px}
     try{ window.localStorage.setItem(SOUTA_CLOSE_KEY, jstToday()); }catch(e){}
   });
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') soutaTry(); });
+
+  // ---- 版の自動確認：古い画面なら、新しい版へ1回だけ自動で開き直す（だめなら帯） ----
+  var VER_KEY = 'otetsudai-ver-tried-v1', verBusy = false, verLast = 0, verNew = 0;
+  // 今の URL を基に、v だけ新しい番号にする。reply・answer・proto・debug・souta・liff.state 由来のクエリとハッシュはそのまま
+  function verUrl(nv){
+    var q = new URLSearchParams(location.search), st = q.get('liff.state');
+    if(q.has('v') || !st) q.set('v', String(nv));
+    if(st){
+      var inner = new URLSearchParams(st.charAt(0) === '?' ? st.slice(1) : st);
+      inner.set('v', String(nv));
+      q.set('liff.state', '?' + inner.toString());
+    }
+    return location.pathname + '?' + q.toString() + location.hash;
+  }
+  function verTyping(){
+    try{
+      if($('scrim').classList.contains('open') || rs.sending || sending) return true;
+      var ae = document.activeElement;
+      if(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return true;
+      if(replyId){
+        var fs = $('reply-view').querySelectorAll('input, textarea');
+        for(var i = 0; i < fs.length; i++) if(String(fs[i].value || '').trim()) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  function verGo(nv){
+    try{ window.sessionStorage.setItem(VER_KEY, String(nv)); }catch(e){}
+    location.replace(verUrl(nv));
+  }
+  function verShowBar(nv){ verNew = nv; $('update-bar').hidden = false; }
+  function verCheck(){
+    if(verBusy) return;
+    verBusy = true; verLast = Date.now();
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){
+        var sv = Number(j && j.v);
+        if(!(sv > APP_VER)){ $('update-bar').hidden = true; return; }
+        var tried = 0;
+        try{ tried = Number(window.sessionStorage.getItem(VER_KEY)) || 0; }catch(e){ tried = sv; }   // 記録できない時は自動で開き直さない（ループ防止）
+        if(tried >= sv || verTyping()){ verShowBar(sv); return; }
+        verGo(sv);
+      })
+      .catch(function(){})   // version.json が取れない時は何もしない
+      .then(function(){ verBusy = false; });
+  }
+  $('update-go').addEventListener('click', function(){ if(verNew) verGo(verNew); });
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && liffReady && Date.now() - verLast >= 10 * 60 * 1000) verCheck();
+  });
 
   // ---- 下書き（頼む画面の選択を端末に自動で残し、開き直した時に戻す） ----
   var DRAFT_KEY = 'otetsudai-draft-v1', draftTimer = 0, draftRestoring = false;
