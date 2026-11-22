@@ -1018,7 +1018,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 57;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 58;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3341,7 +3341,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var REC_CATS = { '朝': ['ご飯もの', '汁物', '副菜'], '昼': ['麺類', '丼もの'], '夜': ['和食', '洋食', '中華', '韓国', '鍋'] };
   var REC_WHY = { '朝': '朝ごはんにどうぞ', '昼': 'お昼にどうぞ', '夜': '夜の定番' };
   function recSupplement(out){
-    var DAY = 86400000, now = Date.now(), bucket = whenBucket(), day = jstToday();
+    var DAY = 86400000, now = Date.now(), bucket = whenBucket(), day = shunToday();
     var seed = String(day.y * 10000 + day.m * 100 + day.d) + bucket;
     var used = {}, recent = {}, shown = {}, cat = {};
     out.forEach(function(o){ used[o.e.name] = true; });
@@ -3433,7 +3433,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var SHUN = {"1":["白菜","大根","ほうれん草","小松菜","ごぼう","れんこん","ぶり","かに","たこ","わかめ","みかん","りんご","いちご","キウイ"],"2":["白菜","大根","ほうれん草","小松菜","ごぼう","れんこん","ぶり","かに","わかめ","あさり","いちご","グレープフルーツ","キウイ","みかん"],"3":["キャベツ","たけのこ","ほうれん草","小松菜","わかめ","あさり","しらす","桜えび","いちご","グレープフルーツ","オレンジ","キウイ"],"4":["キャベツ","たけのこ","玉ねぎ","わかめ","あさり","しらす","桜えび","いちご","グレープフルーツ","オレンジ","キウイ","にら"],"5":["キャベツ","たけのこ","玉ねぎ","じゃがいも","あさり","わかめ","しらす","いちご","メロン","オレンジ","グレープフルーツ","にら","レタス"],"6":["トマト","きゅうり","なす","ピーマン","じゃがいも","枝豆","みょうが","あじ","たこ","メロン","桃","レタス"],"7":["トマト","きゅうり","なす","ピーマン","コーン","枝豆","みょうが","かぼちゃ","あじ","うなぎ","たこ","メロン","桃"],"8":["トマト","きゅうり","なす","ピーマン","コーン","枝豆","みょうが","かぼちゃ","あじ","うなぎ","桃","梨","ぶどう","メロン"],"9":["さつまいも","栗","きのこ","なす","かぼちゃ","さば","いわし","鮭","まぐろ","梨","ぶどう","りんご","山芋"],"10":["さつまいも","栗","きのこ","山芋","かぼちゃ","鮭","さば","いわし","じゃがいも","梨","ぶどう","りんご","れんこん"],"11":["白菜","大根","ほうれん草","小松菜","れんこん","ごぼう","さつまいも","きのこ","鮭","ぶり","かに","りんご","みかん","キウイ"],"12":["白菜","大根","ほうれん草","小松菜","れんこん","ごぼう","ぶり","かに","たこ","みかん","りんご","いちご","キウイ"]};
   var SHUN_KEY = 'otetsudai-shun-v1', shunClosed = false;
   try{ shunClosed = window.localStorage.getItem(SHUN_KEY) === '0'; }catch(e){}
-  function jstToday(){
+  function shunToday(){
     try{
       var m = /(\d+)-(\d+)-(\d+)/.exec(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
       if(m) return { y: +m[1], m: +m[2], d: +m[3] };
@@ -3444,12 +3444,12 @@ input[type="time"].field{width:auto;min-width:140px}
     try{   // 試作の確認用：?proto=1&month=3
       if(isProtoUrl()){ var mm = parseInt(new URLSearchParams(location.search).get('month'), 10); if(mm >= 1 && mm <= 12) return mm; }
     }catch(e){}
-    return jstToday().m;
+    return shunToday().m;
   }
   function strHash(str){ var h = 7; for(var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100003; return h; }
   // 旬の食材タグを持つ料理（果物の分類は、旬の果物のタグを持つものだけ）。ひっかかった数の多い順→よく頼む順（日付で少し入れ替え）
   function shunPick(mon){
-    var ts = SHUN[mon] || [], day = jstToday(), seed = String(day.y * 10000 + day.m * 100 + day.d);
+    var ts = SHUN[mon] || [], day = shunToday(), seed = String(day.y * 10000 + day.m * 100 + day.d);
     var hc = {}; orderHist.forEach(function(he){ hc[he.name] = (hc[he.name] || 0) + 1; });
     var tagCnt = {}, list = [], seen = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){
