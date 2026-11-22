@@ -410,19 +410,21 @@ body.reply-mode .bar,body.reply-mode .totop{display:none !important}
 .dgrid > .inpanel{grid-column:1 / -1;min-width:0}
 .dgrid .dgroup{display:block;position:relative;min-width:0;max-width:none}
 .chip.tile{display:flex;flex-direction:column;align-items:stretch;width:100%;min-width:0;min-height:0;padding:0;overflow:hidden;border-radius:10px;text-align:center;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
-.chip.tile .tmedia{position:relative;display:block;width:100%;padding-top:75%;background:var(--accent-soft)}
+.chip.tile .tmedia{position:relative;display:block;width:100%;padding-top:100%;background:var(--accent-soft)}
 .chip.tile .tphoto{position:absolute;inset:0;display:block;overflow:hidden}
 .chip.tile .tphoto img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
-.tcard{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:34px;font-weight:700;line-height:1;background:hsl(var(--h,160) 42% 85%);color:hsl(var(--h,160) 55% 24%)}
+.tcard{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:38px;font-weight:700;line-height:1;background:hsl(var(--h,160) 42% 85%);color:hsl(var(--h,160) 55% 24%)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tcard{background:hsl(var(--h,160) 28% 26%);color:hsl(var(--h,160) 60% 84%)}}
 :root[data-theme="dark"] .tcard{background:hsl(var(--h,160) 28% 26%);color:hsl(var(--h,160) 60% 84%)}
-.chip.tile .tname{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:4px 4px 6px;font-size:13px;line-height:1.3;min-height:calc(2.6em + 10px);overflow-wrap:anywhere;word-break:break-all}
+.chip.tile .tname{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 4px 4px;font-size:13px;line-height:1.25;min-height:calc(2.5em + 7px)}
+.chip.tile .tname.long{font-size:12px}
+.chip.tile .tname .tt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%;overflow-wrap:break-word;word-break:normal;text-wrap:balance}
 .chip.tile .dcnt{top:auto;right:4px;bottom:4px;z-index:1}
 .chip.tile[aria-pressed="true"]{padding:0;transform:none;border-color:var(--accent);background:var(--accent-soft);color:var(--fg);box-shadow:0 0 0 3px var(--accent)}
 .chip.tile[aria-pressed="true"] .tname{font-weight:700;color:var(--accent)}
 .chip.tile[aria-pressed="true"]::before{left:6px;top:6px;transform:none;z-index:2;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:15px;line-height:1}
 .chip.tile:active{transform:none;filter:brightness(.94)}
-.dgrid .dstar{position:absolute;top:4px;right:4px;z-index:3;width:30px;height:30px;min-width:30px;min-height:30px;margin:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);font-size:17px}
+.dgrid .dstar{position:absolute;top:4px;right:4px;z-index:3;width:27px;height:27px;min-width:27px;min-height:27px;margin:0;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);font-size:15px;line-height:1}
 .rd-gridzone{align-items:start}
 .rd-gridzone .rd-item{display:block;min-width:0;max-width:100%}
 .rd-gridzone .rd-caret{width:auto;min-height:60px;border:3px dashed var(--accent);border-radius:10px;background:var(--accent-soft)}
@@ -999,7 +1001,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 52;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 53;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1646,7 +1648,9 @@ input[type="time"].field{width:auto;min-width:140px}
   function tileFill(btn, name){
     var media = el('span', 'tmedia'), ph = el('span', 'tphoto'); ph.dataset.dish = name; paintTile(ph);
     media.appendChild(ph); btn.appendChild(media);
-    btn.appendChild(el('span', 'tname', name));
+    var nm = el('span', 'tname'); nm.appendChild(el('span', 'tt', name));
+    if(Array.from(String(name)).length >= 8) nm.classList.add('long');   // 長い名前は少し小さく
+    btn.appendChild(nm);
     return media;
   }
   // ---- 料理の画像（登録した写真 → Web の画像 → 無ければ出さない。本体はサーバーの別の保管庫、対応表は共有データ otetsudai-images-v1） ----
