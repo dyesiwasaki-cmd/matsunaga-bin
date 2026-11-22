@@ -261,10 +261,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rd-tool{flex:0 0 100%;margin:4px 0}
 .rd-tool .undo{margin-top:6px}
 .rd-guide{flex:0 0 100%;margin:4px 0 8px}
-.rd-chips{flex:1 1 100%;min-width:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
-.rd-item{display:inline-flex;align-items:center;max-width:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:contain}
-.rd-item .chip{min-width:0;overflow-wrap:anywhere;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.rd-handle{flex:none;width:44px;height:44px;margin-left:2px;border:0;border-radius:8px;background:none;color:var(--muted);font-size:24px;line-height:1;touch-action:none;cursor:grab}
+.rd-chips{flex:1 1 100%;min-width:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0}
+.rd-item{display:inline-flex;align-items:center;max-width:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:contain}
+.rd-item .chip{min-width:0;overflow-wrap:anywhere;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
 .rd-item.rd-lift{border-radius:8px;background:var(--accent-soft);box-shadow:0 10px 24px var(--shadow);opacity:.97;transform:scale(1.04)}
 .rd-item.rd-lift .chip{border-color:var(--accent);color:var(--accent)}
 .rd-caret{flex:none;width:5px;border-radius:3px;background:var(--accent)}
@@ -2516,7 +2515,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // ================= 並び替え（持ち手「⠿」をつまんでドラッグ） =================
   var reorderCat = '', reorderAll = false, tagReorder = false, rdDrag = null, rdMenu = null, rdSuppress = false, rdConfirm = false, rdFocus = null, rdToastTimer = 0, rdUndoFn = null;
   var RD_BANNER = '手動の並び順を変更中（2人共通）';
-  var RD_GUIDE = '☆の代わりの「⠿」をつまんで、好きな場所へ動かします。チップの文字をタップすると「一番上へ／一番下へ」が出ます。';
+  var RD_GUIDE = '料理をつまんで動かせます。画面を動かすときは、すき間を触ってください。';
   function rdVibrate(){ try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){} }
   function rdClosePanels(){ subEditOpen = {}; tagEditOpen = {}; subRemoveAsk = {}; renameSt = null; tagRenameSt = null; }
   // 並び替えに入ったら、この端末の表示を「手動の並び順」にする（終わってもそのまま）
@@ -2618,7 +2617,8 @@ input[type="time"].field{width:auto;min-width:140px}
     st.it.parentNode.insertBefore(st.caret, st.it);
     st.it.classList.add('rd-lift');
     st.it.style.position = 'fixed'; st.it.style.left = r.left + 'px'; st.it.style.top = r.top + 'px'; st.it.style.zIndex = '30'; st.it.style.margin = '0';
-    try{ st.handle.setPointerCapture(st.id); }catch(e){}
+    try{ st.cap.setPointerCapture(st.id); }catch(e){}
+    rdVibrate();
     document.addEventListener('touchmove', rdTouchBlock, { passive: false });
     document.addEventListener('keydown', rdKey);
     st.raf = window.requestAnimationFrame(rdLoop);
@@ -2634,6 +2634,7 @@ input[type="time"].field{width:auto;min-width:140px}
     window.removeEventListener('pointercancel', rdPointerCancel);
     document.removeEventListener('touchmove', rdTouchBlock);
     document.removeEventListener('keydown', rdKey);
+    if(!st.started) return;   // 6px動かさずに離した＝タップ
     var dz = st.zi, pos = st.idx, i, j;
     for(i = 0; i < st.zones.length; i++){
       if(st.caret.parentNode === st.zones[i].el){
@@ -2648,7 +2649,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(st.caret.parentNode) st.caret.parentNode.removeChild(st.caret);
     st.it.classList.remove('rd-lift');
     ['position', 'left', 'top', 'zIndex', 'margin'].forEach(function(p){ st.it.style[p] = ''; });
-    try{ st.handle.releasePointerCapture(st.id); }catch(e){}
+    try{ st.cap.releasePointerCapture(st.id); }catch(e){}
     rdSuppress = true; window.setTimeout(function(){ rdSuppress = false; }, 80);
     if(commit && !(dz === st.zi && pos === st.idx)) st.onDrop(st.zi, st.idx, dz, pos);   // 元の場所で離したら何もしない
   }
@@ -2656,20 +2657,23 @@ input[type="time"].field{width:auto;min-width:140px}
     var st = rdDrag;
     if(!st || e.pointerId !== st.id) return;
     st.x = e.clientX; st.y = e.clientY;
+    if(!st.started){
+      if(Math.sqrt((st.x - st.x0) * (st.x - st.x0) + (st.y - st.y0) * (st.y - st.y0)) >= 6) rdStart(st);   // 6px以上動いたらドラッグ開始
+      return;
+    }
     if(rdOutside(st)){ rdEnd(false); return; }   // 画面外に出たら取りやめ
     rdUpdate(st);
   }
   function rdPointerUp(e){ if(rdDrag && e.pointerId === rdDrag.id){ rdDrag.x = e.clientX; rdDrag.y = e.clientY; rdEnd(!rdOutside(rdDrag)); } }
   function rdPointerCancel(e){ if(rdDrag && e.pointerId === rdDrag.id) rdEnd(false); }
-  function rdPointerDown(e, it, handle, zones, zi, idx, onDrop){
+  function rdPointerDown(e, it, cap, zones, zi, idx, onDrop){
     if(rdDrag) return;
     if(e.pointerType === 'mouse' && e.button !== 0) return;
-    var st = { id: e.pointerId, it: it, handle: handle, zones: zones, zi: zi, idx: idx, onDrop: onDrop, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, raf: 0 };
+    var st = { id: e.pointerId, it: it, cap: cap, zones: zones, zi: zi, idx: idx, onDrop: onDrop, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, raf: 0 };
     rdDrag = st;
     window.addEventListener('pointermove', rdPointerMove);
     window.addEventListener('pointerup', rdPointerUp);
     window.addEventListener('pointercancel', rdPointerCancel);
-    rdStart(st); rdVibrate();   // 持ち手に触れた瞬間につまめる
   }
   // zones：[{ el, names, labels? }]。onDrop(元の段, 元の位置, 先の段, 先の位置)
   function rdBuild(zones, onDrop){
@@ -2679,21 +2683,20 @@ input[type="time"].field{width:auto;min-width:140px}
         var plain = (z.labels && z.labels[i]) || nm;
         var it = el('div', 'rd-item'); it.dataset.rdi = String(i);
         var cb = el('button', 'chip rd-chip', nm); cb.type = 'button';
-        var h = el('button', 'rd-handle', '⠿'); h.type = 'button';
-        h.setAttribute('aria-label', '「' + plain + '」を動かす（矢印キーで移動、' + (i + 1) + '番目）');
-        h.addEventListener('pointerdown', function(e){ rdPointerDown(e, it, h, zones, zi, i, onDrop); });
-        h.addEventListener('keydown', function(e){
+        cb.setAttribute('aria-label', '「' + plain + '」（' + (i + 1) + '番目）。矢印キーで移動、押すと一番上・一番下の選択');
+        cb.addEventListener('pointerdown', function(e){ rdPointerDown(e, it, cb, zones, zi, i, onDrop); });
+        cb.addEventListener('keydown', function(e){
           var d = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : 0;
           if(!d || i + d < 0 || i + d >= z.names.length) return;
           e.preventDefault(); rdFocus = { z: zi, i: i + d }; onDrop(zi, i, zi, i + d);
         });
         it.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-        cb.addEventListener('click', function(){
+        cb.addEventListener('click', function(){   // 動かさずに離したら「タップ」
           if(rdSuppress) return;
           rdMenu = (rdMenu && rdMenu.z === zi && rdMenu.i === i) ? null : { z: zi, i: i };
           render();
         });
-        it.appendChild(cb); it.appendChild(h); z.el.appendChild(it);
+        it.appendChild(cb); z.el.appendChild(it);
         if(rdMenu && rdMenu.z === zi && rdMenu.i === i){
           var m = el('div', 'rd-menu');
           [['⤒ 一番上へ', function(){ onDrop(zi, i, zi, 0); }], ['⤓ 一番下へ', function(){ onDrop(zi, i, zi, z.names.length - 1); }], ['✕ やめる', function(){ rdMenu = null; render(); }]].forEach(function(b){
@@ -2706,7 +2709,7 @@ input[type="time"].field{width:auto;min-width:140px}
       });
     });
     if(rdFocus){
-      var hh = document.querySelector('.rd-zone[data-rdz="' + rdFocus.z + '"] .rd-item[data-rdi="' + rdFocus.i + '"] .rd-handle');
+      var hh = document.querySelector('.rd-zone[data-rdz="' + rdFocus.z + '"] .rd-item[data-rdi="' + rdFocus.i + '"] .rd-chip');
       rdFocus = null;
       if(hh) hh.focus();
     }
