@@ -552,6 +552,12 @@ input[type="time"].field{width:auto;min-width:140px}
 .qtyrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 6px}
 .qtylab{margin-right:2px;font-size:13px;font-weight:700;color:var(--accent)}
 .chip.qtychip{flex:1 1 0;min-width:5.5em;text-align:center}
+.shun-h{display:flex;align-items:center;margin:0 0 6px}
+.shun-toggle{display:inline-flex;align-items:center;min-height:44px;padding:6px 4px;border:0;background:none;color:inherit;font:inherit;font-weight:700;text-align:left;cursor:pointer}
+.shun-toggle:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.shun-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.shun-row{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.shun-row .chip.tile{flex:0 0 104px;width:104px;scroll-snap-align:start}
 .dinfo{display:flex;align-items:flex-start;gap:10px;margin:0 0 6px}
 .dinfo .dthumb{flex:none}
 .dinfo-body{flex:1 1 auto;min-width:0}
@@ -767,6 +773,14 @@ input[type="time"].field{width:auto;min-width:140px}
         <button type="button" class="mini sub" id="fav-undo-btn">元に戻す</button>
       </div>
       <p class="note" id="quick-msg" role="status"></p>
+    </section>
+
+    <section class="sec" id="shun" hidden>
+      <h2 class="shun-h"><button type="button" class="shun-toggle" id="shun-toggle" aria-expanded="true" aria-controls="shun-body"></button></h2>
+      <div id="shun-body">
+        <div class="shun-tags" id="shun-tags" role="group" aria-label="今月の旬の食材"></div>
+        <div class="shun-row" id="shun-row"></div>
+      </div>
     </section>
 
     <section class="sec" id="tag-find">
@@ -1004,7 +1018,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 54;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 55;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3365,7 +3379,86 @@ input[type="time"].field{width:auto;min-width:140px}
     cands.forEach(function(c){ if(out.length < 3 && !used[c.nm]) addOld(c); });
     return out.slice(0, 5);
   }
+  // ---- 今が旬（月ごとの旬の食材。表は画面に内蔵。料理との結び付けは食材タグ。月は日本時間の日付で決める） ----
+  var SHUN = {"1":["白菜","大根","ほうれん草","小松菜","ごぼう","れんこん","ぶり","かに","たこ","わかめ","みかん","りんご","いちご","キウイ"],"2":["白菜","大根","ほうれん草","小松菜","ごぼう","れんこん","ぶり","かに","わかめ","あさり","いちご","グレープフルーツ","キウイ","みかん"],"3":["キャベツ","たけのこ","ほうれん草","小松菜","わかめ","あさり","しらす","桜えび","いちご","グレープフルーツ","オレンジ","キウイ"],"4":["キャベツ","たけのこ","玉ねぎ","わかめ","あさり","しらす","桜えび","いちご","グレープフルーツ","オレンジ","キウイ","にら"],"5":["キャベツ","たけのこ","玉ねぎ","じゃがいも","あさり","わかめ","しらす","いちご","メロン","オレンジ","グレープフルーツ","にら","レタス"],"6":["トマト","きゅうり","なす","ピーマン","じゃがいも","枝豆","みょうが","あじ","たこ","メロン","桃","レタス"],"7":["トマト","きゅうり","なす","ピーマン","コーン","枝豆","みょうが","かぼちゃ","あじ","うなぎ","たこ","メロン","桃"],"8":["トマト","きゅうり","なす","ピーマン","コーン","枝豆","みょうが","かぼちゃ","あじ","うなぎ","桃","梨","ぶどう","メロン"],"9":["さつまいも","栗","きのこ","なす","かぼちゃ","さば","いわし","鮭","まぐろ","梨","ぶどう","りんご","山芋"],"10":["さつまいも","栗","きのこ","山芋","かぼちゃ","鮭","さば","いわし","じゃがいも","梨","ぶどう","りんご","れんこん"],"11":["白菜","大根","ほうれん草","小松菜","れんこん","ごぼう","さつまいも","きのこ","鮭","ぶり","かに","りんご","みかん","キウイ"],"12":["白菜","大根","ほうれん草","小松菜","れんこん","ごぼう","ぶり","かに","たこ","みかん","りんご","いちご","キウイ"]};
+  var SHUN_KEY = 'otetsudai-shun-v1', shunClosed = false;
+  try{ shunClosed = window.localStorage.getItem(SHUN_KEY) === '0'; }catch(e){}
+  function jstToday(){
+    try{
+      var m = /(\d+)-(\d+)-(\d+)/.exec(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
+      if(m) return { y: +m[1], m: +m[2], d: +m[3] };
+    }catch(e){}
+    var n = new Date(); return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() };
+  }
+  function shunMonth(){
+    try{   // 試作の確認用：?proto=1&month=3
+      if(isProtoUrl()){ var mm = parseInt(new URLSearchParams(location.search).get('month'), 10); if(mm >= 1 && mm <= 12) return mm; }
+    }catch(e){}
+    return jstToday().m;
+  }
+  function strHash(str){ var h = 7; for(var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100003; return h; }
+  // 旬の食材タグを持つ料理（果物の分類は、旬の果物のタグを持つものだけ）。ひっかかった数の多い順→よく頼む順（日付で少し入れ替え）
+  function shunPick(mon){
+    var ts = SHUN[mon] || [], day = jstToday(), seed = String(day.y * 10000 + day.m * 100 + day.d);
+    var hc = {}; orderHist.forEach(function(he){ hc[he.name] = (hc[he.name] || 0) + 1; });
+    var tagCnt = {}, list = [], seen = {};
+    menu.forEach(function(g){ g[1].forEach(function(nm){
+      if(seen[nm]) return; seen[nm] = true;
+      var hit = tagsOf(nm).filter(function(t){ return ts.indexOf(t) >= 0; });
+      if(!hit.length) return;
+      hit.forEach(function(t){ tagCnt[t] = (tagCnt[t] || 0) + 1; });
+      list.push({ nm: nm, hit: hit.length, key: Math.min(hc[nm] || 0, 30) * 3 + strHash(nm + seed) % 4 });
+    }); });
+    list.sort(function(a, b){ return (b.hit - a.hit) || (b.key - a.key) || (a.nm < b.nm ? -1 : 1); });
+    return { tags: ts.filter(function(t){ return tagCnt[t] > 0; }).map(function(t){ return [t, tagCnt[t]]; }), dishes: list.slice(0, 8).map(function(x){ return x.nm; }), total: list.length };
+  }
+  function renderShun(){
+    var sec = $('shun'); if(!sec) return;
+    var mon = shunMonth(), r = shunPick(mon);
+    sec.hidden = !r.dishes.length && !r.tags.length;
+    if(sec.hidden) return;
+    var tg = $('shun-toggle');
+    tg.textContent = (shunClosed ? '▸ ' : '▾ ') + '今が旬（' + mon + '月）';
+    tg.setAttribute('aria-expanded', shunClosed ? 'false' : 'true');
+    $('shun-body').hidden = shunClosed;
+    var tb = $('shun-tags'); tb.innerHTML = '';
+    r.tags.forEach(function(x){
+      var t = x[0], b = el('button', 'chip sub-chip tag-chip', '#' + t); b.type = 'button'; b.dataset.stag = t;
+      b.appendChild(document.createTextNode(' ')); b.appendChild(el('small', 'tag-n', String(x[1])));
+      b.setAttribute('aria-pressed', tagFilter === t ? 'true' : 'false');
+      b.addEventListener('click', function(){   // 「食材で探す」と同じ絞り込み
+        tagFilter = tagFilter === t ? '' : t;
+        render();
+        var bs = $('shun-tags').querySelectorAll('button[data-stag]');
+        for(var i = 0; i < bs.length; i++) if(bs[i].dataset.stag === t){ bs[i].focus(); break; }
+      });
+      tb.appendChild(b);
+    });
+    var row = $('shun-row'); row.innerHTML = '';
+    r.dishes.forEach(function(nm){
+      var b = el('button', 'chip tile'); b.type = 'button'; b.dataset.shun = nm;
+      tileFill(b, nm);
+      b.setAttribute('aria-pressed', dishes.indexOf(nm) >= 0 ? 'true' : 'false');
+      b.setAttribute('aria-label', nm + '（旬）');
+      b.addEventListener('click', function(){
+        toggle(dishes, nm);
+        if(dishes.indexOf(nm) < 0){ delete subSel[nm]; delete subOther[nm]; delete dishQty[nm]; }
+        render(); refresh();
+        var bs = $('shun-row').querySelectorAll('button[data-shun]');
+        for(var i = 0; i < bs.length; i++) if(bs[i].dataset.shun === nm){ try{ bs[i].focus({ preventScroll: true }); }catch(e){ bs[i].focus(); } break; }
+      });
+      row.appendChild(b);
+    });
+  }
+  $('shun-toggle').addEventListener('click', function(){
+    shunClosed = !shunClosed;
+    try{ window.localStorage.setItem(SHUN_KEY, shunClosed ? '0' : '1'); }catch(e){}
+    renderShun();
+  });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') renderShun(); });   // 月が替わったら入れ替える
+
   function renderQuick(){
+    renderShun();
     var sec = $('quick');
     var empty = !favs.length && !orderHist.length;
     sec.hidden = (empty && $('fav-undo').hidden);
