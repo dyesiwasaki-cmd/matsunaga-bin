@@ -121,7 +121,10 @@ button,input,textarea{font:inherit;color:inherit}
 .edit-btn{flex:none;min-height:44px;padding:4px 14px;border:2px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 0 var(--line)}
 .edit-btn.on{background:var(--accent);color:var(--accent-fg)}
 .edit-btn:active{transform:translateY(2px);box-shadow:none}
-.cat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;margin-bottom:6px}
+.cat-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 8px;margin-top:14px;margin-bottom:6px}
+.cat-head h3{min-width:0;flex:1 1 8em;overflow-wrap:anywhere}
+.cat-tools{flex:none;display:flex;gap:6px;align-items:center;margin-left:auto}
+.cat-edit-btn:disabled,.tag-find-tools .tiny:disabled{opacity:.4;cursor:not-allowed}
 .cat-head h3{margin:0 !important}
 .cat-head:first-child{margin-top:0}
 .del-cat{flex:none;width:44px;height:44px;border:2px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
@@ -268,6 +271,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rd-menu{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px 6px}
 .rd-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--bar-h,72px) + 16px);z-index:14;display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);padding:8px 12px;border-radius:10px;background:var(--fg);color:var(--surface);box-shadow:0 4px 14px var(--shadow);font-size:14px}
 .rd-toast[hidden]{display:none}
+.tag-n{margin-left:2px;font-size:11px;opacity:.85}
+.mood-chips .chip.mood-zero{opacity:.45}
 .tag-find-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
 .mood-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;padding:2px 0 6px}
 .mood-chips .chip{display:flex;align-items:center;justify-content:center;min-height:40px;padding:4px 6px;font-size:13px;white-space:normal;text-align:center}
@@ -1873,12 +1878,27 @@ input[type="time"].field{width:auto;min-width:140px}
     menu.forEach(function(g){ g[1].forEach(function(nm){ tagsOf(nm).forEach(function(t){ cnt[t] = (cnt[t] || 0) + 1; }); }); });
     customTags.forEach(function(t){ if(!Object.prototype.hasOwnProperty.call(cnt, t)) cnt[t] = 0; });
     var all = Object.keys(cnt).sort(function(a, b){ return (cnt[b] - cnt[a]) || (a < b ? -1 : a > b ? 1 : 0); });
+    // 気分を選んでいる時は、その気分の料理に使われている食材の品数／食材を選んでいる時は、その食材を使う料理の気分ごとの品数
+    var moodCnt = null, moodByTag = null;
+    if(moodFilter){
+      moodCnt = {};
+      menu.forEach(function(g){ g[1].forEach(function(nm){ if(moodsOf(nm).indexOf(moodFilter) >= 0) tagsOf(nm).forEach(function(t){ moodCnt[t] = (moodCnt[t] || 0) + 1; }); }); });
+    }
+    if(tagFilter){
+      moodByTag = {};
+      menu.forEach(function(g){ g[1].forEach(function(nm){ if(tagsOf(nm).indexOf(tagFilter) >= 0) moodsOf(nm).forEach(function(m){ moodByTag[m] = (moodByTag[m] || 0) + 1; }); }); });
+    }
     $('tag-search').hidden = tagEditing;
     $('mood-row').hidden = tagEditing;
     var moodBox = $('mood-chips'); moodBox.innerHTML = '';
     MOOD_LIST.forEach(function(m){
       var mbtn = el('button', 'chip sub-chip mood-chip', m[1] + ' ' + m[0]); mbtn.type = 'button'; mbtn.dataset.mood = m[0];
       mbtn.setAttribute('aria-pressed', moodFilter === m[0] ? 'true' : 'false');
+      if(moodByTag){
+        var mn = moodByTag[m[0]] || 0;
+        mbtn.appendChild(document.createTextNode(' ')); mbtn.appendChild(el('small', 'tag-n', String(mn)));
+        if(!mn) mbtn.classList.add('mood-zero');
+      }
       mbtn.addEventListener('click', function(){
         moodFilter = moodFilter === m[0] ? '' : m[0];
         render();
@@ -1899,9 +1919,10 @@ input[type="time"].field{width:auto;min-width:140px}
     sbtn.textContent = tagSortMode === 'manual' ? '並べた順' : 'よく食べる順';
     sbtn.setAttribute('aria-label', '食材の表示順：' + (tagSortMode === 'manual' ? '並べた順（押すとよく食べる順）' : 'よく食べる順（押すと並べた順）'));
     sbtn.hidden = !!tagReorder;
-    $('tag-reorder-btn').hidden = !tagEditing;
+    $('tag-reorder-btn').hidden = false; $('tag-reorder-btn').disabled = !!tagEditing;
+    $('tag-edit-toggle').disabled = !!tagReorder;
     $('tag-reorder-btn').textContent = tagReorder ? '✓ 並び替え終わり' : '⇅ 並び替え';
-    if(tagReorder && tagEditing){   // 食材の並び替え：段をまたいで動かせる
+    if(tagReorder){   // 食材の並び替え：段をまたいで動かせる
       var rbox = $('tag-chips'); rbox.innerHTML = '';
       rbox.appendChild(el('p', 'rd-banner', RD_BANNER));
       var rtool = el('div', 'rd-tool'); rbox.appendChild(rtool);
@@ -1921,6 +1942,10 @@ input[type="time"].field{width:auto;min-width:140px}
       $('tag-add-panel').hidden = true; $('tag-status').hidden = true;
       return;
     }
+    if(moodCnt && !tagEditing){   // 気分に合う料理に使われていない食材は隠す（選択中の食材は残す）
+      var keepTag = function(t){ return (moodCnt[t] || 0) > 0 || tagFilter === t; };
+      prim = prim.filter(keepTag); restAll = restAll.filter(keepTag);
+    }
     var top;
     if(tagEditing || tagsOpen) top = restAll.slice();
     else{
@@ -1936,6 +1961,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(tagEditing){ box.appendChild(tagEditItem(t, cnt[t])); return; }
       var b = el('button', 'chip sub-chip tag-chip', '#' + t);
       b.type = 'button'; b.dataset.tag = t;
+      if(moodCnt){ b.appendChild(document.createTextNode(' ')); b.appendChild(el('small', 'tag-n', String(moodCnt[t] || 0))); }
       b.setAttribute('aria-pressed', tagFilter === t ? 'true' : 'false');
       b.addEventListener('click', function(){
         tagFilter = tagFilter === t ? '' : t;
@@ -2744,7 +2770,8 @@ input[type="time"].field{width:auto;min-width:140px}
         rhead.appendChild(el('h3', null, g[0]));
         var rend = el('button', 'mini sub cat-edit-btn', '✓ 並び替え終わり'); rend.type = 'button'; rend.setAttribute('aria-pressed', 'true');
         rend.addEventListener('click', function(){ reorderCat = ''; rdMenu = null; rdConfirm = false; render(); });
-        rhead.appendChild(rend);
+        var reb = el('button', 'mini sub cat-edit-btn', '✎ 編集'); reb.type = 'button'; reb.disabled = true;   // 並び替え中は編集できない
+        var rtools = el('div', 'cat-tools'); rtools.appendChild(rend); rtools.appendChild(reb); rhead.appendChild(rtools);
         menuEl.appendChild(rhead);
         menuEl.appendChild(el('p', 'rd-banner', RD_BANNER));
         var rtool = el('div', 'rd-tool'); menuEl.appendChild(rtool);
@@ -2806,13 +2833,14 @@ input[type="time"].field{width:auto;min-width:140px}
         var bs = menuEl.querySelectorAll('button[data-catedit]');
         for(var i = 0; i < bs.length; i++) if(bs[i].dataset.catedit === g[0]){ bs[i].focus(); break; }
       });
-      head.appendChild(eb);
+      var rb = el('button', 'mini sub cat-edit-btn', '⇅ 並び替え'); rb.type = 'button'; rb.disabled = ed;
+      rb.setAttribute('aria-label', '分類「' + g[0] + '」を並び替える');
+      rb.addEventListener('click', function(){
+        reorderCat = g[0]; reorderAll = false; tagReorder = false; catOpen[g[0]] = true; saveCatOpen();
+        rdEnter(); render();
+      });
+      var ctools = el('div', 'cat-tools'); ctools.appendChild(rb); ctools.appendChild(eb); head.appendChild(ctools);
       menuEl.appendChild(head);
-      if(ed){
-        var rbar = el('div', 'rd-bar'), rbtn = el('button', 'mini sub', '⇅ 並び替え'); rbtn.type = 'button';
-        rbtn.addEventListener('click', function(){ reorderCat = g[0]; reorderAll = false; tagReorder = false; rdEnter(); render(); });
-        rbar.appendChild(rbtn); menuEl.appendChild(rbar);
-      }
       var box = el('div', 'chips');
       (open ? names : []).forEach(function(name){
         if(ed){
@@ -3005,6 +3033,7 @@ input[type="time"].field{width:auto;min-width:140px}
     render(); refresh(); $('reset-ask').focus();
   });
   $('tag-reorder-btn').addEventListener('click', function(){
+    if(tagEditing) return;
     tagReorder = !tagReorder;
     if(tagReorder){ reorderCat = ''; reorderAll = false; $('cat-reorder-btn').textContent = '⇅ 分類の並び替え'; rdEnter(); }
     else{ rdMenu = null; rdConfirm = false; }
@@ -3020,6 +3049,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(open) $('cat-add-input').focus();
   });
   $('tag-edit-toggle').addEventListener('click', function(){
+    if(tagReorder) return;
     tagEditing = !tagEditing;
     this.textContent = tagEditing ? '✓ 終わる' : '✎';
     this.setAttribute('aria-pressed', tagEditing ? 'true' : 'false');
