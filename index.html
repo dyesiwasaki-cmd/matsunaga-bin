@@ -220,7 +220,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ord-h{margin:0 0 4px;font-weight:700}
 .ord-k{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0}
 .ord-kn{font-size:14px}
-.ord-done{min-height:32px;padding:2px 10px;font-size:13px}
+.ord-done{min-height:40px;padding:2px 10px;font-size:13px}
 .ord-last{margin:4px 0 0;font-size:12px;color:var(--muted);word-break:break-all}
 .ord-all{margin:4px 0;font-weight:700;color:var(--ok,#2e7d32)}
 .ord-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
@@ -252,6 +252,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .rv-btn.sub[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .st-na{color:var(--muted)}
+.qcard .qs{color:var(--fg);opacity:.85}
+.when-sum{margin:6px 0 10px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.rv-manual{min-height:40px}
 .st-wait{color:var(--accent)}
 .rv-missing{outline:3px solid var(--bad,#c62828);outline-offset:2px;border-radius:6px}
 .sheet .btns{position:sticky;bottom:0;z-index:2;margin-bottom:calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 0 calc(8px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -8px 8px -8px var(--shadow)}
@@ -775,6 +778,7 @@ input[type="time"].field{width:auto;min-width:140px}
         </div>
         <div class="row" id="sb-clean-time-row" hidden><input class="field" id="sb-clean-time" type="time" value="17:00" aria-label="掃除は何時まで"><span>まで</span></div>
       </div>
+      <div class="when-sum" id="sheet-summary" hidden></div>
       <div id="sheet-people" style="margin-bottom:12px" hidden>
       <div class="row">
         <span id="people-q" style="font-weight:700">何人分ですか？</span>
@@ -819,7 +823,7 @@ input[type="time"].field{width:auto;min-width:140px}
     ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','焼肉','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
     ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ']],
     ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し']],
-    ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺']],
+    ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','つけ麺','油そば','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺']],
     ['丼もの',['親子丼','牛丼','カツ丼','海鮮丼','天丼','中華丼','ネギトロ丼','ビビンバ','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼']],
     ['ご飯もの',['おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯']],
     ['汁物',['味噌汁','豚汁','ミネストローネ','中華スープ','けんちん汁','わかめスープ','コーンスープ','クラムチャウダー','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ']],
@@ -1048,6 +1052,15 @@ input[type="time"].field{width:auto;min-width:140px}
     ],
     '冷奴': [
       G('のせるもの', true, ['ねぎ','しょうが','かつお節','みょうが','大葉','キムチ','ごま油と塩'])
+    ],
+    'つけ麺': [
+      G('スープ', false, ['魚介豚骨','醤油','味噌','塩','辛つけ麺']),
+      G('麺', false, ['冷や盛り','あつ盛り']),
+      G('トッピング', true, ['チャーシュー','煮卵','メンマ','ねぎ','のり','魚粉','柚子'])
+    ],
+    '油そば': [
+      G('味', false, ['醤油','塩','辛味']),
+      G('トッピング', true, ['温玉','チャーシュー','メンマ','ねぎ','のり','刻み玉ねぎ','マヨネーズ','ラー油','酢'])
     ],
     '焼肉': [ G('お肉', true, ['牛カルビ','牛ロース','牛タン','豚バラ','鶏もも','ホルモン']), G('たれ', false, ['甘口','中辛','塩','レモン']) ],
     'おでん': [ G('具', true, ['大根','たまご','こんにゃく','しらたき','ちくわ','ちくわぶ','はんぺん','ごぼう天','さつま揚げ','つみれ','厚揚げ','がんもどき','餅巾着','牛すじ','タコ','じゃがいも','ロールキャベツ','結び昆布']) ]
@@ -1479,40 +1492,40 @@ input[type="time"].field{width:auto;min-width:140px}
     '焼き魚定食': ['魚','ご飯'],
     '生姜焼き': ['豚肉','しょうが','玉ねぎ'],
     '筑前煮': ['鶏肉','れんこん','にんじん','ごぼう','こんにゃく'],
-    'さばの味噌煮': ['魚','さば'],
-    '天ぷら': ['エビ','野菜','魚'],
+    'さばの味噌煮': ['魚','さば','しょうが'],
+    '天ぷら': ['エビ','魚','かぼちゃ','なす','さつまいも'],
     '唐揚げ': ['鶏肉','にんにく','しょうが'],
     'とんかつ': ['豚肉','パン粉','キャベツ'],
     '鮭の塩焼き': ['魚','鮭'],
-    'ぶり大根': ['魚','ぶり','大根'],
+    'ぶり大根': ['魚','ぶり','大根','しょうが'],
     '照り焼きチキン': ['鶏肉'],
     '豚の角煮': ['豚肉','卵','大根'],
     '焼肉': ['牛肉','豚肉','玉ねぎ','ピーマン'],
-    'すき焼き': ['牛肉','豆腐','卵','白菜','ねぎ'],
+    'すき焼き': ['牛肉','豆腐','卵','白菜','ねぎ','きのこ'],
     'しゃぶしゃぶ': ['豚肉','牛肉','白菜'],
     'おでん': ['大根','卵','こんにゃく','練り物'],
     '炊き込みご飯': ['ご飯','鶏肉','きのこ','にんじん'],
     'カレー': ['牛肉','じゃがいも','玉ねぎ','にんじん','ご飯'],
     'ハンバーグ': ['ひき肉','玉ねぎ','卵'],
     'オムライス': ['卵','ご飯','鶏肉','玉ねぎ'],
-    'グラタン': ['チーズ','牛乳','玉ねぎ','鶏肉'],
+    'グラタン': ['チーズ','牛乳','玉ねぎ','鶏肉','パスタ'],
     'シチュー': ['鶏肉','牛乳','じゃがいも','にんじん','玉ねぎ'],
     'ビーフシチュー': ['牛肉','じゃがいも','にんじん','玉ねぎ'],
-    'クリームコロッケ': ['牛乳','玉ねぎ'],
+    'クリームコロッケ': ['牛乳','玉ねぎ','パン粉'],
     'アヒージョ': ['にんにく','エビ','きのこ'],
     'ドリア': ['ご飯','チーズ','牛乳'],
     'ハヤシライス': ['牛肉','玉ねぎ','トマト','ご飯'],
     'ガーリックシュリンプ': ['エビ','にんにく'],
     'エビフライ': ['エビ','パン粉'],
-    'コロッケ': ['じゃがいも','ひき肉','玉ねぎ'],
-    'メンチカツ': ['ひき肉','玉ねぎ','キャベツ'],
+    'コロッケ': ['じゃがいも','ひき肉','玉ねぎ','パン粉'],
+    'メンチカツ': ['ひき肉','玉ねぎ','キャベツ','パン粉'],
     'ロールキャベツ': ['キャベツ','ひき肉','玉ねぎ','トマト'],
     'ポトフ': ['ウィンナー','じゃがいも','にんじん','キャベツ','玉ねぎ'],
     'チキン南蛮': ['鶏肉','卵','玉ねぎ'],
     'ステーキ': ['牛肉','にんにく'],
-    '麻婆豆腐': ['豆腐','ひき肉','ねぎ'],
+    '麻婆豆腐': ['豆腐','ひき肉','ねぎ','にんにく','しょうが'],
     '回鍋肉': ['豚肉','キャベツ','ピーマン'],
-    '餃子': ['ひき肉','キャベツ','にら'],
+    '餃子': ['ひき肉','キャベツ','にら','にんにく'],
     '青椒肉絲': ['牛肉','ピーマン','たけのこ'],
     'エビチリ': ['エビ','ねぎ'],
     'チャーハン': ['ご飯','卵','ねぎ'],
@@ -1520,13 +1533,13 @@ input[type="time"].field{width:auto;min-width:140px}
     '八宝菜': ['白菜','エビ','豚肉','にんじん'],
     '春巻き': ['豚肉','たけのこ','春雨'],
     '焼売': ['ひき肉','玉ねぎ'],
-    '天津飯': ['卵','ご飯'],
+    '天津飯': ['卵','ご飯','ねぎ'],
     '棒棒鶏': ['鶏肉','きゅうり'],
     'パスタ': ['パスタ'],
     'ミートスパゲティ': ['パスタ','ひき肉','トマト','玉ねぎ'],
     'うどん': ['麺','ねぎ'],
     'そば': ['麺','ねぎ'],
-    '焼きそば': ['麺','豚肉','キャベツ'],
+    '焼きそば': ['麺','豚肉','キャベツ','もやし'],
     'ラーメン': ['麺','豚肉','ねぎ','卵'],
     'ナポリタン': ['パスタ','ウィンナー','玉ねぎ','ピーマン'],
     'カルボナーラ': ['パスタ','卵','ベーコン','チーズ'],
@@ -1537,18 +1550,18 @@ input[type="time"].field{width:auto;min-width:140px}
     '牛丼': ['牛肉','玉ねぎ','ご飯'],
     'カツ丼': ['豚肉','卵','玉ねぎ','ご飯'],
     '海鮮丼': ['魚','ご飯'],
-    '天丼': ['エビ','野菜','ご飯'],
-    '中華丼': ['白菜','エビ','豚肉','ご飯'],
-    'ネギトロ丼': ['魚','ねぎ','ご飯'],
-    'ビビンバ': ['ご飯','ひき肉','にんじん','ほうれん草','卵'],
+    '天丼': ['エビ','ご飯','かぼちゃ','なす'],
+    '中華丼': ['白菜','エビ','豚肉','ご飯','にんじん'],
+    'ネギトロ丼': ['魚','ねぎ','ご飯','まぐろ'],
+    'ビビンバ': ['ご飯','ひき肉','にんじん','ほうれん草','卵','もやし'],
     '味噌汁': ['豆腐','わかめ','ねぎ'],
-    '豚汁': ['豚肉','大根','にんじん','ごぼう'],
+    '豚汁': ['豚肉','大根','にんじん','ごぼう','ねぎ','こんにゃく'],
     'ミネストローネ': ['トマト','玉ねぎ','にんじん','ベーコン'],
     '中華スープ': ['卵','ねぎ'],
     'けんちん汁': ['大根','にんじん','豆腐','ごぼう'],
     'わかめスープ': ['わかめ','ねぎ'],
     'コーンスープ': ['コーン','牛乳'],
-    'クラムチャウダー': ['あさり','じゃがいも','牛乳','ベーコン'],
+    'クラムチャウダー': ['あさり','じゃがいも','牛乳','ベーコン','玉ねぎ'],
     'サラダ': ['レタス','トマト','きゅうり'],
     '玉ねぎサラダ': ['玉ねぎ'],
     'ほうれん草のおひたし': ['ほうれん草'],
@@ -1563,11 +1576,11 @@ input[type="time"].field{width:auto;min-width:140px}
     '春雨サラダ': ['春雨','きゅうり','ハム','卵'],
     '枝豆': ['枝豆'],
     '茶碗蒸し': ['卵','鶏肉','きのこ'],
-    'お好み焼き': ['キャベツ','豚肉','卵'],
+    'お好み焼き': ['キャベツ','豚肉','卵','小麦粉'],
     'もんじゃ焼き': ['キャベツ','小麦粉','桜えび','天かす'],
     '焼き鳥': ['鶏肉','ねぎ'],
-    'たこ焼き': ['たこ','ねぎ'],
-    '鶏そぼろ': ['鶏肉','卵','ご飯'],
+    'たこ焼き': ['たこ','ねぎ','小麦粉','卵'],
+    '鶏そぼろ': ['鶏肉','卵','ご飯','ひき肉'],
     'あじの南蛮漬け': ['魚','あじ','玉ねぎ','にんじん'],
     '揚げ出し豆腐': ['豆腐','大根','ねぎ'],
     '鮭のホイル焼き': ['魚','鮭','きのこ','玉ねぎ'],
@@ -1582,7 +1595,7 @@ input[type="time"].field{width:auto;min-width:140px}
     '白身魚のムニエル': ['魚','じゃがいも'],
     'ピカタ': ['豚肉','卵','チーズ'],
     'マカロニチーズ': ['パスタ','チーズ','牛乳'],
-    '麻婆茄子': ['なす','ひき肉','ねぎ','しょうが'],
+    '麻婆茄子': ['なす','ひき肉','ねぎ','しょうが','にんにく'],
     'ニラレバ炒め': ['にら','レバー','もやし'],
     'かに玉': ['卵','かに','ねぎ'],
     '油淋鶏': ['鶏肉','ねぎ','しょうが'],
@@ -1601,11 +1614,11 @@ input[type="time"].field{width:auto;min-width:140px}
     '冷麺': ['麺','きゅうり','卵','キムチ'],
     '豚丼': ['豚肉','玉ねぎ','ご飯'],
     'そぼろ丼': ['ひき肉','卵','ご飯'],
-    'うな丼': ['うなぎ','ご飯'],
+    'うな丼': ['うなぎ','ご飯','魚'],
     'マグロの漬け丼': ['魚','まぐろ','ご飯'],
     '玉子丼': ['卵','玉ねぎ','ご飯'],
     'ロコモコ丼': ['ひき肉','卵','レタス','トマト','ご飯'],
-    'しらす丼': ['しらす','ご飯','ねぎ'],
+    'しらす丼': ['しらす','ご飯','ねぎ','魚'],
     'スタミナ丼': ['豚肉','にんにく','にら','ご飯'],
     'おにぎり': ['ご飯','鮭'],
     '手巻き寿司': ['ご飯','魚','きゅうり','卵'],
@@ -1615,7 +1628,7 @@ input[type="time"].field{width:auto;min-width:140px}
     '雑炊': ['ご飯','卵','ねぎ'],
     'おかゆ': ['ご飯','卵'],
     '赤飯': ['ご飯','小豆'],
-    '焼きおにぎり': ['ご飯','ねぎ'],
+    '焼きおにぎり': ['ご飯'],
     '栗ご飯': ['ご飯','栗'],
     'お吸い物': ['豆腐','わかめ','ねぎ'],
     'かきたま汁': ['卵','ねぎ'],
@@ -1623,9 +1636,9 @@ input[type="time"].field{width:auto;min-width:140px}
     'オニオンスープ': ['玉ねぎ','ベーコン'],
     'つみれ汁': ['魚','大根','ねぎ'],
     'あら汁': ['魚','大根','ねぎ'],
-    'すいとん': ['鶏肉','大根','にんじん','ねぎ'],
+    'すいとん': ['鶏肉','大根','にんじん','ねぎ','小麦粉'],
     'かぼちゃのポタージュ': ['かぼちゃ','玉ねぎ','牛乳'],
-    '寄せ鍋': ['魚','エビ','白菜','豆腐','ねぎ'],
+    '寄せ鍋': ['魚','エビ','白菜','豆腐','ねぎ','鶏肉','きのこ'],
     'キムチ鍋': ['豚肉','キムチ','豆腐','白菜','にら'],
     '水炊き': ['鶏肉','白菜','豆腐','ねぎ'],
     '湯豆腐': ['豆腐','ねぎ'],
@@ -1633,7 +1646,7 @@ input[type="time"].field{width:auto;min-width:140px}
     '豆乳鍋': ['豚肉','白菜','豆腐','きのこ'],
     'もつ鍋': ['もつ','キャベツ','にら','にんにく'],
     'ミルフィーユ鍋': ['豚肉','白菜'],
-    '鶏団子鍋': ['ひき肉','白菜','ねぎ','きのこ'],
+    '鶏団子鍋': ['ひき肉','白菜','ねぎ','きのこ','鶏肉'],
     '石狩鍋': ['魚','鮭','豆腐','白菜'],
     'きゅうりとわかめの酢の物': ['きゅうり','わかめ'],
     'ほうれん草のごま和え': ['ほうれん草'],
@@ -1644,7 +1657,9 @@ input[type="time"].field{width:auto;min-width:140px}
     'こんにゃくの煮物': ['こんにゃく','にんじん'],
     '小松菜と油揚げの煮びたし': ['小松菜','油揚げ'],
     '白和え': ['豆腐','こんにゃく','にんじん'],
-    'ほうれん草とベーコンのソテー': ['ほうれん草','ベーコン']
+    'ほうれん草とベーコンのソテー': ['ほうれん草','ベーコン'],
+    'つけ麺': ['麺','豚肉','ねぎ','卵'],
+    '油そば': ['麺','豚肉','ねぎ','卵']
   };
   var TAGS_KEY = 'otetsudai-tags-v1';
   function loadTags(){
@@ -1682,14 +1697,14 @@ input[type="time"].field{width:auto;min-width:140px}
   // ---- 気分で探す ----
   var MOOD_LIST = [['ヘルシー', '🥗', 'ヘルシーな'], ['さっぱり', '🍋', 'さっぱりした'], ['がっつり', '🍖', 'がっつりした'], ['こってり', '🧈', 'こってりした'], ['軽め', '🍙', '軽めの'], ['温まる', '🍲', '温まる'], ['野菜たっぷり', '🥬', '野菜たっぷりの'], ['やさしい', '🍵', 'やさしい']];
   var MOOD_BY = {
-    'ヘルシー': ['焼き魚定食','さばの味噌煮','鮭の塩焼き','ぶり大根','しゃぶしゃぶ','鮭のホイル焼き','湯豆腐','水炊き','豆乳鍋','冷奴','サラダ','玉ねぎサラダ','野菜スティック','ひじき煮','切り干し大根','春雨サラダ','枝豆','きゅうりとわかめの酢の物','ほうれん草のごま和え','白和え','海鮮丼','そば','わかめスープ','豚肉ともやしの中華蒸し','揚げ出し豆腐','いわしの蒲焼き','白身魚のムニエル','筑前煮','ほうれん草のおひたし','茶碗蒸し','こんにゃくの煮物','キムチになる前のキャベツ'],
-    'さっぱり': ['冷やし中華','そうめん','そば','冷麺','きゅうりとわかめの酢の物','玉ねぎサラダ','サラダ','冷奴','あじの南蛮漬け','野菜スティック','きゅうりの浅漬け','春雨サラダ','棒棒鶏','ペペロンチーノ','鮭の塩焼き','しらす丼','お茶漬け','もやしのナムル','ほうれん草のおひたし','海鮮丼','ネギトロ丼','マグロの漬け丼','キムチになる前のキャベツ'],
-    'がっつり': ['焼肉','唐揚げ','とんかつ','豚の角煮','すき焼き','ハンバーグ','ステーキ','カツ丼','牛丼','豚丼','スタミナ丼','ロコモコ丼','天丼','チキンカツ','メンチカツ','エビフライ','チキン南蛮','回鍋肉','酢豚','餃子','ラーメン','焼きそば','担々麺','カレー','ビビンバ','生姜焼き','ガーリックシュリンプ','油淋鶏','もつ鍋','ちゃんこ鍋','お好み焼き','天ぷら','照り焼きチキン','焼き鳥','焼きうどん','ジャージャー麺','うな丼','ポークソテー'],
-    'こってり': ['焼肉','カルボナーラ','グラタン','ドリア','クリームコロッケ','ビーフシチュー','豚の角煮','ラーメン','担々麺','麻婆豆腐','麻婆茄子','チャーハン','天津飯','ピザ','マカロニチーズ','オムライス','ミートスパゲティ','シチュー','ハヤシライス','アヒージョ','ポテトサラダ','とんかつ','ロコモコ丼','たこ焼き','コロッケ','ナポリタン','エビチリ','もんじゃ焼き'],
-    '軽め': ['そうめん','おにぎり','お茶漬け','冷奴','枝豆','茶碗蒸し','わかめスープ','サンドイッチ','オムレツ','だし巻き卵','おかゆ','ほうれん草のおひたし','冷やし中華','ニラ玉','かきたま汁','お吸い物','春雨サラダ','こんにゃくの煮物'],
-    '温まる': ['豚汁','味噌汁','けんちん汁','おでん','すき焼き','シチュー','ポトフ','ビーフシチュー','ミネストローネ','クラムチャウダー','コーンスープ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','うどん','雑炊','すいとん','ワンタンスープ','肉じゃが','かぼちゃのポタージュ','オニオンスープ','つみれ汁','あら汁','ちゃんぽん','中華スープ'],
-    '野菜たっぷり': ['肉野菜炒め','八宝菜','ポトフ','ミネストローネ','豚汁','けんちん汁','筑前煮','おでん','ロールキャベツ','青椒肉絲','サラダ','野菜スティック','ちゃんぽん','皿うどん','焼きビーフン','ミルフィーユ鍋','キムチ鍋','もやしのナムル','炊き込みご飯','ニラレバ炒め','ビビンバ','中華丼','ほうれん草とベーコンのソテー','小松菜と油揚げの煮びたし','なすの煮びたし','かぼちゃの煮物','豚肉ともやしの中華蒸し','玉ねぎサラダ','キムチになる前のキャベツ','かぼちゃのそぼろ煮'],
-    'やさしい': ['おかゆ','雑炊','うどん','茶碗蒸し','湯豆腐','お茶漬け','かきたま汁','お吸い物','だし巻き卵','玉子丼','親子丼','白身魚のムニエル','鶏そぼろ','かぼちゃの煮物','かぼちゃのポタージュ','味噌汁','けんちん汁','オムレツ','コーンスープ','肉豆腐','そぼろ丼','白和え','かぼちゃのそぼろ煮']
+    'ヘルシー': ['焼き魚定食','さばの味噌煮','鮭の塩焼き','ぶり大根','しゃぶしゃぶ','鮭のホイル焼き','湯豆腐','水炊き','豆乳鍋','冷奴','サラダ','玉ねぎサラダ','野菜スティック','ひじき煮','切り干し大根','春雨サラダ','枝豆','きゅうりとわかめの酢の物','ほうれん草のごま和え','白和え','海鮮丼','そば','わかめスープ','豚肉ともやしの中華蒸し','いわしの蒲焼き','白身魚のムニエル','筑前煮','ほうれん草のおひたし','茶碗蒸し','こんにゃくの煮物','キムチになる前のキャベツ','棒棒鶏','うどん'],
+    'さっぱり': ['冷やし中華','そうめん','そば','冷麺','きゅうりとわかめの酢の物','玉ねぎサラダ','サラダ','冷奴','あじの南蛮漬け','野菜スティック','きゅうりの浅漬け','春雨サラダ','棒棒鶏','ペペロンチーノ','鮭の塩焼き','しらす丼','お茶漬け','もやしのナムル','ほうれん草のおひたし','海鮮丼','ネギトロ丼','マグロの漬け丼','キムチになる前のキャベツ','手巻き寿司','ちらし寿司','うどん'],
+    'がっつり': ['焼肉','唐揚げ','とんかつ','豚の角煮','すき焼き','ハンバーグ','ステーキ','カツ丼','牛丼','豚丼','スタミナ丼','ロコモコ丼','天丼','チキンカツ','メンチカツ','エビフライ','チキン南蛮','回鍋肉','酢豚','餃子','ラーメン','焼きそば','担々麺','カレー','ビビンバ','生姜焼き','ガーリックシュリンプ','油淋鶏','もつ鍋','ちゃんこ鍋','お好み焼き','天ぷら','照り焼きチキン','焼き鳥','焼きうどん','ジャージャー麺','うな丼','ポークソテー','ピカタ','ニラレバ炒め','春巻き','焼売','木須肉','鶏肉のカシューナッツ炒め','つけ麺','油そば'],
+    'こってり': ['焼肉','カルボナーラ','グラタン','ドリア','クリームコロッケ','ビーフシチュー','豚の角煮','ラーメン','担々麺','麻婆豆腐','麻婆茄子','チャーハン','天津飯','ピザ','マカロニチーズ','オムライス','ミートスパゲティ','シチュー','ハヤシライス','アヒージョ','ポテトサラダ','とんかつ','ロコモコ丼','たこ焼き','コロッケ','ナポリタン','エビチリ','もんじゃ焼き','エビマヨ','つけ麺','油そば'],
+    '軽め': ['そうめん','おにぎり','お茶漬け','冷奴','枝豆','茶碗蒸し','わかめスープ','サンドイッチ','オムレツ','だし巻き卵','おかゆ','ほうれん草のおひたし','冷やし中華','ニラ玉','かきたま汁','お吸い物','春雨サラダ','こんにゃくの煮物','焼きおにぎり','いなり寿司','うどん','そば'],
+    '温まる': ['豚汁','味噌汁','けんちん汁','おでん','すき焼き','シチュー','ポトフ','ビーフシチュー','ミネストローネ','クラムチャウダー','コーンスープ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','うどん','雑炊','すいとん','ワンタンスープ','肉じゃが','かぼちゃのポタージュ','オニオンスープ','つみれ汁','あら汁','ちゃんぽん','中華スープ','肉豆腐','ロールキャベツ','スンドゥブ','そば'],
+    '野菜たっぷり': ['肉野菜炒め','八宝菜','ポトフ','ミネストローネ','豚汁','けんちん汁','筑前煮','ロールキャベツ','青椒肉絲','サラダ','野菜スティック','ちゃんぽん','皿うどん','焼きビーフン','ミルフィーユ鍋','キムチ鍋','もやしのナムル','ニラレバ炒め','ビビンバ','中華丼','ほうれん草とベーコンのソテー','小松菜と油揚げの煮びたし','なすの煮びたし','かぼちゃの煮物','豚肉ともやしの中華蒸し','玉ねぎサラダ','キムチになる前のキャベツ','かぼちゃのそぼろ煮'],
+    'やさしい': ['おかゆ','雑炊','うどん','茶碗蒸し','湯豆腐','お茶漬け','かきたま汁','お吸い物','だし巻き卵','玉子丼','親子丼','白身魚のムニエル','鶏そぼろ','かぼちゃの煮物','かぼちゃのポタージュ','味噌汁','けんちん汁','オムレツ','コーンスープ','肉豆腐','そぼろ丼','白和え','かぼちゃのそぼろ煮','炊き込みご飯','揚げ出し豆腐','かに玉','栗ご飯']
   };
   var MOOD_DEFAULT = {};
   MOOD_LIST.forEach(function(m){ (MOOD_BY[m[0]] || []).forEach(function(nm){ if(!MOOD_DEFAULT[nm]) MOOD_DEFAULT[nm] = []; if(MOOD_DEFAULT[nm].indexOf(m[0]) < 0) MOOD_DEFAULT[nm].push(m[0]); }); });
@@ -2382,20 +2397,35 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     paintOmakase(); render(); $('omakase-star').focus();
   });
+  // カードの2行目：前回のサブメニュー指定（例「温かい・きつね／ねぎ」）
+  function subSummary(fe){
+    if(!hasSub(fe.name)) return '';
+    var singles = [], multis = [];
+    visibleGroups(fe.name, fe.sel).forEach(function(g){
+      var list = (fe.sel[g.label] || []).slice(), o = String(fe.other[g.label] || '').trim();
+      if(o){ if(g.multi) list.push(o); else list = [o]; }
+      if(!list.length) return;
+      if(g.multi) multis.push(list.join('・')); else singles.push(list.join('・'));
+    });
+    return singles.join('・') + (multis.length ? (singles.length ? '／' : '') + multis.join('／') : '');
+  }
   function qCard(e, row, extra){
     var fe = filterEntry(e);
     var item = el('div', 'qitem');
     var b = el('button', 'qcard'); b.type = 'button';
     b.dataset.qrow = row; b.dataset.qkey = keyOf(e);
     b.setAttribute('aria-pressed', isPressed(e) ? 'true' : 'false');
-    var text = (row === 'freq' || row === 'rec') ? e.name : labelFor(e.name, fe.sel, fe.other);
+    var isO = e.name === OMAKASE, full = labelFor(e.name, fe.sel, fe.other);
+    var text = isO ? full : e.name;
     b.appendChild(el('span', 'qt', text));
+    var ss = isO ? '' : subSummary(fe);
+    if(ss) b.appendChild(el('small', 'qn qs', ss));
     if(extra) b.appendChild(el('small', row === 'rec' ? 'qn recwhy' : 'qn', extra));
     b.addEventListener('click', function(){ applyEntry(e); focusCard(row, keyOf(e)); });
     item.appendChild(b);
     if(row === 'fav'){
       var x = el('button', 'qdel', '\u00d7'); x.type = 'button';
-      x.setAttribute('aria-label', '「' + text + '」をお気に入りから外す');
+      x.setAttribute('aria-label', '「' + full + '」をお気に入りから外す');
       x.addEventListener('click', function(){ removeFav(e); });
       item.appendChild(x);
     }
@@ -3542,6 +3572,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!$('scrim').classList.contains('open')) return;
     pending = buildMessage();
     paintMsg($('sheet-msg'), pending);
+    paintSummary();
   }
   $('subok').addEventListener('click', function(){
     subOk = !subOk; this.setAttribute('aria-pressed', subOk ? 'true' : 'false');
@@ -3894,6 +3925,23 @@ input[type="time"].field{width:auto;min-width:140px}
   $('sb-meal-time').addEventListener('input', function(){ $('meal-time').value = this.value; renderQuick(); syncSheetWhen(); updateSheetMsg(); });
   $('sb-clean-time').addEventListener('input', function(){ $('clean-time').value = this.value; syncSheetWhen(); updateSheetMsg(); });
   $('memo').addEventListener('input', updateSheetMsg);
+  // 確認シートの、頼む内容（1行）
+  function sheetSummaryText(){
+    var parts = [];
+    if(mealCount() > 0){
+      var names = dishes.map(dishLabel);
+      if(freeText()) names.push(freeText());
+      if(omakase) names.push(labelFor(OMAKASE, omakaseEntry().sel, omakaseEntry().other));
+      parts.push('🍳 ' + names.join('・') + '（' + people + '人分）');
+    }
+    if(usual) parts.push('🧹 いつもの掃除');
+    var sl = [];
+    shop.forEach(function(nm){ if((qty[nm] || 0) >= 1) sl.push(nm + '×' + qty[nm]); });
+    if(shopOther()) sl.push(shopOther());
+    if(sl.length) parts.push('🛒 ' + sl.join('・'));
+    return parts.join('／');
+  }
+  function paintSummary(){ var t = sheetSummaryText(); $('sheet-summary').textContent = t; $('sheet-summary').hidden = !t; }
   function openSheet(){
     pending = buildMessage();
     if(!pending) return;
@@ -3902,6 +3950,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('subok').setAttribute('aria-pressed', subOk ? 'true' : 'false');
     showSheetErr('');
     syncSheetWhen();
+    paintSummary();
     paintMsg($('sheet-msg'), pending);
     lastFocus = document.activeElement;
     scrim.classList.add('open');
@@ -4050,7 +4099,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // 保存済みの献立にも無い料理だけを足す（利用者が削除・名前変更した料理は確認済みなので戻らない）。
   // 初めてこの仕組みが動く端末では、今回追加した料理以外を確認済みとみなす。
   var SEEN_KEY = 'otetsudai-menu-seen-v1';
-  var MENU_ADDED_NOW = ['焼肉','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼','おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー'];
+  var MENU_ADDED_NOW = ['つけ麺','油そば','焼肉','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼','おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ','寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー'];
   function loadSeen(){
     try{
       var raw = window.localStorage.getItem(SEEN_KEY);
@@ -4099,7 +4148,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // 保存済みの同じ料理・同じ見出しのグループに、未確認で、まだ無い選択肢だけを末尾へ足す。
   // 利用者が消した選択肢、消した・見出しを変えたグループには足さない。
   var SUBSEEN_KEY = 'otetsudai-subopts-seen-v1';
-  var SUB_ADDED_NOW = ['焼肉	お肉	牛カルビ', '焼肉	お肉	牛ロース', '焼肉	お肉	牛タン', '焼肉	お肉	豚バラ', '焼肉	お肉	鶏もも', '焼肉	お肉	ホルモン', '焼肉	たれ	甘口', '焼肉	たれ	中辛', '焼肉	たれ	塩', '焼肉	たれ	レモン', 'アヒージョ	具材	キャベツ', 'アヒージョ	具材	はんぺん'];   // 今回の追加分（初めて動く端末では未確認扱い）
+  var SUB_ADDED_NOW = ['つけ麺	スープ	魚介豚骨', 'つけ麺	スープ	醤油', 'つけ麺	スープ	味噌', 'つけ麺	スープ	塩', 'つけ麺	スープ	辛つけ麺', 'つけ麺	麺	冷や盛り', 'つけ麺	麺	あつ盛り', 'つけ麺	トッピング	チャーシュー', 'つけ麺	トッピング	煮卵', 'つけ麺	トッピング	メンマ', 'つけ麺	トッピング	ねぎ', 'つけ麺	トッピング	のり', 'つけ麺	トッピング	魚粉', 'つけ麺	トッピング	柚子', '油そば	味	醤油', '油そば	味	塩', '油そば	味	辛味', '油そば	トッピング	温玉', '油そば	トッピング	チャーシュー', '油そば	トッピング	メンマ', '油そば	トッピング	ねぎ', '油そば	トッピング	のり', '油そば	トッピング	刻み玉ねぎ', '油そば	トッピング	マヨネーズ', '油そば	トッピング	ラー油', '油そば	トッピング	酢', '焼肉	お肉	牛カルビ', '焼肉	お肉	牛ロース', '焼肉	お肉	牛タン', '焼肉	お肉	豚バラ', '焼肉	お肉	鶏もも', '焼肉	お肉	ホルモン', '焼肉	たれ	甘口', '焼肉	たれ	中辛', '焼肉	たれ	塩', '焼肉	たれ	レモン', 'アヒージョ	具材	キャベツ', 'アヒージョ	具材	はんぺん'];   // 今回の追加分（初めて動く端末では未確認扱い）
   function loadSubSeen(){
     try{
       var raw = window.localStorage.getItem(SUBSEEN_KEY);
@@ -4295,7 +4344,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var WD = '日月火水木金土';
   var REASONS = ['品切れでした', '材料がありませんでした', '今日は難しいです', 'その他'];
   var LINK_BASE = 'https://liff.line.me/' + LIFF_ID + '?reply=';
-  var liffReady = false, liffType = '', liffInClient = false, myHash = '';
+  var liffReady = false, liffType = '', liffInClient = false, myHash = '', myHashReady = false;
   var replyId = '', replyOrderData = null, replyErr = '', replyNotice = '', rs = { mode: 'main' };
   var ordersData = [], myHashP = null, answerMode = false, replyRendered = false;
 
@@ -4384,10 +4433,26 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // ---- 状態の表示（言葉＋色） ----
   function stBadge(st){ return el('span', 'stbadge st-' + st, ST_WORD[st] || st); }
-  function manualDone(id, kind, after){
+  function showUndoToast(text, fn){
+    rdUndoFn = fn; $('rd-toast-text').textContent = text; $('rd-toast').hidden = false;
+    clearTimeout(rdToastTimer);
+    rdToastTimer = setTimeout(function(){ $('rd-toast').hidden = true; rdUndoFn = null; }, 6000);
+  }
+  function manualDone(id, kind, after, prevSt){
     var ch = {}; ch[kind] = 'done';
     syncPost({ action: 'replyOrder', id: id, changes: ch, kind: 'manual', text: KIND_NAME[kind] + 'を「済み」にしました', by: 'orderer' })
-      .then(function(res){ if(res && res.ok && res.order && replyId === id) replyOrderData = res.order; }).catch(function(){})
+      .then(function(res){
+        if(!(res && res.ok)) return;
+        if(res.order && replyId === id) replyOrderData = res.order;
+        if(prevSt && prevSt !== 'done'){
+          showUndoToast('「' + KIND_NAME[kind] + '」を済みにしました', function(){   // 直前の状態に戻す
+            var c2 = {}; c2[kind] = prevSt;
+            syncPost({ action: 'replyOrder', id: id, changes: c2, kind: 'manual', text: KIND_NAME[kind] + 'を元に戻しました', by: 'orderer' })
+              .then(function(r2){ if(r2 && r2.ok && r2.order && replyId === id) replyOrderData = r2.order; }).catch(function(){})
+              .then(function(){ if(replyId) renderReply(); else ordersRefresh(); });
+          });
+        }
+      }).catch(function(){})
       .then(after);
   }
 
@@ -4496,7 +4561,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(!o.canceled && !dropped && stOf(o, k) !== 'done'){
         var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
         bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
-        bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh); });
+        bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh, stOf(o, k)); });
         row.appendChild(bt);
       }
       b.appendChild(row);
@@ -4572,7 +4637,7 @@ input[type="time"].field{width:auto;min-width:140px}
     liffReady = true;
     if(!replyId){ var id = getReplyId(); if(id) enterReply(id); }
     if(replyId){
-      if(window.liff && liffInClient) getMyHash().then(function(h){ myHash = h; renderReply(); });
+      if(window.liff && liffInClient) getMyHash().then(function(h){ myHash = h; myHashReady = true; renderReply(); });
       renderReply();
     }
     ordersRefresh();
@@ -4900,14 +4965,8 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!pend.length) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
     else{
       if(nones.length) rvBtn(v, '👌 OKで返事する', false, function(){ toPreviewPlan(o, { oks: nones }, 'main'); }).classList.add('big');
-      if(acks.length) rvBtn(v, '✅ できたで返事する', false, function(){
-        if(acks.length === 1){ toPreviewPlan(o, { dones: acks }, 'main'); return; }
-        rs.selKinds = acks.slice(); rs.sel = {}; acks.forEach(function(k){ rs.sel[k] = true; });
-        rs.mode = 'doneSel'; renderReply();
-      }).classList.add('big');
-      if(nones.length) rvBtn(v, '✅ もうできました', false, function(){
-        if(nones.length === 1){ toPreviewPlan(o, { dones: nones }, 'main'); return; }
-        rs.selKinds = nones.slice(); rs.sel = {}; nones.forEach(function(k){ rs.sel[k] = true; });
+      rvBtn(v, '✅ できました', false, function(){
+        rs.selKinds = pend.slice(); rs.sel = {}; pend.forEach(function(k){ rs.sel[k] = true; });
         rs.mode = 'doneSel'; renderReply();
       }).classList.add('big');
       rvBtn(v, '💬 相談する', false, function(){
@@ -4927,9 +4986,9 @@ input[type="time"].field{width:auto;min-width:140px}
     var pnote = prevNote(o, k);
     if(pnote) card.appendChild(el('p', 'rv-prev', pnote));
     if(canManual && stOf(o, k) !== 'done'){
-      var bt = el('button', 'mini sub', '済みにする'); bt.type = 'button';
+      var bt = el('button', 'mini sub rv-manual', '済みにする'); bt.type = 'button';
       bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
-      bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, renderReply); });
+      bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, renderReply, stOf(o, k)); });
       card.appendChild(bt);
     }
     return card;
@@ -5136,13 +5195,31 @@ input[type="time"].field{width:auto;min-width:140px}
     v.appendChild(rvBig(o));
     var expired = o.target.date < dateStr(new Date());
     var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
-    var last = null, pendingC = null;
+    var last = null, pendingC = null, answered = {};   // answered：種類ごとに、答え済みの料理
+    var kindOf = { 'ご飯': 'meal', '掃除': 'clean', '買い物': 'shop' };
     (o.replies || []).forEach(function(r){
       if(!r) return;
       if(r.by === 'matsunaga') last = r;
-      if(r.by === 'matsunaga' && r.kind === 'consult' && r.detail && typeof r.detail === 'object') pendingC = r;
-      else if(r.by === 'orderer' && r.kind === 'answer') pendingC = null;
+      if(r.by === 'matsunaga' && r.kind === 'consult' && r.detail && typeof r.detail === 'object'){ pendingC = r; answered = {}; }
+      else if(pendingC && r.by === 'orderer' && r.kind === 'answer'){
+        String(r.text || '').split('\n').forEach(function(ln){
+          var m = /^(?:🍳|🧹|🛒) (ご飯|掃除|買い物)：(.+?) → /.exec(ln), m2 = /^(?:🍳|🧹|🛒) (ご飯|掃除|買い物)：/.exec(ln);
+          if(m){ var kk = kindOf[m[1]]; (answered[kk] = answered[kk] || {})[m[2]] = true; }
+          else if(m2){ var k2 = kindOf[m2[1]]; (answered[k2] = answered[k2] || {}).__all = true; }
+        });
+      }
     });
+    var det = null;
+    if(pendingC){   // まだ答えていない料理だけを残す（ひとことだけの返事では消えない）
+      det = {};
+      Object.keys(pendingC.detail).forEach(function(k){
+        var v0 = pendingC.detail[k], ans = answered[k] || {};
+        if(ans.__all) return;
+        if(Array.isArray(v0)){ var rest = v0.filter(function(e){ return !ans[e.dish]; }); if(rest.length) det[k] = rest; }
+        else det[k] = v0;
+      });
+      if(!Object.keys(det).length){ det = null; pendingC = null; }
+    }
     function matsuCard(r){
       var lc = el('div', 'rv-card');
       lc.appendChild(el('p', 'rv-kn', '松永さんのお返事' + (hhmm(r.at) ? '（' + hhmm(r.at) + '）' : '')));
@@ -5154,11 +5231,12 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     if(pendingC) v.appendChild(matsuCard(pendingC));
     if(last && last !== pendingC) v.appendChild(matsuCard(last));
-    var det = pendingC ? pendingC.detail : null;   // まだ答えていない最新の相談（あとからひとことだけ来ても残る）
     function itemKind(k){ return !!(det && Array.isArray(det[k]) && det[k].length > 0); }
     if(!liffReady){ v.appendChild(el('p', 'note', 'LINEに接続しています…')); return; }
     if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
     if(!canSend){ v.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。')); return; }
+    if(o.ordererHash && !myHashReady){ v.appendChild(el('p', 'note', '確認しています…')); return; }
+    if(o.ordererHash && myHash !== o.ordererHash){ v.appendChild(el('p', 'rv-err', 'ぴーちゃん（お願いした人）が答える画面です')); return; }   // ordererHash が空の古い依頼は誰でも可
     if(!rs.a) rs.a = {};
     if(!rs.ai) rs.ai = {};
     if(rs.mode === 'preview'){ renderActions(v, o); return; }
@@ -5214,7 +5292,7 @@ input[type="time"].field{width:auto;min-width:140px}
           dk2.forEach(function(e){ if(!en && e.dish === item) en = e; });
           if(!en){ out.push(item); continue; }
           var a0 = ans[item];
-          if(!a0){ out.push(item); allA = false; continue; }
+          if(!a0){ rs.err = '相談された料理すべてに、答えを選んでください。'; rs.errBox = 'a:' + ck + ':' + item; renderReply(); return; }
           anyA = true;
           var hd = KIND_ICON[ck] + ' ' + KIND_NAME[ck] + '：' + item + ' → ';
           if(a0.t === 'ok'){ out.push(en.alt); klines.push(hd + en.alt + (en.altMode === 'done' ? 'で了解です' : 'でお願いします')); }
@@ -5259,8 +5337,8 @@ input[type="time"].field{width:auto;min-width:140px}
       rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n') + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + replyId;
       renderReply();
     });
-    sb.disabled = !!rs.sending || !anyPicked();
-    ft.addEventListener('input', function(){ rs.free = ft.value; sb.disabled = !!rs.sending || !anyPicked(); });
+    sb.disabled = !!rs.sending;
+    ft.addEventListener('input', function(){ rs.free = ft.value; });
   }
 
   function renderReply(){ renderReplyInner(); rvFocusErr(); }
