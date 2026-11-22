@@ -451,6 +451,11 @@ input[type="time"].field{width:auto;min-width:140px}
 #tag-add-panel .row{margin-top:8px}
 .aimark{margin-left:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px;background:var(--accent);color:var(--accent-fg)}
 .head-btns{display:flex;align-items:center;gap:6px;flex:none}
+.sort-wrap{position:relative;display:inline-block}
+.sort-pop{position:absolute;right:0;top:100%;z-index:15;min-width:12em;margin-top:4px;padding:4px;border:2px solid var(--accent);border-radius:8px;background:var(--surface);box-shadow:0 6px 16px var(--shadow)}
+.sort-pop[hidden]{display:none}
+.sort-pop button{display:block;width:100%;min-height:44px;padding:6px 10px;border:0;border-radius:6px;background:none;color:var(--fg);font:inherit;text-align:left;white-space:nowrap;cursor:pointer}
+.sort-pop button[aria-checked="true"]{font-weight:700;color:var(--accent);background:var(--accent-soft)}
 .sort-btn{min-height:44px;padding:4px 10px;border:2px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font-weight:700;font-size:12px;cursor:pointer}
 .dcnt{position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:1px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:11px;font-weight:700;line-height:16px;text-align:center}
 .notice{margin:0 0 10px;padding:8px 10px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface);font-size:13px;font-weight:700}
@@ -587,7 +592,7 @@ input[type="time"].field{width:auto;min-width:140px}
 
     <section class="sec" id="tag-find">
       <div id="mood-row" style="margin-bottom:12px"><h2>気分で探す</h2><div class="mood-chips" id="mood-chips" role="group" aria-label="気分で探す"></div></div>
-      <div class="tag-find-head"><h2>食材で探す</h2><span class="tag-find-tools"><button type="button" class="mini sub tiny" id="tag-sort-toggle">よく食べる順</button><button type="button" class="mini sub tiny" id="tag-reorder-btn" hidden>⇅ 並び替え</button><button type="button" class="mini sub tiny" id="tag-edit-toggle" aria-pressed="false" aria-label="食材の編集">✎</button></span></div>
+      <div class="tag-find-head"><h2>食材で探す</h2><span class="tag-find-tools"><span class="sort-wrap"><button type="button" class="mini sub tiny" id="tag-sort-toggle">並び：よく食べる順 ▾</button><div class="sort-pop" id="tag-sort-pop" role="menu" aria-label="食材の並び順" hidden></div></span><button type="button" class="mini sub tiny" id="tag-reorder-btn" hidden>⇅ 並び替え</button><button type="button" class="mini sub tiny" id="tag-edit-toggle" aria-pressed="false" aria-label="食材の編集">✎</button></span></div>
       <input class="field" id="tag-search" type="search" placeholder="料理名や食材で探す（例：鶏肉）" autocomplete="off" aria-label="料理名や食材で探す">
       <div class="chips" id="tag-chips" style="margin-top:10px"></div>
       <div class="subbox" id="tag-add-panel" role="group" aria-label="食材を追加" hidden></div>
@@ -613,7 +618,7 @@ input[type="time"].field{width:auto;min-width:140px}
     <section class="sec">
       <div class="sec-head">
         <h2 id="menu-h">献立をお選びください（複数可）</h2>
-        <div class="head-btns"><button type="button" class="sort-btn" id="sort-toggle">よく頼む順</button></div>
+        <div class="head-btns"><span class="sort-wrap"><button type="button" class="sort-btn" id="sort-toggle">並び：よく頼む順 ▾</button><div class="sort-pop" id="sort-pop" role="menu" aria-label="並び順" hidden></div></span></div>
       </div>
       <div class="undo" id="edit-undo" role="status" hidden>
         <span id="edit-undo-text"></span>
@@ -1915,9 +1920,9 @@ input[type="time"].field{width:auto;min-width:140px}
     rdTagDefault = { meat: prim.slice(), other: restAll.slice() };   // よく食べる順
     if(tagSortMode === 'manual' && tagOrder){ var mr = applyTagOrder(prim, restAll, cnt); prim = mr.meat; restAll = mr.other; }
     var sbtn = $('tag-sort-toggle');
-    sbtn.textContent = tagSortMode === 'manual' ? '並べた順' : 'よく食べる順';
-    sbtn.setAttribute('aria-label', '食材の表示順：' + (tagSortMode === 'manual' ? '並べた順（押すとよく食べる順）' : 'よく食べる順（押すと並べた順）'));
-    sbtn.hidden = !!tagReorder;
+    sbtn.textContent = '並び：' + (tagSortMode === 'manual' ? '並べた順' : 'よく食べる順') + ' ▾';
+    sbtn.setAttribute('aria-label', '食材の並び順：' + (tagSortMode === 'manual' ? '並べた順' : 'よく食べる順') + '（押すと選べます）');
+    sbtn.parentNode.hidden = !!tagReorder;
     $('tag-reorder-btn').hidden = false; $('tag-reorder-btn').disabled = !!tagEditing;
     $('tag-edit-toggle').disabled = !!tagReorder;
     $('tag-reorder-btn').textContent = tagReorder ? '✓ 並び替え終わり' : '⇅ 並び替え';
@@ -2431,23 +2436,54 @@ input[type="time"].field{width:auto;min-width:140px}
   // ---- 並び順（よく頼む順／手動の並び順） ----
   var SORT_KEY = 'otetsudai-sort-v1';
   var sortMode = 'freq';
-  try{ if(window.localStorage.getItem(SORT_KEY) === 'reg') sortMode = 'reg'; }catch(e){}
+  var SORT_LABELS = { freq: 'よく頼む順', recent: '最近頼んだ順', reg: '手動の並び順' };
+  try{ var sv = window.localStorage.getItem(SORT_KEY); if(sv === 'reg' || sv === 'recent') sortMode = sv; }catch(e){}
   function updSort(){
     var b = $('sort-toggle');
     b.hidden = false;
-    b.textContent = sortMode === 'freq' ? 'よく頼む順' : '手動の並び順';
-    b.setAttribute('aria-label', '並び順：' + (sortMode === 'freq' ? 'よく頼む順（押すと手動の並び順に切り替え）' : '手動の並び順（押すとよく頼む順に切り替え）'));
+    b.textContent = '並び：' + SORT_LABELS[sortMode] + ' ▾';
+    b.setAttribute('aria-label', '並び順：' + SORT_LABELS[sortMode] + '（押すと選べます）');
+  }
+  function sortByRecent(names, at){
+    return names.map(function(nm, i){ return { nm: nm, i: i }; }).sort(function(a, b){
+      var x = at[a.nm], y = at[b.nm];
+      if(x != null && y != null) return (y - x) || (a.i - b.i);
+      if(x != null) return -1;
+      if(y != null) return 1;
+      return a.i - b.i;   // 一度も頼んでいない料理は、後ろに手動の並び順で
+    }).map(function(x){ return x.nm; });
+  }
+  // 並び順の選択（ページ内のポップ）
+  function setupSortPop(btn, pop, opts, getCur, onPick){
+    function close(){ pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    function paint(){
+      pop.innerHTML = '';
+      opts.forEach(function(o){
+        var on = getCur() === o[0];
+        var b = el('button', null, (on ? '✓ ' : '　') + o[1]); b.type = 'button';
+        b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.addEventListener('click', function(){ close(); onPick(o[0]); btn.focus(); });
+        pop.appendChild(b);
+      });
+    }
+    btn.setAttribute('aria-haspopup', 'true'); btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(pop.hidden){ paint(); pop.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+      else close();
+    });
+    document.addEventListener('click', function(e){ if(!pop.hidden && !pop.contains(e.target)) close(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !pop.hidden){ close(); btn.focus(); } });
   }
   function sortByFreq(names, hc){
     return names.map(function(nm, i){ return { nm: nm, i: i }; }).sort(function(a, b){
       return ((hc[b.nm] || 0) - (hc[a.nm] || 0)) || (a.i - b.i);
     }).map(function(x){ return x.nm; });
   }
-  $('sort-toggle').addEventListener('click', function(){
-    sortMode = sortMode === 'freq' ? 'reg' : 'freq';
+  setupSortPop($('sort-toggle'), $('sort-pop'), [['freq', SORT_LABELS.freq], ['recent', SORT_LABELS.recent], ['reg', SORT_LABELS.reg]], function(){ return sortMode; }, function(v){
+    sortMode = v;
     try{ window.localStorage.setItem(SORT_KEY, sortMode); }catch(e){}
     render();
-    $('sort-toggle').focus();
   });
 
   // 料理チップのすぐ後ろに入れるパネルの印（幅いっぱい・三角つき）
@@ -2753,6 +2789,8 @@ input[type="time"].field{width:auto;min-width:140px}
     var filt = filterActive();
     var histCounts = {};
     orderHist.forEach(function(he){ histCounts[he.name] = (histCounts[he.name] || 0) + 1; });
+    var recentAt = {};   // 料理ごとに、最後に頼んだ日時（日時が無い古い記録は順番で代用）
+    orderHist.forEach(function(he, i){ var sc = typeof he.t === 'number' ? he.t : i; if(recentAt[he.name] == null || sc > recentAt[he.name]) recentAt[he.name] = sc; });
     if(reorderAll){   // 分類の並び替え：分類の見出しだけをチップで並べる
       menuEl.appendChild(el('p', 'rd-banner', RD_BANNER));
       menuEl.appendChild(el('p', 'note rd-guide', RD_GUIDE));
@@ -2766,6 +2804,7 @@ input[type="time"].field{width:auto;min-width:140px}
       var ed = !!editCats[g[0]];   // この分類だけ編集状態（編集中は絞り込みも並び替えもせず、登録順）
       var names = (filt && !ed) ? g[1].filter(tagMatch) : g[1];
       if(!ed && sortMode === 'freq') names = sortByFreq(names, histCounts);
+      else if(!ed && sortMode === 'recent') names = sortByRecent(names, recentAt);
       if(filt && !ed && names.length === 0) return;
       var open = ed || (filt ? names.length > 0 : !!catOpen[g[0]]);
       if(reorderCat === g[0]){   // この分類の並び替え：今のチップの並びのまま、持ち手だけを出す
@@ -3042,8 +3081,8 @@ input[type="time"].field{width:auto;min-width:140px}
     else{ rdMenu = null; rdConfirm = false; }
     render();
   });
-  $('tag-sort-toggle').addEventListener('click', function(){
-    tagSortMode = tagSortMode === 'manual' ? 'eaten' : 'manual'; saveTagSort(); render();
+  setupSortPop($('tag-sort-toggle'), $('tag-sort-pop'), [['eaten', 'よく食べる順'], ['manual', '並べた順']], function(){ return tagSortMode; }, function(v){
+    tagSortMode = v; saveTagSort(); render();
   });
   $('cat-add-open').addEventListener('click', function(){
     var row = $('cat-add-row'), open = row.hidden;
