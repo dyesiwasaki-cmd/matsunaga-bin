@@ -127,6 +127,13 @@ button,input,textarea{font:inherit;color:inherit}
 .cat-edit-btn:disabled,.tag-find-tools .tiny:disabled{opacity:.4;cursor:not-allowed}
 .cat-head h3{margin:0 !important}
 .cat-head:first-child{margin-top:0}
+/* 分類の見出しを、スクロール中も固定欄（タブ＋検索）のすぐ下に貼り付ける。次の分類が来たら入れ替わる */
+.cat-sec{margin-top:14px}
+.cat-sec:first-child{margin-top:0}
+.cat-sec > .cat-head{position:sticky;top:var(--head-top,110px);z-index:6;margin:0;padding:6px 0;background:var(--bg);box-shadow:0 2px 0 var(--line)}
+#menu.no-stick .cat-sec > .cat-head{position:static;box-shadow:none}
+.cat-sec .chip,.cat-sec .inpanel,.cat-sec .dgroup{scroll-margin-top:calc(var(--stick-h,110px) + var(--cat-h,48px))}
+.cat-close{display:block;width:100%;min-height:44px;margin:10px 0 2px;font-size:15px}
 .del-cat{flex:none;width:44px;height:44px;border:2px solid var(--line);border-radius:4px;background:var(--surface);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
 .edit-item{display:inline-flex;align-items:stretch;max-width:100%;min-height:44px;border:2px dashed var(--muted);border-radius:4px;background:var(--surface)}
 .edit-item > span{display:flex;align-items:center;padding:6px 10px;font-size:15px;word-break:break-word;min-width:0}
@@ -978,7 +985,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 49;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 50;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3448,6 +3455,8 @@ input[type="time"].field{width:auto;min-width:140px}
     var bar = document.querySelector('.bar'), bh = bar ? bar.offsetHeight : 0;
     var need = p.getBoundingClientRect().bottom - (window.innerHeight - bh - 8);
     var sbot = Math.max(0, $('tabs-stick').getBoundingClientRect().bottom);
+    var hd = chip.closest('.cat-sec'); hd = hd && hd.querySelector('.cat-head');
+    if(hd && !menuEl.classList.contains('no-stick')) sbot += hd.offsetHeight;
     var d = Math.min(need, chip.getBoundingClientRect().top - (sbot + 8));
     if(d > 0) window.scrollBy({ top: d, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
@@ -3866,12 +3875,33 @@ input[type="time"].field{width:auto;min-width:140px}
   });
   paintViewSeg();
 
+  // 分類を閉じる：閉じたあと、その分類の見出しが固定欄のすぐ下に来るようにスクロールを合わせる
+  function focusCatToggle(name){
+    var bs = menuEl.querySelectorAll('button[data-cattoggle]');
+    for(var i = 0; i < bs.length; i++) if(bs[i].dataset.cattoggle === name){ try{ bs[i].focus({ preventScroll: true }); }catch(e){ bs[i].focus(); } break; }
+  }
+  function alignCat(name){
+    var bs = menuEl.querySelectorAll('button[data-cattoggle]'), sec = null;
+    for(var i = 0; i < bs.length; i++) if(bs[i].dataset.cattoggle === name){ sec = bs[i].closest('.cat-sec'); break; }
+    if(!sec) return;
+    var top = $('tabs-stick').getBoundingClientRect().bottom, r = sec.getBoundingClientRect();
+    if(r.top < top - 1) window.scrollBy(0, r.top - top);
+  }
+  function closeCat(name){
+    catOpen[name] = false; saveCatOpen(); render();
+    focusCatToggle(name); alignCat(name);
+  }
+  function updCatH(){
+    var h = menuEl.querySelector('.cat-sec > .cat-head');
+    document.documentElement.style.setProperty('--cat-h', (h ? h.offsetHeight : 48) + 'px');
+  }
   // メニュー表を描画
   function render(){
     Object.keys(subSel).forEach(function(k){
       if(dishes.indexOf(k) < 0){ delete subSel[k]; delete subOther[k]; }
     });
     menuEl.innerHTML = ''; n = 0;
+    menuEl.classList.toggle('no-stick', !!(reorderAll || reorderCat));   // 並び替え中は見出しを貼り付けない
     updSort();
     var filt = filterActive();
     var totalMatch = 0;
@@ -3945,9 +3975,10 @@ input[type="time"].field{width:auto;min-width:140px}
         ct.appendChild(document.createTextNode((open ? '▾ ' : '▸ ') + g[0] + '（' + (filt ? names.length : g[1].length) + '）'));
         if(selN){ var cs = el('span', 'cat-sel', '✓' + selN); cs.setAttribute('aria-label', '選択中' + selN + '品'); ct.appendChild(cs); }
         ct.addEventListener('click', function(){
-          catOpen[g[0]] = !catOpen[g[0]]; saveCatOpen(); render();
-          var bs = menuEl.querySelectorAll('button[data-cattoggle]');
-          for(var i = 0; i < bs.length; i++) if(bs[i].dataset.cattoggle === g[0]){ bs[i].focus(); break; }
+          var wasOpen = !!catOpen[g[0]];
+          catOpen[g[0]] = !wasOpen; saveCatOpen(); render();
+          focusCatToggle(g[0]);
+          if(wasOpen) alignCat(g[0]);
         });
         h3.appendChild(ct);
       }
@@ -3980,7 +4011,7 @@ input[type="time"].field{width:auto;min-width:140px}
         rdEnter(); render();
       });
       var ctools = el('div', 'cat-tools'); ctools.appendChild(rb); ctools.appendChild(eb); head.appendChild(ctools);
-      menuEl.appendChild(head);
+      var csec = el('div', 'cat-sec'); menuEl.appendChild(csec); csec.appendChild(head);
       var gridOn = viewMode === 'photo' && !ed;
       var box = el('div', gridOn ? 'chips dgrid' : 'chips');
       (open ? names : []).forEach(function(name){
@@ -4028,7 +4059,12 @@ input[type="time"].field{width:auto;min-width:140px}
         }
         appendDishCell(box, name, gridOn, histCounts, '');
       });
-      if(open) menuEl.appendChild(box);
+      if(open) csec.appendChild(box);
+      if(open && !ed && !filt){   // 並びのいちばん最後に、この分類を閉じるボタン
+        var cclose = el('button', 'mini sub cat-close', '▴ ' + g[0] + 'を閉じる'); cclose.type = 'button'; cclose.dataset.catclose = g[0];
+        cclose.addEventListener('click', function(){ closeCat(g[0]); });
+        csec.appendChild(cclose);
+      }
       if(ed){
         var row = el('div', 'add-row');
         var inp = el('input', 'field');
@@ -4043,13 +4079,14 @@ input[type="time"].field{width:auto;min-width:140px}
           if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go(); }
         });
         row.appendChild(inp); row.appendChild(ab);
-        menuEl.appendChild(row);
+        csec.appendChild(row);
       }
     });
     renderFind();
     renderQuick();
     paintOmakase();
     placeTriangles();
+    updCatH();
   }
 
   function setMsg(t){ $('edit-msg').textContent = t; }
@@ -4659,8 +4696,13 @@ input[type="time"].field{width:auto;min-width:140px}
   // ---- タブの固定表示 ----
   var tabsStick = $('tabs-stick');
   function safeTop(){ try{ return parseFloat(window.getComputedStyle(document.body, '::before').height) || 0; }catch(e){ return 0; } }
-  function updStick(){ document.documentElement.style.setProperty('--stick-h', (tabsStick.offsetHeight + safeTop() + 8) + 'px'); }
+  function updStick(){
+    var h = tabsStick.offsetHeight + safeTop();
+    document.documentElement.style.setProperty('--stick-h', (h + 8) + 'px');
+    document.documentElement.style.setProperty('--head-top', h + 'px');
+  }
   updStick();
+  if(window.ResizeObserver) new ResizeObserver(updStick).observe(tabsStick);
   window.addEventListener('resize', updStick);
   if(window.IntersectionObserver){
     new IntersectionObserver(function(es){
