@@ -545,14 +545,24 @@ input[type="time"].field{width:auto;min-width:140px}
 .dthumb:active{filter:brightness(.92)}
 .dthumb:focus-visible,.dview .btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .subwrap{display:flow-root}
-.dthumb-sub{float:right;width:75px;height:56px;margin:2px 0 4px 8px}
-.dthumb-sub.empty{width:44px;height:44px}
+.dthumb-sub{width:56px;height:56px;margin:0}
+.dthumb-sub.empty{width:56px;height:56px;font-size:22px}
+.dinfo{display:flex;align-items:flex-start;gap:10px;margin:0 0 6px}
+.dinfo .dthumb{flex:none}
+.dinfo-body{flex:1 1 auto;min-width:0}
+.dinfo-body .sub-title{margin:0;min-height:34px;display:flex;align-items:center;flex-wrap:wrap}
+.dinfo-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;margin:2px 0 0;padding:2px 0;border:0;background:none;color:var(--fg);font:inherit;font-size:13px;line-height:1.5;text-align:left;overflow-wrap:anywhere;cursor:pointer}
+.dinfo-desc.open{display:block;-webkit-line-clamp:unset;overflow:visible}
+.dinfo-desc.dinfo-write{color:var(--muted);font-size:12px;text-decoration:underline}
+.dinfo-desc:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .dview{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:rgba(10,14,13,.82)}
 .dview[hidden]{display:none}
 .dview-box{width:100%;max-width:520px;max-height:100%;overflow:auto;padding:14px;border:2px solid var(--accent);border-radius:12px;background:var(--surface);color:var(--fg)}
 .dview-title{margin:0 0 8px;font-size:17px}
-.dview-imgwrap{display:flex;justify-content:center;min-height:80px;border-radius:8px;background:var(--accent-soft)}
-.dview-imgwrap img{display:block;max-width:100%;max-height:55vh;object-fit:contain;border-radius:8px}
+.dview-imgwrap{display:flex;align-items:center;justify-content:center;width:min(100%,52vh);aspect-ratio:1 / 1;margin:0 auto;overflow:hidden;border-radius:8px;background:var(--accent-soft)}
+.dview-imgwrap img{display:block;width:100%;height:100%;object-fit:cover}
+.dview-prev{border-color:var(--accent)}
+.dview-btns[hidden]{display:none}
 .dview-imgwrap img[hidden]{display:none}
 .dview-noimg{display:flex;align-items:center;justify-content:center;width:100%;min-height:120px;padding:12px;color:var(--muted);font-size:15px}
 .dview-noimg[hidden]{display:none}
@@ -909,6 +919,10 @@ input[type="time"].field{width:auto;min-width:140px}
       <div class="btns"><button type="button" class="btn sub" id="dview-desc-cancel">やめる</button><button type="button" class="btn main" id="dview-desc-save">保存</button></div>
     </div>
     <p class="dview-msg" id="dview-msg" role="status"></p>
+    <div class="dview-confirm dview-prev" id="dview-prev" hidden>
+      <span>この画像で登録しますか？（真ん中を正方形に切り抜いています）</span>
+      <div class="btns"><button type="button" class="btn sub" id="dview-prev-no">やめる</button><button type="button" class="btn main" id="dview-prev-ok">この画像で登録</button></div>
+    </div>
     <div class="dview-confirm" id="dview-confirm" hidden>
       <span id="dview-confirm-text">この写真を消しますか？（元には戻せません）</span>
       <div class="btns"><button type="button" class="btn sub" id="dview-del-no">やめる</button><button type="button" class="btn sub dng" id="dview-del-yes">消す</button></div>
@@ -985,7 +999,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 51;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 52;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1640,6 +1654,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var IMG_BASE = SYNC_URL ? SYNC_URL.replace(/\/store(\?.*)?$/, '/img?id=') : '';
   var IMG_LONG = 800, IMG_QUALITY = [0.8, 0.65, 0.5], IMG_MAX_BYTES = 400 * 1024, IMG_FILE_MAX = 30 * 1024 * 1024;
   var IMG_TEST = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD431b/AJCt7/12f/0I0UUV/aGV/wC4UP8ABH/0lHlZj/vtb/FL82f/2Q==';   // 向き(EXIF=6)つきの2x1画像。自動で向きが直る環境かを調べる用
+  var dviewPending = null;
   var DESC_KEY = 'otetsudai-desc-v1', DESC_MAX = 120, descMap = {}, descVer = 0, descBusy = false, descEditing = false;
   var imgMap = {}, imgVer = 0, imgAuto = null, dimgTarget = '', dimgBusy = false, dviewName = '', dviewOpener = null, dimgToastTimer = 0;
   function imgInfo(name){ return Object.prototype.hasOwnProperty.call(imgMap, name) && imgMap[name] && typeof imgMap[name] === 'object' ? imgMap[name] : null; }
@@ -1700,11 +1715,12 @@ input[type="time"].field{width:auto;min-width:140px}
     var v = Number(r.version) || 0;
     if(v <= descVer) return;
     descVer = v; descMap = r.value;
+    descRefresh();
     if(!$('dview').hidden) paintView();
   }
   // 大きく表示
   function paintView(){
-    var name = dviewName, info = imgInfo(name), src = imgSrc(info);
+    var name = dviewName, info = imgInfo(name), pend = dviewPending && dviewPending.name === name ? dviewPending : null, src = pend ? pend.url : imgSrc(info);
     $('dview-title').textContent = name;
     var im = $('dview-img');
     if((im.getAttribute('src') || '') !== src){ im.onerror = function(){ $('dview-msg').textContent = '画像を読み込めませんでした'; }; if(src) im.src = src; else im.removeAttribute('src'); }
@@ -1721,6 +1737,10 @@ input[type="time"].field{width:auto;min-width:140px}
     $('dview-del').textContent = restore ? '↩ 元の画像に戻す' : '消す';
     $('dview-confirm-text').textContent = restore ? '登録した写真を外して、元の画像に戻します' : 'この写真を消しますか？（元には戻せません）';
     $('dview-del-yes').textContent = restore ? '戻す' : '消す';
+    // 登録前の確認（正方形の見え方）。確認中はほかの操作を隠す
+    $('dview-prev').hidden = !pend;
+    document.querySelector('#dview .dview-btns').hidden = !!pend;
+    if(pend){ $('dview-by').textContent = '登録前の確認（正方形に切り抜いています）'; $('dview-desc').hidden = true; $('dview-desc-edit').hidden = true; $('dview-descedit').hidden = true; $('dview-confirm').hidden = true; }
   }
   function openImgView(name, opener){
     dviewName = name; dviewOpener = opener || null;
@@ -1731,7 +1751,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('dview-close').focus();
   }
   function closeImgView(){
-    $('dview').hidden = true; $('dview-confirm').hidden = true; descEditing = false; $('dview-img').removeAttribute('src');
+    $('dview').hidden = true; $('dview-confirm').hidden = true; descEditing = false; dviewPending = null; $('dview-img').removeAttribute('src');
     var o = dviewOpener; dviewOpener = null;
     try{ if(o && document.contains(o) && !o.hidden) o.focus(); }catch(e){}
   }
@@ -1799,15 +1819,20 @@ input[type="time"].field{width:auto;min-width:140px}
           try{
             var rw = im.naturalWidth, rh = im.naturalHeight;
             if(!rw || !rh) throw new Error('この画像は読み込めませんでした');
-            var vw = swap ? rh : rw, vh = swap ? rw : rh;
-            var sc = Math.min(1, IMG_LONG / Math.max(vw, vh));
+            var vw = swap ? rh : rw, vh = swap ? rw : rh;   // 見た目の向きでの大きさ
+            // 真ん中を正方形に切り、一辺 IMG_LONG（足りなければそのまま）に縮める。まず向きを直した全体を縮めて、そこから真ん中を切り出す
+            var side = Math.min(vw, vh), out = Math.max(1, Math.min(IMG_LONG, side)), sc = out / side;
             var cw = Math.max(1, Math.round(vw * sc)), ch = Math.max(1, Math.round(vh * sc));
-            var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-            var ctx = cv.getContext('2d');
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch);
+            var tc = document.createElement('canvas'); tc.width = cw; tc.height = ch;
+            var tx = tc.getContext('2d');
+            tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, cw, ch);
             var mx = manual ? imgMatrix(orient, cw, ch) : null;
-            if(mx) ctx.transform(mx[0], mx[1], mx[2], mx[3], mx[4], mx[5]);
-            ctx.drawImage(im, 0, 0, swap ? ch : cw, swap ? cw : ch);
+            if(mx) tx.transform(mx[0], mx[1], mx[2], mx[3], mx[4], mx[5]);
+            tx.drawImage(im, 0, 0, swap ? ch : cw, swap ? cw : ch);
+            var cv = document.createElement('canvas'); cv.width = out; cv.height = out;
+            var ctx = cv.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, out, out);
+            ctx.drawImage(tc, Math.round((cw - out) / 2), Math.round((ch - out) / 2), out, out, 0, 0, out, out);
             var qi = 0;
             (function enc(){
               cv.toBlob(function(bl){
@@ -1829,22 +1854,38 @@ input[type="time"].field{width:auto;min-width:140px}
   function imgUpload(name, file){
     if(!file) return;
     if(file.size > IMG_FILE_MAX){ imgToast('画像が大きすぎます'); return; }
-    dimgBusy = true; imgToast('📷 登録しています…');
-    var by = '';
+    dimgBusy = true; imgToast('📷 画像を整えています…');
     imgShrink(file).then(function(b64){
+      dimgBusy = false; $('dimg-toast').hidden = true;
       if(!b64) throw new Error('画像を読み取れませんでした');
-      return getMyName().then(function(n){ by = n; return syncPost({ action: 'uploadImage', dish: name, dataBase64: b64, src: 'photo', by: by }); });
-    }).then(function(res){
+      if($('dview').hidden || dviewName !== name) openImgView(name, null);
+      dviewPending = { name: name, b64: b64, url: 'data:image/jpeg;base64,' + b64 };
+      paintView();
+      $('dview-prev-ok').focus();
+    }).catch(function(e){
+      dimgBusy = false;
+      imgToast(e && e.message && e.message.indexOf('HTTP') !== 0 ? e.message : '登録できませんでした。通信を確かめてください');
+    });
+  }
+  // 確認で「この画像で登録」を押したら送る
+  function imgSend(){
+    var pd = dviewPending;
+    if(!pd || dimgBusy) return;
+    var name = pd.name, by = '';
+    dimgBusy = true; imgToast('📷 登録しています…');
+    getMyName().then(function(n){ by = n; return syncPost({ action: 'uploadImage', dish: name, dataBase64: pd.b64, src: 'photo', by: by }); }).then(function(res){
       dimgBusy = false;
       if(res && res.ok && res.id){
         var prev = imgInfo(name), keepWeb = prev ? (prev.src === 'web' ? { id: prev.id, by: prev.by || '', at: prev.at || '' } : prev.web) : null;
         imgMap = Object.assign({}, imgMap); imgMap[name] = { id: res.id, src: 'photo', by: by, at: new Date().toISOString() };
         if(keepWeb) imgMap[name].web = keepWeb;
+        dviewPending = null;
         imgRefresh(); imgToast('登録しました');
+        if(!$('dview').hidden) $('dview-pick').focus();
       }else imgToast('登録できませんでした' + (res && res.auth === false ? '。LINEのトークから開き直してください' : ''));
-    }).catch(function(e){
+    }).catch(function(){
       dimgBusy = false;
-      imgToast(e && e.message && e.message.indexOf('HTTP') !== 0 ? e.message : '登録できませんでした。通信を確かめてください');
+      imgToast('登録できませんでした。通信を確かめてください');
     });
   }
   function imgDelete(name){
@@ -1874,6 +1915,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(res && res.ok){
         descMap = Object.assign({}, descMap);
         if(text) descMap[name] = text; else delete descMap[name];
+        descRefresh();
         return res;
       }
       throw new Error((res && res.auth === false) ? 'LINEのトークから開き直してください' : (res && res.error) || '');
@@ -1897,6 +1939,8 @@ input[type="time"].field{width:auto;min-width:140px}
     saveDesc(name, text).then(function(){ descBusy = false; if(dviewName === name) descEditClose(); imgToast('説明を保存しました'); })
       .catch(function(e){ descBusy = false; $('dview-msg').textContent = '保存できませんでした' + (e && e.message ? '（' + e.message + '）' : '。通信を確かめてください'); });
   });
+  $('dview-prev-ok').addEventListener('click', imgSend);
+  $('dview-prev-no').addEventListener('click', function(){ dviewPending = null; paintView(); $('dview-pick').focus(); });
   $('dview-close').addEventListener('click', closeImgView);
   $('dview').addEventListener('click', function(e){ if(e.target === this) closeImgView(); });
   $('dview-pick').addEventListener('click', function(){ pickImg(dviewName); });
@@ -1905,7 +1949,7 @@ input[type="time"].field{width:auto;min-width:140px}
   $('dview-del-yes').addEventListener('click', function(){ imgDelete(dviewName); });
   document.addEventListener('keydown', function(e){
     if($('dview').hidden) return;
-    if(e.key === 'Escape'){ e.preventDefault(); if(descEditing) descEditClose(); else closeImgView(); return; }
+    if(e.key === 'Escape'){ e.preventDefault(); if(dviewPending){ dviewPending = null; paintView(); } else if(descEditing) descEditClose(); else closeImgView(); return; }
     if(e.key === 'Tab'){
       var bs = Array.prototype.filter.call($('dview').querySelectorAll('button, textarea'), function(b){ return !b.hidden && !b.closest('[hidden]'); });
       if(!bs.length) return;
@@ -1914,11 +1958,42 @@ input[type="time"].field{width:auto;min-width:140px}
       else if(!e.shiftKey && i === bs.length - 1){ e.preventDefault(); bs[0].focus(); }
     }
   });
+  // 選んだ料理の欄の上部：小さな画像（無ければ📷）・見出し・🔍・説明（2行まで。押すと全文。空なら「説明を書く」）
+  function paintInfoDesc(box){
+    var name = box.dataset.dish, ds = descOf(name), b = box.querySelector('.dinfo-desc');
+    if(!b) return;
+    b.textContent = ds || '説明を書く'; b.classList.toggle('dinfo-write', !ds); b.classList.remove('open');
+    if(ds) b.setAttribute('aria-expanded', 'false'); else b.removeAttribute('aria-expanded');
+    b.setAttribute('aria-label', ds ? name + 'の説明（押すと全文）' : name + 'の説明を書く');
+    b.onclick = function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(!descOf(name)){ openImgView(name, b); descEditOpen(); return; }
+      var o = b.classList.toggle('open'); b.setAttribute('aria-expanded', o ? 'true' : 'false');
+    };
+  }
+  function descRefresh(){
+    var bs = document.querySelectorAll('.dinfo[data-dish]');
+    for(var i = 0; i < bs.length; i++) paintInfoDesc(bs[i]);
+  }
+  function infoTop(name, title){
+    var box = el('div', 'dinfo'); box.dataset.dish = name;
+    var th = dishThumb(name); if(th){ th.classList.add('dthumb-sub'); box.appendChild(th); }
+    var body = el('div', 'dinfo-body');
+    var tp = el('p', 'sub-title', title); tp.appendChild(imgBtn(name)); body.appendChild(tp);
+    var dsc = el('button', 'dinfo-desc'); dsc.type = 'button'; body.appendChild(dsc);
+    box.appendChild(body); paintInfoDesc(box);
+    return box;
+  }
+  // サブメニューの無い料理：上部だけの欄（選んでいる間、最後に選んだ1つだけ開く）
+  function plainPanel(name){
+    var wrap = el('div', 'subwrap');
+    wrap.appendChild(infoTop(name, name));
+    return wrap;
+  }
   function subPanel(name){
     pruneSub(name);
     var wrap = el('div', 'subwrap');
-    var sth = dishThumb(name); if(sth){ sth.classList.add('dthumb-sub'); wrap.appendChild(sth); }
-    var stp = el('p', 'sub-title', name + 'の種類'); stp.appendChild(imgBtn(name)); wrap.appendChild(stp);
+    wrap.appendChild(infoTop(name, name + 'の種類'));
     visibleGroups(name).forEach(function(g){
       var box = el('div', 'subbox');
       box.setAttribute('role', 'group');
@@ -3750,16 +3825,16 @@ input[type="time"].field{width:auto;min-width:140px}
     b.addEventListener('click', function(){
       toggle(dishes, name);
       b.setAttribute('aria-pressed', dishes.indexOf(name)>=0 ? 'true':'false');
-      if(hasSub(name)){
-        if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
-        render(); focusDishChip(name);
-        if(dishes.indexOf(name) >= 0) revealPanel(name);
-      }
+      // サブメニューの有無にかかわらず、選ぶと欄が開き、外すと閉じる（サブの無い料理は最後に選んだ1つだけ）
+      if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
+      render(); focusDishChip(name);
+      if(dishes.indexOf(name) >= 0) revealPanel(name);
       refresh();
     });
     var gp = el('span', 'dgroup'); gp.appendChild(b); gp.appendChild(dishStar(name)); box.appendChild(gp);
     if(dishes.indexOf(name) >= 0){
-      box.appendChild(hasSub(name) && sub[name].length ? inPanel(subPanel(name), name, 'chip') : inPanel(favRow(name), name, ''));
+      if(hasSub(name) && sub[name].length) box.appendChild(inPanel(subPanel(name), name, 'chip'));
+      else if(dishes[dishes.length - 1] === name) box.appendChild(inPanel(plainPanel(name), name, 'chip'));
     }
   }
 
