@@ -252,6 +252,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .rv-btn.sub[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .st-na{color:var(--muted)}
+.st-wait{color:var(--accent)}
+.rv-missing{outline:3px solid var(--bad,#c62828);outline-offset:2px;border-radius:6px}
+.sheet .btns{position:sticky;bottom:0;z-index:2;margin-bottom:calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 0 calc(8px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -8px 8px -8px var(--shadow)}
+.ord .rv-btn{margin:8px 0}
 .rv-prev,.ord-prev{margin:2px 0 6px;font-size:12px;color:var(--muted)}
 .ord-items{margin:2px 0 0;font-size:13px;overflow-wrap:anywhere}
 .rv-itembox{margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
@@ -805,14 +809,14 @@ input[type="time"].field{width:auto;min-width:140px}
   var SYNC_URL = 'https://matsunaga-bin-api.netlify.app/api/store';
 
   var MENU = [
-    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','焼肉','すき焼き','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
+    ['和食',['肉じゃが','焼き魚定食','生姜焼き','筑前煮','さばの味噌煮','天ぷら','唐揚げ','とんかつ','鮭の塩焼き','ぶり大根','照り焼きチキン','豚の角煮','焼肉','しゃぶしゃぶ','おでん','炊き込みご飯','お好み焼き','もんじゃ焼き','焼き鳥','たこ焼き','鶏そぼろ','あじの南蛮漬け','揚げ出し豆腐','鮭のホイル焼き','肉豆腐','いわしの蒲焼き','かぼちゃのそぼろ煮']],
     ['洋食',['カレー','ハンバーグ','オムライス','グラタン','シチュー','ビーフシチュー','クリームコロッケ','アヒージョ','ドリア','ハヤシライス','ガーリックシュリンプ','エビフライ','コロッケ','メンチカツ','ロールキャベツ','ポトフ','チキン南蛮','ステーキ','オムレツ','ピザ','サンドイッチ','ポークソテー','チキンカツ','白身魚のムニエル','ピカタ','マカロニチーズ']],
     ['中華',['麻婆豆腐','回鍋肉','餃子','青椒肉絲','エビチリ','チャーハン','酢豚','八宝菜','春巻き','焼売','天津飯','棒棒鶏','麻婆茄子','ニラレバ炒め','かに玉','油淋鶏','肉野菜炒め','エビマヨ','ニラ玉','木須肉','鶏肉のカシューナッツ炒め','豚肉ともやしの中華蒸し']],
     ['麺類',['パスタ','ミートスパゲティ','うどん','そば','焼きそば','ラーメン','ナポリタン','カルボナーラ','ペペロンチーノ','冷やし中華','そうめん','焼きうどん','ちゃんぽん','担々麺','皿うどん','焼きビーフン','ジャージャー麺','冷麺']],
     ['丼もの',['親子丼','牛丼','カツ丼','海鮮丼','天丼','中華丼','ネギトロ丼','ビビンバ','豚丼','そぼろ丼','うな丼','マグロの漬け丼','玉子丼','ロコモコ丼','しらす丼','スタミナ丼']],
     ['ご飯もの',['おにぎり','手巻き寿司','ちらし寿司','お茶漬け','いなり寿司','雑炊','おかゆ','赤飯','焼きおにぎり','栗ご飯']],
     ['汁物',['味噌汁','豚汁','ミネストローネ','中華スープ','けんちん汁','わかめスープ','コーンスープ','クラムチャウダー','お吸い物','かきたま汁','ワンタンスープ','オニオンスープ','つみれ汁','あら汁','すいとん','かぼちゃのポタージュ']],
-    ['鍋',['寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋']],
+    ['鍋',['寄せ鍋','キムチ鍋','水炊き','湯豆腐','ちゃんこ鍋','豆乳鍋','もつ鍋','ミルフィーユ鍋','鶏団子鍋','石狩鍋','すき焼き']],
     ['副菜',['サラダ','玉ねぎサラダ','ほうれん草のおひたし','きんぴら','ポテトサラダ','キムチになる前のキャベツ','野菜スティック','だし巻き卵','冷奴','ひじき煮','切り干し大根','春雨サラダ','枝豆','茶碗蒸し','きゅうりとわかめの酢の物','ほうれん草のごま和え','かぼちゃの煮物','もやしのナムル','きゅうりの浅漬け','なすの煮びたし','こんにゃくの煮物','小松菜と油揚げの煮びたし','白和え','ほうれん草とベーコンのソテー']]
   ];
   var MENU_KEY = 'otetsudai-menu-v1';
@@ -893,10 +897,11 @@ input[type="time"].field{width:auto;min-width:140px}
     ],
     'パスタ': [
       G('ソース', false, ['トマト','クリーム','和風','オイル','ミート']),
-      G('具', true, ['ベーコン','きのこ','ツナ','エビ','ほうれん草','ナス','チーズ'])
+      G('具', true, ['ベーコン','きのこ','ツナ','エビ','ほうれん草','ナス','チーズ','明太子'])
     ],
     'カレー': [
-      G('種類', false, ['ビーフ','ポーク','チキン','キーマ','シーフード','野菜','バターチキン','カツカレー','スープカレー','グリーンカレー']),
+      G('主食', false, ['ご飯','ナン','両方']),
+      G('種類', false, ['ビーフ','ポーク','チキン','キーマ','シーフード','野菜','バターチキン','スープカレー','グリーンカレー']),
       G('辛さ', false, ['甘口','中辛','辛口']),
       G('トッピング', true, ['チーズ','卵','カツ','唐揚げ','ほうれん草','コロッケ','福神漬け'])
     ],
@@ -921,9 +926,122 @@ input[type="time"].field{width:auto;min-width:140px}
     '餃子': [ G('焼き方', false, ['焼き','水','揚げ']) ],
     '牛丼': [ G('トッピング', true, ['卵','温泉卵','ねぎ','チーズ','キムチ']) ],
     '味噌汁': [ G('具', true, ['豆腐','わかめ','ねぎ','油揚げ','なめこ','大根','じゃがいも','玉ねぎ','しじみ']) ],
-    'サラダ': [ G('ドレッシング', false, ['和風','ごま','シーザー','フレンチ','青じそ']) ],
+    'サラダ': [
+      G('種類', false, ['グリーン','トマト','大根','海藻','豆腐','コールスロー']),
+      G('ドレッシング', false, ['和風','ごま','シーザー','フレンチ','青じそ'])
+    ],
     '冷やし中華': [ G('たれ', false, ['醤油','ごまだれ']) ],
     'アヒージョ': [ G('具材', true, ['エビ','マッシュルーム','タコ','イカ','ホタテ','牡蠣','砂肝','ベーコン','ブロッコリー','ミニトマト','じゃがいも','アスパラ','にんにく','白身魚','サーモン','ウィンナー','キャベツ','はんぺん']) ],
+    'しゃぶしゃぶ': [
+      G('お肉', false, ['豚','牛','豚と牛','鶏','ぶり']),
+      G('たれ', false, ['ポン酢','ごまだれ','両方']),
+      G('しめ', false, ['うどん','ラーメン','雑炊','なし'])
+    ],
+    '担々麺': [
+      G('種類', false, ['汁なし','汁あり']),
+      G('辛さ', false, ['控えめ','ふつう','辛め'])
+    ],
+    'そうめん': [
+      G('種類', false, ['つめたーい','あったかーい'])
+    ],
+    'おにぎり': [
+      G('具', true, ['ツナマヨ','明太子','たらこ','鮭','梅','昆布','おかか','塩むすび'])
+    ],
+    '肉野菜炒め': [
+      G('お肉', false, ['豚','鶏','牛']),
+      G('味', false, ['塩こしょう','醤油','味噌','オイスターソース','焼肉のたれ'])
+    ],
+    '天ぷら': [
+      G('具', true, ['えび','いか','きす','かぼちゃ','さつまいも','なす','ししとう','かき揚げ']),
+      G('つけるもの', false, ['天つゆ','塩'])
+    ],
+    'とんかつ': [
+      G('お肉', false, ['ロース','ヒレ']),
+      G('かけるもの', false, ['ソース','おろしポン酢','味噌だれ'])
+    ],
+    '焼き鳥': [
+      G('味', false, ['塩','たれ','両方']),
+      G('種類', true, ['もも','ねぎま','つくね','皮','むね','手羽先','砂肝','レバー'])
+    ],
+    'お好み焼き': [
+      G('具', true, ['豚','いか','えび','もち','チーズ','明太子','ねぎ']),
+      G('麺入り', false, ['なし','そば','うどん'])
+    ],
+    'もんじゃ焼き': [
+      G('具', true, ['明太子','もち','チーズ','豚','いか','えび','ベビースター'])
+    ],
+    'たこ焼き': [
+      G('中身', true, ['たこ','チーズ','ウィンナー','もち','えび']),
+      G('かけるもの', false, ['ソース','ソースとマヨネーズ','だし醤油','ポン酢'])
+    ],
+    '炊き込みご飯': [
+      G('種類', false, ['五目','きのこ','たけのこ','鮭','あさり','さつまいも'])
+    ],
+    'グラタン': [
+      G('種類', false, ['マカロニ','えび','チキン','ポテト','かぼちゃ','ほうれん草'])
+    ],
+    'ピザ': [
+      G('具', true, ['トマトとチーズ','サラミ','ツナコーン','照り焼きチキン','きのこ','シーフード','もち明太子'])
+    ],
+    'サンドイッチ': [
+      G('具', true, ['たまご','ハム','ツナ','カツ','レタスとトマト','チーズ','フルーツ']),
+      G('パン', false, ['そのまま','焼く'])
+    ],
+    'ロールキャベツ': [
+      G('味', false, ['コンソメ','トマト','クリーム','和風だし'])
+    ],
+    'シチュー': [
+      G('種類', false, ['鶏のクリーム','豚のクリーム','鮭のクリーム','ビーフ'])
+    ],
+    'クリームコロッケ': [
+      G('具', true, ['かに','えび','コーン','きのこ'])
+    ],
+    '麻婆豆腐': [
+      G('辛さ', false, ['甘口','ふつう','辛口','しびれ強め'])
+    ],
+    'チャーハン': [
+      G('具', true, ['卵','チャーシュー','えび','レタス','キムチ','高菜','鮭','かに'])
+    ],
+    '焼きそば': [
+      G('味', false, ['ソース','塩','あんかけ']),
+      G('のせるもの', true, ['目玉焼き','紅しょうが','青のり','かつお節','マヨネーズ'])
+    ],
+    '焼きうどん': [
+      G('味', false, ['醤油','ソース'])
+    ],
+    'カツ丼': [
+      G('種類', false, ['卵とじ','ソース','味噌'])
+    ],
+    '海鮮丼': [
+      G('のせるもの', true, ['まぐろ','サーモン','いくら','えび','いか','ほたて','たい','ねぎとろ'])
+    ],
+    '手巻き寿司': [
+      G('具', true, ['まぐろ','サーモン','えび','いくら','ねぎとろ','卵焼き','きゅうり','ツナマヨ'])
+    ],
+    'お茶漬け': [
+      G('具', false, ['鮭','梅','のり','たらこ','明太子','わさび'])
+    ],
+    'おかゆ': [
+      G('種類', false, ['白がゆ','卵がゆ','梅','鮭','中華がゆ'])
+    ],
+    'すき焼き': [
+      G('しめ', false, ['うどん','ご飯','なし'])
+    ],
+    '寄せ鍋': [
+      G('メインの具', true, ['鶏','豚','たら','鮭','えび','つみれ']),
+      G('しめ', false, ['うどん','ラーメン','雑炊','なし'])
+    ],
+    'キムチ鍋': [
+      G('辛さ', false, ['控えめ','ふつう','辛め']),
+      G('しめ', false, ['ラーメン','うどん','チーズ雑炊','なし'])
+    ],
+    '水炊き': [
+      G('たれ', true, ['ポン酢','ごまだれ','ゆずこしょう']),
+      G('しめ', false, ['うどん','ラーメン','雑炊','なし'])
+    ],
+    '冷奴': [
+      G('のせるもの', true, ['ねぎ','しょうが','かつお節','みょうが','大葉','キムチ','ごま油と塩'])
+    ],
     '焼肉': [ G('お肉', true, ['牛カルビ','牛ロース','牛タン','豚バラ','鶏もも','ホルモン']), G('たれ', false, ['甘口','中辛','塩','レモン']) ],
     'おでん': [ G('具', true, ['大根','たまご','こんにゃく','しらたき','ちくわ','ちくわぶ','はんぺん','ごぼう天','さつま揚げ','つみれ','厚揚げ','がんもどき','餅巾着','牛すじ','タコ','じゃがいも','ロールキャベツ','結び昆布']) ]
   };
@@ -3556,7 +3674,9 @@ input[type="time"].field{width:auto;min-width:140px}
     paintMsg($('sheet-msg'), pending);
     lastFocus = document.activeElement;
     scrim.classList.add('open');
-    $('sheet-send').focus();
+    var shEl = scrim.querySelector('.sheet'); if(shEl) shEl.scrollTop = 0; scrim.scrollTop = 0;
+    try{ $('sheet-send').focus({ preventScroll: true }); }catch(e){ $('sheet-send').focus(); }
+    if(shEl) shEl.scrollTop = 0;
   }
   function closeSheet(){
     scrim.classList.remove('open');
@@ -4130,13 +4250,18 @@ input[type="time"].field{width:auto;min-width:140px}
     top.appendChild(tools);
     b.appendChild(top);
     if(o.canceled) b.appendChild(el('p', 'ord-cancel', '取り消し'));
+    if(hasConsult){
+      var ansb = el('button', 'rv-btn big', '💬 相談に答える'); ansb.type = 'button';
+      ansb.addEventListener('click', function(){ openAnswerFor(o); });
+      b.appendChild(ansb);
+    }
     if(ordUi.id === o.id && ordUi.mode) b.appendChild(ordConfirm(o));
     KINDS.forEach(function(k){
       var dropped = isDropped(o, k);
       if(!hasKind(o, k) && !dropped) return;
       var row = el('div', 'ord-k');
       row.appendChild(el('span', 'ord-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
-      if(!o.canceled) row.appendChild(stBadge(stOf(o, k)));
+      if(!o.canceled) row.appendChild(stBadgeFor(o, k));
       if(!o.canceled && !dropped && stOf(o, k) !== 'done'){
         var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
         bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
@@ -4153,7 +4278,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var rp = o.replies || [];
     if(rp.length){
       var last = rp[rp.length - 1];
-      b.appendChild(el('p', 'ord-last', (hhmm(last.at) ? hhmm(last.at) + '　' : '') + String(last.text || '').split('\n').join(' ')));
+      b.appendChild(el('p', 'ord-last', (hhmm(last.at) ? hhmm(last.at) + '　' : '') + cleanText(last.text)));
     }
     return b;
   }
@@ -4293,7 +4418,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function rvBtn(parent, text, sub, fn){
     var b = el('button', 'rv-btn' + (sub ? ' sub' : ''), text); b.type = 'button';
     if(rs.sending) b.disabled = true;
-    b.addEventListener('click', function(){ replyNotice = ''; fn(); });
+    b.addEventListener('click', function(){ replyNotice = ''; rs.err = ''; rs.errBox = ''; rs.errShown = ''; fn(); });
     parent.appendChild(b);
     return b;
   }
@@ -4302,17 +4427,26 @@ input[type="time"].field{width:auto;min-width:140px}
   function noneKinds(o){ return pendingKinds(o).filter(function(k){ return stOf(o, k) !== 'ack'; }); }   // 返事なし（相談中も含む）
   function ackKinds(o){ return kindsWith(o, 'ack'); }
   // ---- 相談を料理ごとに（ご飯・買い物は「どの料理／品物？」を選び、料理ごとにわけ・代わり） ----
+  var REASONS_CLEAN = ['今日は時間が足りません', '道具・洗剤がありません', '体調がすぐれません', 'その他'];
   function consultItemKind(k){ return k === 'meal' || k === 'shop'; }
   function newConsult(o, k){
-    if(!consultItemKind(k)) return { reason: '', alt: '', altMode: 'propose', note: '' };
-    var c = { sel: {}, per: {}, same: false, shared: { reason: '', alt: '', altMode: 'propose' }, restOk: true, note: '' };
+    if(!consultItemKind(k)) return { reason: '', other: '', alt: '', altMode: 'propose', note: '' };
+    var c = { sel: {}, per: {}, same: false, shared: { reason: '', other: '', alt: '', altMode: 'propose' }, restOk: true, note: '' };
     if((o[k] || []).length === 1) c.sel[0] = true;
     return c;
   }
   function consultIdxs(c){ return Object.keys(c.sel || {}).map(Number).sort(function(a, b){ return a - b; }); }
-  // わけ・代わり・伝え方（提案する／もう変えた）
-  function reasonAltBlock(parent, obj, group){
-    chipRow(parent, REASONS.map(function(r){ return [r, r]; }), function(r){ return obj.reason === r; }, function(r){ obj.reason = r; renderReply(); }, group + 'のわけ');
+  function reasonText(en){ return en.reason === 'その他' ? String(en.other || '').trim() : en.reason; }
+  // わけ（「その他」はその場に書く）・代わり・伝え方（提案する／もう変えた）
+  function reasonAltBlock(parent, obj, group, reasons){
+    chipRow(parent, (reasons || REASONS).map(function(r){ return [r, r]; }), function(r){ return obj.reason === r; }, function(r){ obj.reason = r; renderReply(); }, group + 'のわけ');
+    if(obj.reason === 'その他'){
+      var lo = el('label', 'sub-lab'); lo.appendChild(el('span', null, 'わけを書いてください（必須）'));
+      var io = el('input', 'field'); io.type = 'text'; io.maxLength = 40; io.value = obj.other || ''; io.autocomplete = 'off';
+      io.placeholder = '例：お店が休みでした';
+      io.addEventListener('input', function(){ obj.other = io.value; });
+      lo.appendChild(io); parent.appendChild(lo);
+    }
     var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
     var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = obj.alt || ''; i1.autocomplete = 'off';
     var modeBox = el('div', 'rv-mode'); modeBox.hidden = !(obj.alt && obj.alt.trim());
@@ -4330,17 +4464,19 @@ input[type="time"].field{width:auto;min-width:140px}
       if(idxs.length >= 2) chipRow(box, [['same', '全部同じ（わけ・代わり）']], function(){ return !!c.same; }, function(){ c.same = !c.same; renderReply(); }, '全部同じ');
       if(idxs.length >= 2 && c.same){
         box.appendChild(el('p', 'note', '選んだ' + word + 'すべてに、同じ内容を付けます'));
-        reasonAltBlock(box, c.shared, '全部');
+        var sh = el('div', 'rv-itembox'); sh.dataset.box = 'c:' + k + ':shared';
+        reasonAltBlock(sh, c.shared, '全部'); box.appendChild(sh);
       }else{
         idxs.forEach(function(i){
-          if(!c.per[i]) c.per[i] = { reason: '', alt: '', altMode: 'propose' };
-          var ib = el('div', 'rv-itembox'); ib.appendChild(el('p', 'rv-kn', '・' + items[i]));
+          if(!c.per[i]) c.per[i] = { reason: '', other: '', alt: '', altMode: 'propose' };
+          var ib = el('div', 'rv-itembox'); ib.dataset.box = 'c:' + k + ':' + i;
+          ib.appendChild(el('p', 'rv-kn', '・' + items[i]));
           reasonAltBlock(ib, c.per[i], items[i]); box.appendChild(ib);
         });
       }
       if(idxs.length && idxs.length < items.length) chipRow(box, [['rest', '✔ ほかの' + word + 'はOK']], function(){ return !!c.restOk; }, function(){ c.restOk = !c.restOk; renderReply(); }, 'ほかはOK');
     }else{
-      reasonAltBlock(box, c, KIND_NAME[k]);
+      reasonAltBlock(box, c, KIND_NAME[k], REASONS_CLEAN);
     }
     var l2 = el('label', 'sub-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
     var i2 = el('input', 'field'); i2.type = 'text'; i2.maxLength = 80; i2.value = c.note || ''; i2.autocomplete = 'off';
@@ -4348,22 +4484,28 @@ input[type="time"].field{width:auto;min-width:140px}
     l2.appendChild(i2); box.appendChild(l2);
     return box;
   }
+  function enErr(en, label, box){
+    if(!en || !en.reason) return { msg: '「' + label + '」のわけを選んでください。', box: box };
+    if(en.reason === 'その他' && !String(en.other || '').trim()) return { msg: '「' + label + '」のわけ（その他）を書いてください。', box: box };
+    return null;
+  }
+  // 足りないところがあれば { msg, box }（box＝赤枠にする箱の印）を返す
   function consultErr(o){
     var ks = Object.keys(rs.c);
-    if(!ks.length) return '相談する種類を選んでください。';
+    if(!ks.length) return { msg: '相談する種類を選んでください。', box: '' };
     for(var n = 0; n < ks.length; n++){
-      var k = ks[n], c = rs.c[k];
+      var k = ks[n], c = rs.c[k], e;
       if(consultItemKind(k)){
         var idxs = consultIdxs(c), word = k === 'meal' ? '料理' : '品物';
-        if(!idxs.length) return KIND_NAME[k] + 'の、相談する' + word + 'を選んでください。';
-        if(idxs.length >= 2 && c.same){ if(!c.shared.reason) return '「全部同じ」のわけを選んでください。'; }
-        else for(var i = 0; i < idxs.length; i++) if(!c.per[idxs[i]] || !c.per[idxs[i]].reason) return '「' + (o[k][idxs[i]] || word) + '」のわけを選んでください。';
-      }else if(!c.reason) return KIND_NAME[k] + 'の相談のわけを選んでください。';
+        if(!idxs.length) return { msg: KIND_NAME[k] + 'の、相談する' + word + 'を選んでください。', box: 'c:' + k };
+        if(idxs.length >= 2 && c.same){ e = enErr(c.shared, '全部', 'c:' + k + ':shared'); if(e) return e; }
+        else for(var i = 0; i < idxs.length; i++){ e = enErr(c.per[idxs[i]], o[k][idxs[i]] || word, 'c:' + k + ':' + idxs[i]); if(e) return e; }
+      }else{ e = enErr(c, KIND_NAME[k], 'c:' + k); if(e) return e; }
     }
-    return '';
+    return null;
   }
   function consultPhrase(en){
-    var t = en.reason === 'その他' ? '' : endSentence(en.reason);
+    var rt = reasonText(en), t = rt ? endSentence(rt) : '';
     var a = (en.alt || '').trim();
     t += a ? (en.altMode === 'done' ? endSentence(a + 'にしました') : a + 'でもいいですか？') : 'どうしましょうか？';
     return t;
@@ -4376,7 +4518,7 @@ input[type="time"].field{width:auto;min-width:140px}
       idxs.forEach(function(i){
         var en = (idxs.length >= 2 && c.same) ? c.shared : c.per[i], a = (en.alt || '').trim();
         lines.push(head + items[i] + ' → ' + consultPhrase(en));
-        detail.push({ dish: items[i], reason: en.reason, alt: a, altMode: a ? (en.altMode || 'propose') : '' });
+        detail.push({ dish: items[i], reason: reasonText(en), alt: a, altMode: a ? (en.altMode || 'propose') : '' });
       });
       if(c.restOk && idxs.length < items.length) lines.push('（ほかの' + word + 'はOKです）');
       if(c.note && c.note.trim()) lines.push('💬 ' + c.note.trim());
@@ -4385,7 +4527,40 @@ input[type="time"].field{width:auto;min-width:140px}
     var t = consultPhrase(c);
     if(c.note && c.note.trim()) t += ' ' + endSentence(c.note.trim());
     var a2 = (c.alt || '').trim();
-    return { lines: [head + t], detail: { reason: c.reason, alt: a2, altMode: a2 ? (c.altMode || 'propose') : '' } };
+    return { lines: [head + t], detail: { reason: reasonText(c), alt: a2, altMode: a2 ? (c.altMode || 'propose') : '' } };
+  }
+  function rvShowErr(parent){
+    if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); parent.appendChild(er); }
+  }
+  // 足りない箱を赤枠にして、そこ（なければ注意書き）までスクロールする（同じ注意は1回だけ）
+  function rvFocusErr(){
+    var v = $('reply-view');
+    Array.prototype.forEach.call(v.querySelectorAll('.rv-missing'), function(x){ x.classList.remove('rv-missing'); });
+    if(!rs.err){ rs.errShown = ''; return; }
+    if(rs.errBox) Array.prototype.forEach.call(v.querySelectorAll('[data-box]'), function(x){ if(x.dataset.box === rs.errBox) x.classList.add('rv-missing'); });
+    if(rs.errShown === rs.err) return;
+    rs.errShown = rs.err;
+    var t = v.querySelector('.rv-missing') || v.querySelector('.rv-err');
+    if(t && t.scrollIntoView){
+      try{ t.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }catch(e){}
+    }
+  }
+  function cleanText(t){ return String(t || '').split(String.fromCharCode(10)).filter(function(l){ return l && l.indexOf('liff.line.me') < 0 && l.indexOf('お返事はこちら') < 0; }).join(' '); }
+  function stBadgeFor(o, k){   // 代わりを指定して松永さんの確認待ちの種類
+    var st = stOf(o, k), rp = o.replies || [], lr = rp.length ? rp[rp.length - 1] : null;
+    if(st === 'none' && lr && lr.by === 'orderer' && lr.kind === 'answer') return el('span', 'stbadge st-wait', '松永さんの確認待ち');
+    return stBadge(st);
+  }
+  var replyFromList = false;
+  function openAnswerFor(o){
+    answerMode = true; replyFromList = true; replyOrderData = o; rs = { mode: 'main' }; replyNotice = '';
+    enterReply(o.id);
+  }
+  function leaveReply(){
+    document.body.classList.remove('reply-mode'); $('reply-view').hidden = true;
+    replyId = ''; replyOrderData = null; replyFromList = false; answerMode = false; replyRendered = false; rs = { mode: 'main' };
+    ordersRefresh();
+    try{ window.scrollTo(0, 0); }catch(e){}
   }
   function endSentence(t){ return /[。！？!?☺️]$/.test(t) ? t : t + '。'; }
   // rs.plan（oks＝OK／dones＝できた／c＝相談／restOk＝ほかはOK）とひとこと（rs.free）から、changes・kind・文面を作る
@@ -4419,11 +4594,11 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function renderActions(v, o){
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
-    if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
     if(rs.mode === 'preview'){
       if(answerMode){
         v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
         v.appendChild(el('pre', 'msg', rs.text));
+        rvShowErr(v);
         rvBtn(v, rs.sending ? '送っています…' : 'LINEに送る', false, sendReplyNow);
         rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
         return;
@@ -4434,6 +4609,7 @@ input[type="time"].field{width:auto;min-width:140px}
       fl.appendChild(ft); v.appendChild(fl);
       v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
       var pre = el('pre', 'msg', rs.text); v.appendChild(pre);
+      rvShowErr(v);
       var sb = rvBtn(v, rs.sending ? '送っています…' : 'LINEに送る', false, sendReplyNow);
       function canSendNow(){ return !rs.sending && (rs.lines > 0 || !!(rs.free && rs.free.trim())); }
       sb.disabled = !canSendNow();
@@ -4444,10 +4620,12 @@ input[type="time"].field{width:auto;min-width:140px}
     if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事は松永さんがしてください（押した人の名前で送られます）'));
     var pend = pendingKinds(o), nones = noneKinds(o), acks = ackKinds(o);
     if(rs.mode === 'doneSel'){
+      var dsel = rs.selKinds || acks;
       v.appendChild(el('p', 'sub-h', 'どれができましたか？'));
-      chipRow(v, acks.map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }), function(k){ return !!rs.sel[k]; }, function(k){ rs.sel[k] = !rs.sel[k]; renderReply(); }, 'できた種類');
+      chipRow(v, dsel.map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }), function(k){ return !!rs.sel[k]; }, function(k){ rs.sel[k] = !rs.sel[k]; renderReply(); }, 'できた種類');
+      rvShowErr(v);
       rvBtn(v, '送る内容を確認', false, function(){
-        var ks = acks.filter(function(k){ return rs.sel[k]; });
+        var ks = dsel.filter(function(k){ return rs.sel[k]; });
         if(!ks.length){ rs.err = '1つ以上、選んでください。'; renderReply(); return; }
         toPreviewPlan(o, { dones: ks }, 'doneSel');
       });
@@ -4457,7 +4635,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(rs.mode === 'consult'){
       v.appendChild(el('p', 'sub-h', '相談する内容'));
       pend.forEach(function(k){
-        var card = el('div', 'rv-card'), head = el('div', 'rv-head');
+        var card = el('div', 'rv-card'), head = el('div', 'rv-head'); card.dataset.box = 'c:' + k;
         head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
         head.appendChild(stBadge(stOf(o, k)));
         card.appendChild(head);
@@ -4478,20 +4656,27 @@ input[type="time"].field{width:auto;min-width:140px}
       if(rest.length){
         chipRow(v, [['on', '✔ ほかはOK（' + rest.map(function(k){ return KIND_NAME[k]; }).join('・') + '）']], function(){ return !!rs.restOn; }, function(){ rs.restOn = !rs.restOn; renderReply(); }, 'ほかはOK');
       }
+      rvShowErr(v);
       rvBtn(v, '送る内容を確認', false, function(){
         var ce = consultErr(o);
-        if(ce){ rs.err = ce; renderReply(); return; }
+        if(ce){ rs.err = ce.msg; rs.errBox = ce.box; renderReply(); return; }
         toPreviewPlan(o, { c: rs.c, restOk: rs.restOn ? rest : [] }, 'consult');
       });
       rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
       return;
     }
+    rvShowErr(v);
     if(!pend.length) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
     else{
       if(nones.length) rvBtn(v, '👌 OKで返事する', false, function(){ toPreviewPlan(o, { oks: nones }, 'main'); }).classList.add('big');
       if(acks.length) rvBtn(v, '✅ できたで返事する', false, function(){
         if(acks.length === 1){ toPreviewPlan(o, { dones: acks }, 'main'); return; }
-        rs.sel = {}; acks.forEach(function(k){ rs.sel[k] = true; });
+        rs.selKinds = acks.slice(); rs.sel = {}; acks.forEach(function(k){ rs.sel[k] = true; });
+        rs.mode = 'doneSel'; renderReply();
+      }).classList.add('big');
+      if(nones.length) rvBtn(v, '✅ もうできました', false, function(){
+        if(nones.length === 1){ toPreviewPlan(o, { dones: nones }, 'main'); return; }
+        rs.selKinds = nones.slice(); rs.sel = {}; nones.forEach(function(k){ rs.sel[k] = true; });
         rs.mode = 'doneSel'; renderReply();
       }).classList.add('big');
       rvBtn(v, '💬 相談する', false, function(){
@@ -4505,7 +4690,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function plainCard(o, k, canManual){
     var card = el('div', 'rv-card'), head = el('div', 'rv-head');
     head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
-    head.appendChild(stBadge(stOf(o, k)));
+    head.appendChild(stBadgeFor(o, k));
     card.appendChild(head);
     (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
     var pnote = prevNote(o, k);
@@ -4684,7 +4869,7 @@ input[type="time"].field{width:auto;min-width:140px}
       var en = null;
       dk.forEach(function(e){ if(!en && e.dish === item) en = e; });
       if(!en){ card.appendChild(el('p', 'rv-line', '・' + item)); return; }
-      var ib = el('div', 'rv-itembox');
+      var ib = el('div', 'rv-itembox'); ib.dataset.box = 'a:' + k + ':' + item;
       ib.appendChild(el('p', 'rv-kn', '・' + item));
       var said = (en.reason && en.reason !== 'その他' ? en.reason + '。' : '') + (en.alt ? (en.altMode === 'done' ? en.alt + 'に変えました。' : en.alt + 'でもいいですか？') : 'どうしましょうか？');
       ib.appendChild(el('p', 'note', '松永さん：' + said));
@@ -4720,19 +4905,26 @@ input[type="time"].field{width:auto;min-width:140px}
     v.appendChild(rvBig(o));
     var expired = o.target.date < dateStr(new Date());
     var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
-    var last = null;
-    (o.replies || []).forEach(function(r){ if(r && r.by === 'matsunaga') last = r; });
-    var det = (last && last.detail && typeof last.detail === 'object') ? last.detail : null;
-    function itemKind(k){ return !!(det && Array.isArray(det[k]) && det[k].length > 0); }
-    if(last){
+    var last = null, pendingC = null;
+    (o.replies || []).forEach(function(r){
+      if(!r) return;
+      if(r.by === 'matsunaga') last = r;
+      if(r.by === 'matsunaga' && r.kind === 'consult' && r.detail && typeof r.detail === 'object') pendingC = r;
+      else if(r.by === 'orderer' && r.kind === 'answer') pendingC = null;
+    });
+    function matsuCard(r){
       var lc = el('div', 'rv-card');
-      lc.appendChild(el('p', 'rv-kn', '松永さんのお返事' + (hhmm(last.at) ? '（' + hhmm(last.at) + '）' : '')));
-      String(last.text || '').split('\n').forEach(function(ln){
+      lc.appendChild(el('p', 'rv-kn', '松永さんのお返事' + (hhmm(r.at) ? '（' + hhmm(r.at) + '）' : '')));
+      String(r.text || '').split('\n').forEach(function(ln){
         if(!ln || ln.indexOf('liff.line.me') >= 0 || ln.indexOf('お返事はこちら') >= 0) return;
         lc.appendChild(el('p', 'rv-line', ln));
       });
-      v.appendChild(lc);
+      return lc;
     }
+    if(pendingC) v.appendChild(matsuCard(pendingC));
+    if(last && last !== pendingC) v.appendChild(matsuCard(last));
+    var det = pendingC ? pendingC.detail : null;   // まだ答えていない最新の相談（あとからひとことだけ来ても残る）
+    function itemKind(k){ return !!(det && Array.isArray(det[k]) && det[k].length > 0); }
     if(!liffReady){ v.appendChild(el('p', 'note', 'LINEに接続しています…')); return; }
     if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
     if(!canSend){ v.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。')); return; }
@@ -4740,7 +4932,6 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!rs.ai) rs.ai = {};
     if(rs.mode === 'preview'){ renderActions(v, o); return; }
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
-    if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
     if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事はぴーちゃんがしてください（押した人の名前で送られます）'));
     var cons = kindsWith(o, 'consult');
     if(!cons.length) v.appendChild(el('p', 'note', 'いま、答えが必要なご相談はありません。ひとことだけ送ることもできます。'));
@@ -4780,12 +4971,13 @@ input[type="time"].field{width:auto;min-width:140px}
     var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
     ft.placeholder = '例：ありがとうございます';
     fl.appendChild(ft); v.appendChild(fl);
+    rvShowErr(v);
     sb = rvBtn(v, 'このお返事をLINEに送る', false, function(){
       var lines = [], changes = {}, hist = [], itemsOut = {};
       for(var ci = 0; ci < cons.length; ci++){   // 料理ごとの答え（detail がある種類）：依頼の中身の新しい配列を作る
         var ck = cons[ci];
         if(!itemKind(ck)) continue;
-        var ans = rs.ai[ck] || {}, out = [], anyA = false, allA = true, klines = [], dk2 = det[ck], list0 = o[ck] || [];
+        var ans = rs.ai[ck] || {}, out = [], anyA = false, anyAlt = false, allA = true, klines = [], dk2 = det[ck], list0 = o[ck] || [];
         for(var ii = 0; ii < list0.length; ii++){
           var item = list0[ii], en = null;
           dk2.forEach(function(e){ if(!en && e.dish === item) en = e; });
@@ -4799,8 +4991,9 @@ input[type="time"].field{width:auto;min-width:140px}
           else{
             var labs = (a0.picks || []).map(pickLabel);
             if(a0.alt && a0.alt.trim()) labs.push(a0.alt.trim());
-            if(!labs.length){ rs.err = '「' + item + '」の代わりを、選ぶか入れてください。'; renderReply(); return; }
+            if(!labs.length){ rs.err = '「' + item + '」の代わりを、選ぶか入れてください。'; rs.errBox = 'a:' + ck + ':' + item; renderReply(); return; }
             labs.forEach(function(l){ out.push(l); });
+            anyAlt = true;
             klines.push(hd + labs.join('・') + 'でお願いします');
             if(ck === 'meal') (a0.picks || []).forEach(function(p){ if(p.name !== OMAKASE && menuHas(p.name)) hist.push(answerHistEntry(o, p)); });
           }
@@ -4808,7 +5001,7 @@ input[type="time"].field{width:auto;min-width:140px}
         if(anyA){
           klines.forEach(function(l){ lines.push(l); });
           itemsOut[ck] = out;
-          if(allA) changes[ck] = out.length ? 'ack' : 'na';
+          if(allA) changes[ck] = anyAlt ? 'none' : (out.length ? 'ack' : 'na');
         }
       }
       for(var i = 0; i < cons.length; i++){
@@ -4819,7 +5012,7 @@ input[type="time"].field{width:auto;min-width:140px}
           var labels = (a.picks || []).map(pickLabel);
           if(a.alt && a.alt.trim()) labels.push(a.alt.trim());
           if(!labels.length){ rs.err = KIND_NAME[k] + 'の代わりのものを、選ぶか入れてください。'; renderReply(); return; }
-          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：代わりは' + labels.join('・') + 'でお願いします'); changes[k] = 'ack';
+          lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：代わりは' + labels.join('・') + 'でお願いします'); changes[k] = 'none';
           if(k === 'meal') (a.picks || []).forEach(function(p){ if(p.name !== OMAKASE && menuHas(p.name)) hist.push(answerHistEntry(o, p)); });
         }else if(a.t === 'na'){
           lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：今回はなしで大丈夫です'); changes[k] = 'na';
@@ -4832,17 +5025,22 @@ input[type="time"].field{width:auto;min-width:140px}
       if(!lines.length){ rs.err = '選ぶか、ひとことを書いてください。'; renderReply(); return; }
       rs.mode = 'preview'; rs.kind = 'answer'; rs.changes = changes; rs.hist = hist; rs.err = '';
       rs.items = Object.keys(itemsOut).length ? itemsOut : undefined; rs.detail = undefined;
-      rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n');
+      rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n') + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + replyId;
       renderReply();
     });
     sb.disabled = !!rs.sending || !anyPicked();
     ft.addEventListener('input', function(){ rs.free = ft.value; sb.disabled = !!rs.sending || !anyPicked(); });
   }
 
-  function renderReply(){
+  function renderReply(){ renderReplyInner(); rvFocusErr(); }
+  function renderReplyInner(){
     var v = $('reply-view');
     if(!replyId){ return; }
     v.innerHTML = '';
+    if(replyFromList){
+      var bk = el('button', 'mini sub', '← 一覧にもどる'); bk.type = 'button';
+      bk.addEventListener('click', leaveReply); v.appendChild(bk);
+    }
     v.appendChild(el('h2', 'rv-title', answerMode ? '🐈 松永便｜ぴーちゃんへのご相談' : '🐈 松永便のお返事'));
     var o = replyOrderData;
     if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
@@ -4864,7 +5062,7 @@ input[type="time"].field{width:auto;min-width:140px}
       var rp = (o.replies || []).slice(-3);
       if(rp.length){
         var hc = el('div', 'rv-card'); hc.appendChild(el('p', 'rv-kn', 'これまでのお返事'));
-        rp.forEach(function(r){ hc.appendChild(el('p', 'rv-line', (hhmm(r.at) ? hhmm(r.at) + '　' : '') + String(r.text || '').split('\n').join(' '))); });
+        rp.forEach(function(r){ hc.appendChild(el('p', 'rv-line', (hhmm(r.at) ? hhmm(r.at) + '　' : '') + cleanText(r.text))); });
         v.appendChild(hc);
       }
     }
