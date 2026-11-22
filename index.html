@@ -163,6 +163,15 @@ button,input,textarea{font:inherit;color:inherit}
 .rv-lab>span{display:block;margin-bottom:4px;overflow-wrap:anywhere}
 .rv-lab .field{display:block;width:100%;max-width:100%;box-sizing:border-box;min-width:0;margin-top:0}
 .sheet-send-sub{margin-top:8px;width:100%}
+.souta{position:relative;margin:0 0 12px;padding:10px 40px 10px 12px;border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--fg)}
+.souta[hidden]{display:none}
+.souta-head{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:12px;font-weight:700;color:var(--accent)}
+.souta-icon{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface);border:1px solid var(--line)}
+.souta-text{margin:0;font-size:15px;line-height:1.6;font-weight:700;overflow-wrap:anywhere}
+.souta-close{position:absolute;top:4px;right:4px;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.souta-close:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.souta-test{margin-left:auto;margin-right:4px;padding:0 6px;border:1px solid var(--accent);border-radius:8px;font-size:10px;font-weight:700;color:var(--accent);background:var(--surface)}
+.souta-debug{margin:0 0 12px;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .subbox .seg{margin:6px 0 4px}
 .subbox .seg .chip{min-height:40px;font-size:14px}
 .name-btn{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -554,6 +563,12 @@ input[type="time"].field{width:auto;min-width:140px}
 </g></symbol></svg>
 
 <div class="wrap">
+  <div class="souta" id="souta-card" role="note" hidden>
+    <div class="souta-head"><img class="souta-icon" src="cat-icons/souta-160.png" width="32" height="32" alt=""><span>執事 颯太より</span><span class="souta-test" id="souta-test" hidden>試し表示</span></div>
+    <p class="souta-text" id="souta-text"></p>
+    <button type="button" class="souta-close" id="souta-close" aria-label="今日はもう表示しない">×</button>
+  </div>
+  <p class="souta-debug" id="souta-debug" hidden></p>
   <p class="notice" id="liff-notice" role="status" hidden>松永さんとのトークに貼ったリンクから開くと、そのまま送れます。</p>
   <div class="titlebar">
   <h1 class="title"><img class="brand" src="cat-icons/logo-720.png" alt="松永便" width="240" height="80"><img class="brand-dark" src="cat-icons/logo-720-dark.png" alt="松永便" width="240" height="80"></h1>
@@ -4219,7 +4234,7 @@ input[type="time"].field{width:auto;min-width:140px}
         orderCache = null;
         var mark = created ? postRetry({ action: 'markOrderSent', id: order.id }, 4).then(function(){ return true; }).catch(function(){ return false; }) : Promise.resolve(true);
         return mark.then(function(markOk){
-          done(); finishSend(finalText, true);
+          done(); finishSend(finalText, true, created ? order.id : '');
           if(!markOk){ $('chat-warn').hidden = false; $('chat-warn').textContent = '送りましたが、「今日のお願い」への記録の更新に失敗しました。あとで画面を開き直してください。'; }
           ordersRefresh();
         });
@@ -4234,7 +4249,7 @@ input[type="time"].field{width:auto;min-width:140px}
   $('sheet-nolink').addEventListener('click', function(){ startSend(false); });
 
   // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
-  function finishSend(text, sent){
+  function finishSend(text, sent, oid){
     $('chat-h').textContent = sent ? '送りました' : '試作モード（送っていません）';
     $('chat-warn').hidden = !!sent;
     $('chat-warn').textContent = '試作のため、実際には送られていません。';
@@ -4242,8 +4257,9 @@ input[type="time"].field{width:auto;min-width:140px}
       var nowT = Date.now();
       var newHist = [];
       if(sent){
-      if(omakase){ var oe = omakaseEntry(); oe.t = nowT; oe.w = whenBucket(); orderHist.push(oe); newHist.push(oe); }
-      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
+      var mark = oid || ('s' + nowT);   // 注文ごとの印（同じ注文の料理は1回と数える）
+      if(omakase){ var oe = omakaseEntry(); oe.t = nowT; oe.w = whenBucket(); oe.o = mark; orderHist.push(oe); newHist.push(oe); }
+      dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); he.o = mark; orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
       saveHist(true); syncAppendHist(newHist); invalidateEaten();
       }
@@ -4543,6 +4559,7 @@ input[type="time"].field{width:auto;min-width:140px}
           syncVer[k] = v; syncApply(k, r.value); changed = true;
         });
         syncLoaded = true;
+        try{ soutaTry(); }catch(e){}
         if((first || changed) && mergeDefaults()) changed = true;
         if(changed) syncRedraw();
         syncOk();
@@ -4882,6 +4899,7 @@ input[type="time"].field{width:auto;min-width:140px}
       renderReply();
     }
     ordersRefresh();
+    try{ soutaTry(); }catch(e){}
   }
   // 頼んだ人の呼び名（依頼に保存した LINE の表示名。無い時は「頼んだ方」）
   function ordName(o){ var n = o && o.ordererName ? String(o.ordererName).trim() : ''; return n ? n + 'さん' : '頼んだ方'; }
@@ -5386,6 +5404,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var fe = filterEntry({ name: p.name, sel: p.sel || {}, other: p.other || {} });
     var d = String(o.target.date).split('-');
     fe.t = new Date(+d[0], +d[1] - 1, +d[2], 12, 0, 0).getTime();
+    fe.o = o.id;
     var m = /[朝昼夜]/.exec(o.target.label || '');
     if(m) fe.w = m[0];
     return fe;
@@ -5644,6 +5663,172 @@ input[type="time"].field{width:auto;min-width:140px}
     setInterval(tick, 30000);
     document.addEventListener('visibilitychange', tick);
   }
+
+
+  // ---- 執事 颯太の一言（頼む画面の札） ----
+  // 履歴（orderHist）を画面側で集計して「事実」{kind,count,names}だけをサーバーへ送る。文はサーバーが作る
+  var SOUTA_CLOSE_KEY = 'otetsudai-souta-closed-v1';
+  var FRIED_NAMES = ['唐揚げ','とんかつ','天ぷら','エビフライ','コロッケ','メンチカツ','チキンカツ','カキフライ','アジフライ','春巻き','油淋鶏','チキン南蛮','ヤンニョムチキン','フライドポテト','クリームコロッケ','揚げ出し豆腐','天丼','カツ丼','ポークカツ','かき揚げ','鶏と野菜の黒酢あん'];
+  var FRIED_RE = /揚げ|フライ|カツ|天ぷら|天丼/;
+  var MEAT_TAGS = ['鶏肉','豚肉','牛肉','ひき肉','ベーコン','ウィンナー'];
+  var FISH_TAGS = ['魚','鮭','さば','まぐろ','エビ','イカ','タコ'];
+  var NOODLE_EXCLUDE = ['部隊チゲ','マカロニサラダ'];
+  var soutaDone = '', soutaBusy = false;
+  function jstDateOf(t){
+    try{ return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t)); }
+    catch(e){ return ''; }
+  }
+  function jstToday(){ return jstDateOf(Date.now()); }
+  function dayShift(ds, n){
+    var p = ds.split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n));
+    return d.toISOString().slice(0, 10);
+  }
+  function dayDiff(a, b){   // b - a（日）
+    var pa = a.split('-'), pb = b.split('-');
+    return Math.round((Date.UTC(+pb[0], +pb[1] - 1, +pb[2]) - Date.UTC(+pa[0], +pa[1] - 1, +pa[2])) / 86400000);
+  }
+  function qParam(name){
+    try{
+      var q = new URLSearchParams(location.search), v = q.get(name);
+      if(v !== null) return v;
+      var st = q.get('liff.state');   // LINE のリンク経由では、クエリが liff.state に入ることがある
+      if(st){ var q2 = new URLSearchParams(st.charAt(0) === '?' ? st.slice(1) : st); return q2.get(name); }
+    }catch(e){}
+    return null;
+  }
+  function catOf(name){ for(var i = 0; i < menu.length; i++) if(menu[i][1].indexOf(name) >= 0) return menu[i][0]; return ''; }
+  function isFried(name){ return FRIED_NAMES.indexOf(name) >= 0 || FRIED_RE.test(name); }
+  function isNoodle(name){
+    if(NOODLE_EXCLUDE.indexOf(name) >= 0) return false;
+    return catOf(name) === '麺類' || tagsOf(name).indexOf('麺') >= 0;
+  }
+  // 履歴を「注文」にまとめる（印の無い古い履歴は、同じ t を1つの注文とみなす）
+  function soutaOrders(hist){
+    var map = {}, list = [];
+    hist.forEach(function(e){
+      if(!e || typeof e.name !== 'string' || !(e.t > 0)) return;
+      var key = e.o ? 'o:' + e.o : 't:' + e.t;
+      if(!map[key]){ map[key] = { date: jstDateOf(e.t), t: e.t, dishes: [], moods: [] }; list.push(map[key]); }
+      var od = map[key];
+      if(od.dishes.indexOf(e.name) < 0) od.dishes.push(e.name);
+      if(e.name === OMAKASE && e.sel && e.sel['気分']) e.sel['気分'].forEach(function(m){ if(od.moods.indexOf(m) < 0) od.moods.push(m); });
+    });
+    return list;
+  }
+  function uniqPush(arr, v){ if(arr.indexOf(v) < 0) arr.push(v); }
+  // 事実の一覧（優先順）。無ければ []。today は日本時間の今日
+  function soutaFacts(hist, today){
+    var from = dayShift(today, -7), yest = dayShift(today, -1);
+    var all = soutaOrders(hist);
+    var per = all.filter(function(o){ return o.date >= from && o.date <= yest; });
+    if(per.length < 3) return [];
+    // 直近2日に体調のおまかせ・おかゆ・雑炊があれば出さない
+    var recent2 = all.filter(function(o){ return o.date >= dayShift(today, -2) && o.date <= yest; });
+    if(recent2.some(function(o){ return o.moods.indexOf('やさしいもの') >= 0 || o.dishes.indexOf('おかゆ') >= 0 || o.dishes.indexOf('雑炊') >= 0; })) return [];
+    var facts = [];
+    var cats = {}, dishCount = {}, friedOrders = 0, friedNames = [], noodleOrders = 0, noodleDates = {}, meat = 0, fish = 0, omk = 0;
+    var dishTotal = 0, heavy = 0, light = 0;
+    per.forEach(function(o){
+      var hasF = false, hasN = false, hasM = false, hasFi = false, hasO = false;
+      o.dishes.forEach(function(n){
+        if(n === OMAKASE){ hasO = true; return; }
+        dishCount[n] = (dishCount[n] || 0) + 1;
+        var c = catOf(n); if(c) cats[c] = true;
+        if(isFried(n)){ hasF = true; uniqPush(friedNames, n); }
+        if(isNoodle(n)) hasN = true;
+        var tg = tagsOf(n);
+        if(tg.some(function(x){ return MEAT_TAGS.indexOf(x) >= 0; })) hasM = true;
+        if(tg.some(function(x){ return FISH_TAGS.indexOf(x) >= 0; })) hasFi = true;
+        var md = moodsOf(n); dishTotal++;
+        if(md.indexOf('がっつり') >= 0 || md.indexOf('こってり') >= 0) heavy++;
+        if(md.indexOf('ヘルシー') >= 0 || md.indexOf('さっぱり') >= 0) light++;
+      });
+      if(hasF) friedOrders++;
+      if(hasN){ noodleOrders++; noodleDates[o.date] = true; }
+      if(hasM) meat++;
+      if(hasFi) fish++;
+      if(hasO) omk++;
+    });
+    if(CATS4_NEED.every(function(c){ return cats[c]; })) facts.push({ kind: 'sweep', count: 4, names: CATS4_NEED.slice() });
+    var topDish = '', topN = 0;
+    Object.keys(dishCount).forEach(function(n){ if(dishCount[n] > topN){ topN = dishCount[n]; topDish = n; } });
+    if(topN >= 3) facts.push({ kind: 'same_dish', count: topN, names: [topDish] });
+    // 麺：3暦日連続
+    var run = 0, best = 0;
+    for(var i = 7; i >= 1; i--){ if(noodleDates[dayShift(today, -i)]){ run++; if(run > best) best = run; } else run = 0; }
+    if(best >= 3) facts.push({ kind: 'noodle_streak', count: best, names: [] });
+    if(meat >= 5 && fish === 0) facts.push({ kind: 'meat_streak', count: meat, names: [] });
+    if(friedOrders >= 3) facts.push({ kind: 'fried', count: friedOrders, names: friedNames.slice(0, 3) });
+    if(noodleOrders >= 4) facts.push({ kind: 'noodle', count: noodleOrders, names: [] });
+    if(dishTotal >= 5 && heavy / dishTotal >= 0.7) facts.push({ kind: 'heavy', count: heavy, total: dishTotal, names: [] });
+    if(dishTotal >= 5 && light / dishTotal >= 0.7) facts.push({ kind: 'light', count: light, total: dishTotal, names: [] });
+    if(omk >= 3) facts.push({ kind: 'omakase', count: omk, names: [] });
+    // 昨日の初登場・久しぶり
+    var before = all.filter(function(o){ return o.date < yest; });
+    if(before.length >= 5){
+      var last = {};
+      before.forEach(function(o){ o.dishes.forEach(function(n){ if(!last[n] || o.date > last[n]) last[n] = o.date; }); });
+      var yo = all.filter(function(o){ return o.date === yest; }), nw = '', rv = '', rvDays = 0;
+      yo.forEach(function(o){ o.dishes.forEach(function(n){
+        if(n === OMAKASE) return;
+        if(!last[n]){ if(!nw) nw = n; }
+        else if(dayDiff(last[n], yest) >= 30 && !rv){ rv = n; rvDays = dayDiff(last[n], yest); }
+      }); });
+      if(nw) facts.push({ kind: 'new_dish', count: 1, names: [nw] });
+      if(rv) facts.push({ kind: 'revisit', count: rvDays, names: [rv] });
+    }
+    return facts;
+  }
+  var CATS4_NEED = ['和食', '洋食', '中華', '韓国'];
+  function soutaShow(text, isTest){
+    $('souta-text').textContent = text;   // 描画は textContent
+    $('souta-test').hidden = !isTest;
+    $('souta-card').hidden = false;
+  }
+  function soutaClosedToday(){
+    try{ return window.localStorage.getItem(SOUTA_CLOSE_KEY) === jstToday(); }catch(e){ return false; }
+  }
+  function soutaDebugLine(t){ var d = $('souta-debug'); if(!DEBUG){ d.hidden = true; return; } d.textContent = '颯太の一言（確認用）：' + t; d.hidden = false; }
+  // 画面を開いた時と日付が変わった時だけ問い合わせる（30秒ごとの同期には載せない）
+  function soutaTry(){
+    if(!SYNC_URL || replyId || soutaBusy || !liffReady) return;
+    var test = qParam('souta') === 'test', today = jstToday();
+    if(!test && soutaDone === today) return;
+    if(!test){
+      if(!syncLoaded) return;   // 履歴を共有から読み込んでから
+      if(soutaClosedToday()){ soutaDone = today; return; }
+    }
+    if(test){
+      soutaBusy = true;
+      var tf = [
+        { kind: 'fried', count: 3, names: ['唐揚げ', 'とんかつ'] },
+        { kind: 'same_dish', count: 3, names: ['唐揚げ'] },
+        { kind: 'omakase', count: 3, names: [] }
+      ];
+      var pick = tf[Math.floor(Math.random() * tf.length)];
+      soutaDebugLine('試し表示の事実 = ' + JSON.stringify(pick));
+      syncPost({ action: 'butlerComment', test: true, facts: [pick] }).then(function(res){
+        if(res && res.ok && res.text) soutaShow(res.text, true);
+        else soutaDebugLine('試し表示：' + ((res && (res.reason || res.error)) || '出せませんでした'));
+      }).catch(function(){}).then(function(){ soutaBusy = false; });
+      return;
+    }
+    var facts = soutaFacts(orderHist, today);
+    soutaDebugLine(facts.length ? JSON.stringify(facts) : '使える事実なし');
+    soutaDone = today;
+    if(!facts.length || isProtoUrl()) return;   // 試作（?proto=1）では本番の _butler を書かない
+    soutaBusy = true;
+    syncPost({ action: 'butlerComment', today: today, facts: facts }).then(function(res){
+      if(res && res.ok && res.text && !soutaClosedToday()) soutaShow(res.text, false);
+      else if(res && res.pending) soutaDone = '';   // 別の端末が作っている最中。次に開いた時に取り直す
+    }).catch(function(){ soutaDone = ''; }).then(function(){ soutaBusy = false; });
+  }
+  $('souta-close').addEventListener('click', function(){
+    $('souta-card').hidden = true;
+    if(!$('souta-test').hidden) return;   // 試し表示は「今日は出さない」の記録にしない
+    try{ window.localStorage.setItem(SOUTA_CLOSE_KEY, jstToday()); }catch(e){}
+  });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') soutaTry(); });
 
   paintOmakase();
   refresh();
