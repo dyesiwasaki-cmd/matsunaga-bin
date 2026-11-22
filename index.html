@@ -549,6 +549,9 @@ input[type="time"].field{width:auto;min-width:140px}
 .subwrap{display:flow-root}
 .dthumb-sub{width:56px;height:56px;margin:0}
 .dthumb-sub.empty{width:56px;height:56px;font-size:22px}
+.qtyrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 6px}
+.qtylab{margin-right:2px;font-size:13px;font-weight:700;color:var(--accent)}
+.chip.qtychip{flex:1 1 0;min-width:5.5em;text-align:center}
 .dinfo{display:flex;align-items:flex-start;gap:10px;margin:0 0 6px}
 .dinfo .dthumb{flex:none}
 .dinfo-body{flex:1 1 auto;min-width:0}
@@ -1001,7 +1004,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 53;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 54;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1511,6 +1514,7 @@ input[type="time"].field{width:auto;min-width:140px}
     try{ window.localStorage.setItem(SUBG_KEY, JSON.stringify(sub)); }catch(e){}
     syncMark(SUBG_KEY);
   }
+  var dishQty = {};   // 料理ごとの量（少なめ／大盛り。ふつうは入れない）。前回の量は覚えない
   var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {}, subOtherOpen = {}, subDelAsk = {};
   function hasSub(name){ return Object.prototype.hasOwnProperty.call(sub, name) && Array.isArray(sub[name]); }
   function subMarkText(name){
@@ -1542,9 +1546,14 @@ input[type="time"].field{width:auto;min-width:140px}
     });
   }
   // 料理名＋サブメニューの選択 から、文面と同じラベルを作る
-  function labelFor(name, selMap, otherMap){
+  // 量（少なめ／大盛り）。ふつうは添えない。ラベル付きの指定（「トッピング：卵」など）がある時は「／量」、無ければ「・量」でつなぐ
+  var QTY_LIST = ['少なめ', 'ふつう', '大盛り'];
+  function qtyOf(name){ var q = dishQty[name]; return q === '少なめ' || q === '大盛り' ? q : ''; }
+  function qtyJoin(txt, q){ return !q ? txt : !txt ? q : txt + (txt.indexOf('：') >= 0 ? '／' : '・') + q; }
+  function labelFor(name, selMap, otherMap, q){
     if(name === OMAKASE){ var ot = omakaseText(selMap, otherMap); return ot ? name + '（' + ot + '）' : name; }
-    if(!hasSub(name) || !sub[name].length) return name;
+    q = q === '少なめ' || q === '大盛り' ? q : '';
+    if(!hasSub(name) || !sub[name].length) return q ? name + '（' + q + '）' : name;
     var segs = [], run = null, first = true;
     visibleGroups(name, selMap).forEach(function(g){
       var list = ((selMap && selMap[g.label]) || []).slice(), o = String((otherMap && otherMap[g.label]) || '').trim();
@@ -1559,12 +1568,12 @@ input[type="time"].field{width:auto;min-width:140px}
       }
     });
     var txt = segs.map(function(s){ return (s.label ? s.label + '：' : '') + s.vals.join('・'); }).join('／');
-    return name + '（' + (txt || 'おまかせ') + '）';
+    return name + '（' + (qtyJoin(txt, q) || 'おまかせ') + '）';
   }
   function dishLabel(name){
-    if(!hasSub(name) || !sub[name].length) return name;
+    if(!hasSub(name) || !sub[name].length) return labelFor(name, {}, {}, qtyOf(name));
     pruneSub(name);
-    return labelFor(name, subSel[name] || {}, subOther[name] || {});
+    return labelFor(name, subSel[name] || {}, subOther[name] || {}, qtyOf(name));
   }
   function focusDishChip(name){
     var cs = menuEl.querySelectorAll('.chip[data-v]');
@@ -1988,16 +1997,38 @@ input[type="time"].field{width:auto;min-width:140px}
     box.appendChild(body); paintInfoDesc(box);
     return box;
   }
+  // 量の行（全料理に共通：少なめ／ふつう／大盛り。初期はふつう）
+  function qtyRow(name){
+    var row = el('div', 'qtyrow'); row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', name + 'の量');
+    row.appendChild(el('span', 'qtylab', '量'));
+    var cur = qtyOf(name);
+    QTY_LIST.forEach(function(q){
+      var on = q === 'ふつう' ? !cur : cur === q;
+      var b = el('button', 'chip sub-chip qtychip', q); b.type = 'button';
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on ? 'true' : 'false'); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.dataset.qname = name; b.dataset.qval = q;
+      b.addEventListener('click', function(){
+        if(q === 'ふつう') delete dishQty[name]; else dishQty[name] = q;
+        render();
+        var bs = menuEl.querySelectorAll('button[data-qname]');
+        for(var i = 0; i < bs.length; i++) if(bs[i].dataset.qname === name && bs[i].dataset.qval === q){ bs[i].focus(); break; }
+      });
+      row.appendChild(b);
+    });
+    return row;
+  }
   // サブメニューの無い料理：上部だけの欄（選んでいる間、最後に選んだ1つだけ開く）
   function plainPanel(name){
     var wrap = el('div', 'subwrap');
     wrap.appendChild(infoTop(name, name));
+    wrap.appendChild(qtyRow(name));
     return wrap;
   }
   function subPanel(name){
     pruneSub(name);
     var wrap = el('div', 'subwrap');
     wrap.appendChild(infoTop(name, name + 'の種類'));
+    wrap.appendChild(qtyRow(name));
     visibleGroups(name).forEach(function(g){
       var box = el('div', 'subbox');
       box.setAttribute('role', 'group');
@@ -3120,18 +3151,21 @@ input[type="time"].field{width:auto;min-width:140px}
   function stable(o){
     return JSON.stringify(Object.keys(o).sort().map(function(k){ return [k, o[k]]; }));
   }
-  function keyOf(e){ return e.name + '|' + stable(e.sel) + '|' + stable(e.other); }
+  function keyOf(e){ return e.name + '|' + stable(e.sel) + '|' + stable(e.other) + (e.qty === '少なめ' || e.qty === '大盛り' ? '|' + e.qty : ''); }
   // 今の選択を、保存用の形にする（空の選択は除く）
   function snapFor(name){
     if(hasSub(name)) pruneSub(name);
     var sel = {}, other = {}, s = subSel[name] || {}, o = subOther[name] || {};
     Object.keys(s).forEach(function(k){ if(s[k] && s[k].length) sel[k] = s[k].slice(); });
     Object.keys(o).forEach(function(k){ if(String(o[k]).trim()) other[k] = String(o[k]).trim(); });
-    return { name: name, sel: sel, other: other };
+    var r = { name: name, sel: sel, other: other }, q = qtyOf(name);
+    if(q) r.qty = q;
+    return r;
   }
   // 今のサブメニューに存在する分だけに絞る
   function filterEntry(e){
     var fe = { name: e.name, sel: {}, other: {} };
+    if(e.qty === '少なめ' || e.qty === '大盛り') fe.qty = e.qty;
     if(e.name === OMAKASE){ fe.sel = clone(e.sel || {}); fe.other = clone(e.other || {}); return fe; }
     if(!hasSub(e.name)) return fe;
     sub[e.name].forEach(function(g){
@@ -3161,11 +3195,12 @@ input[type="time"].field{width:auto;min-width:140px}
     msg.textContent = '';
     if(isPressed(e)){
       var k = dishes.indexOf(e.name); if(k >= 0) dishes.splice(k, 1);
-      delete subSel[e.name]; delete subOther[e.name];
+      delete subSel[e.name]; delete subOther[e.name]; delete dishQty[e.name];
     }else{
       var fe = filterEntry(e);
       if(dishes.indexOf(e.name) < 0) dishes.push(e.name);
       subSel[e.name] = fe.sel; subOther[e.name] = fe.other;
+      if(fe.qty) dishQty[e.name] = fe.qty; else delete dishQty[e.name];
       if(hasSub(e.name)) pruneSub(e.name);
     }
     render(); refresh();
@@ -3183,7 +3218,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var k = keyOf(e), fe = filterEntry(e);
     favs = favs.filter(function(x){ return keyOf(x) !== k; });
     saveFav(); render();
-    $('fav-undo-text').textContent = '「' + labelFor(e.name, fe.sel, fe.other) + '」をお気に入りから外しました。';
+    $('fav-undo-text').textContent = '「' + labelFor(e.name, fe.sel, fe.other, fe.qty) + '」をお気に入りから外しました。';
     $('fav-undo').hidden = false;
     renderQuick();
     favTimer = setTimeout(function(){ hideFavUndo(); renderQuick(); }, 8000);
@@ -3263,10 +3298,10 @@ input[type="time"].field{width:auto;min-width:140px}
     var b = el('button', 'qcard'); b.type = 'button';
     b.dataset.qrow = row; b.dataset.qkey = keyOf(e);
     b.setAttribute('aria-pressed', isPressed(e) ? 'true' : 'false');
-    var isO = e.name === OMAKASE, full = labelFor(e.name, fe.sel, fe.other);
+    var isO = e.name === OMAKASE, full = labelFor(e.name, fe.sel, fe.other, fe.qty);
     var text = isO ? full : e.name;
     b.appendChild(el('span', 'qt', text));
-    var ss = isO ? '' : subSummary(fe);
+    var ss = isO ? '' : [subSummary(fe), fe.qty || ''].filter(Boolean).join('・');
     if(ss) b.appendChild(el('small', 'qn qs', ss));
     if(extra) b.appendChild(el('small', row === 'rec' ? 'qn recwhy' : 'qn', extra));
     b.addEventListener('click', function(){ applyEntry(e); focusCard(row, keyOf(e)); });
@@ -3830,7 +3865,7 @@ input[type="time"].field{width:auto;min-width:140px}
       toggle(dishes, name);
       b.setAttribute('aria-pressed', dishes.indexOf(name)>=0 ? 'true':'false');
       // サブメニューの有無にかかわらず、選ぶと欄が開き、外すと閉じる（サブの無い料理は最後に選んだ1つだけ）
-      if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
+      if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; delete dishQty[name]; }
       render(); focusDishChip(name);
       if(dishes.indexOf(name) >= 0) revealPanel(name);
       refresh();
@@ -3991,6 +4026,7 @@ input[type="time"].field{width:auto;min-width:140px}
     Object.keys(subSel).forEach(function(k){
       if(dishes.indexOf(k) < 0){ delete subSel[k]; delete subOther[k]; }
     });
+    Object.keys(dishQty).forEach(function(k){ if(dishes.indexOf(k) < 0) delete dishQty[k]; });
     menuEl.innerHTML = ''; n = 0;
     menuEl.classList.toggle('no-stick', !!(reorderAll || reorderCat));   // 並び替え中は見出しを貼り付けない
     updSort();
@@ -4871,7 +4907,8 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // 注文文面用：料理を1行（複数選択の項目は次の行）にする
   function dishLines(name){
-    if(!hasSub(name) || !sub[name].length) return ['・' + name];
+    var q = qtyOf(name);
+    if(!hasSub(name) || !sub[name].length) return ['・' + name + (q ? '（' + q + '）' : '')];
     pruneSub(name);
     var sm = subSel[name] || {}, om = subOther[name] || {}, singles = [], multis = [];
     visibleGroups(name, sm).forEach(function(g){
@@ -4881,7 +4918,8 @@ input[type="time"].field{width:auto;min-width:140px}
       if(g.multi) multis.push('　' + g.label + '：' + list.join('・'));
       else singles.push(list.join('・'));
     });
-    return ['・' + name + (singles.length ? '（' + singles.join('・') + '）' : '')].concat(multis);
+    var first = singles.slice(); if(q) first.push(q);
+    return ['・' + name + (first.length ? '（' + first.join('・') + '）' : '')].concat(multis);
   }
   function buildMessage(){
     var blocks = [], memo = $('memo').value.trim();
@@ -5080,7 +5118,7 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // 頼む画面の選択を、すべて空に戻す
   function resetSelections(){
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = loadPeople(); daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
+    dishes = []; subSel = {}; subOther = {}; dishQty = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = loadPeople(); daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
@@ -6788,7 +6826,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function snapDraft(){
     return {
-      v: 1, date: dateStr(new Date()), dishes: dishes.slice(), subSel: clone(subSel), subOther: clone(subOther),
+      v: 1, date: dateStr(new Date()), dishes: dishes.slice(), subSel: clone(subSel), subOther: clone(subOther), dishQty: clone(dishQty),
       usual: !!usual, omakase: !!omakase, omakaseMoods: omakaseMoods.slice(), omakaseOther: omakaseOther,
       people: people, daigo: !!daigo, daigoAuto: !!daigoAuto, when: when, tomorrow: !!tomorrow,
       mealTime: $('meal-time').value, cleanTime: $('clean-time').value, cleanMode: cleanMode,
@@ -6819,6 +6857,8 @@ input[type="time"].field{width:auto;min-width:140px}
       dishes = d.dishes.filter(okName);
       subSel = d.subSel && typeof d.subSel === 'object' ? d.subSel : {};
       subOther = d.subOther && typeof d.subOther === 'object' ? d.subOther : {};
+      dishQty = {};
+      if(d.dishQty && typeof d.dishQty === 'object') Object.keys(d.dishQty).forEach(function(n){ if(dishes.indexOf(n) >= 0 && (d.dishQty[n] === '少なめ' || d.dishQty[n] === '大盛り')) dishQty[n] = d.dishQty[n]; });
       usual = !!d.usual; $('usual-clean').setAttribute('aria-pressed', usual ? 'true' : 'false');
       omakase = !!d.omakase; omakaseMoods = Array.isArray(d.omakaseMoods) ? d.omakaseMoods : []; omakaseOther = String(d.omakaseOther || ''); paintOmakase();
       people = d.people >= 1 && d.people <= 20 ? d.people : loadPeople();
