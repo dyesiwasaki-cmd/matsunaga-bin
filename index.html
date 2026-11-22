@@ -211,8 +211,6 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tag-find-head h2{margin:0}
 .tag-find-head .tiny{min-height:32px;padding:2px 10px;font-size:13px}
 .tag-sub{flex:0 0 100%;margin:6px 0 0;font-size:12px;font-weight:700;color:var(--muted)}
-.mood-chips{display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap;padding:2px 2px 8px;-webkit-overflow-scrolling:touch}
-.mood-chips .chip{flex:none;white-space:nowrap}
 .mood-edit{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:6px}
 .ord,.rv-card{border:2px solid var(--line);border-radius:8px;background:var(--surface);padding:8px 12px;margin:8px 0}
 .ord.consult{border-color:var(--bad,#c62828);box-shadow:0 0 0 2px var(--bad,#c62828)}
@@ -251,6 +249,33 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-consult{margin-top:8px;padding:8px 8px 10px 12px;border-left:4px solid var(--bad,#c62828);background:var(--accent-soft);border-radius:0 4px 4px 0}
 .rv-btn.sub[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .st-na{color:var(--muted)}
+.rv-btn.big{min-height:64px;font-size:20px}
+.when-band{margin:8px 0;padding:8px 12px;border-left:6px solid var(--accent);border-radius:0 8px 8px 0;background:var(--accent-soft);font-size:20px;font-weight:700;line-height:1.4}
+#sheet-when .seg{margin:4px 0 8px}
+.cat-toggle{display:inline-flex;align-items:center;max-width:100%;min-height:44px;padding:6px 4px;border:0;background:none;color:inherit;font:inherit;font-weight:700;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rd-banner{flex:0 0 100%;margin:4px 0;padding:6px 10px;border-left:6px solid var(--accent);background:var(--accent-soft);font-weight:700;font-size:14px}
+.rd-tool{flex:0 0 100%;margin:4px 0}
+.rd-tool .undo{margin-top:6px}
+.rd-guide{flex:0 0 100%;margin:4px 0 8px}
+.rd-chips{flex:1 1 100%;min-width:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.rd-item{display:inline-flex;align-items:center;max-width:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:contain}
+.rd-item .chip{min-width:0;overflow-wrap:anywhere;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.rd-handle{flex:none;width:44px;height:44px;margin-left:2px;border:0;border-radius:8px;background:none;color:var(--muted);font-size:24px;line-height:1;touch-action:none;cursor:grab}
+.rd-item.rd-lift{border-radius:8px;background:var(--accent-soft);box-shadow:0 10px 24px var(--shadow);opacity:.97;transform:scale(1.04)}
+.rd-item.rd-lift .chip{border-color:var(--accent);color:var(--accent)}
+.rd-caret{flex:none;width:5px;border-radius:3px;background:var(--accent)}
+.rd-menu{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px 6px}
+.rd-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--bar-h,72px) + 16px);z-index:14;display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);padding:8px 12px;border-radius:10px;background:var(--fg);color:var(--surface);box-shadow:0 4px 14px var(--shadow);font-size:14px}
+.rd-toast[hidden]{display:none}
+.tag-find-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.mood-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;padding:2px 0 6px}
+.mood-chips .chip{display:flex;align-items:center;justify-content:center;min-height:40px;padding:4px 6px;font-size:13px;white-space:normal;text-align:center}
+.cardrow{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.cardrow::-webkit-scrollbar{height:6px}
+.cardrow::-webkit-scrollbar-track{background:transparent}
+.cardrow::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.cat-sel{margin-left:8px;padding:0 8px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font-size:12px}
 .daigo-tag{display:inline-block;padding:1px 10px;border:2px solid var(--alert);border-radius:12px;background:var(--alert-soft);color:var(--alert);font-weight:700;font-size:.9em;line-height:1.5;white-space:nowrap}
 .rv-big .daigo-tag{font-size:16px;vertical-align:middle}
 #daigo{background:var(--surface);color:var(--alert);font-weight:700;border-color:#e9a39d;border-color:color-mix(in srgb, var(--alert) 45%, var(--surface))}
@@ -558,7 +583,7 @@ input[type="time"].field{width:auto;min-width:140px}
 
     <section class="sec" id="tag-find">
       <div id="mood-row" style="margin-bottom:12px"><h2>気分で探す</h2><div class="mood-chips" id="mood-chips" role="group" aria-label="気分で探す"></div></div>
-      <div class="tag-find-head"><h2>食材で探す</h2><button type="button" class="mini sub tiny" id="tag-edit-toggle" aria-pressed="false" aria-label="食材の編集">✎</button></div>
+      <div class="tag-find-head"><h2>食材で探す</h2><span class="tag-find-tools"><button type="button" class="mini sub tiny" id="tag-sort-toggle">よく食べる順</button><button type="button" class="mini sub tiny" id="tag-reorder-btn" hidden>⇅ 並び替え</button><button type="button" class="mini sub tiny" id="tag-edit-toggle" aria-pressed="false" aria-label="食材の編集">✎</button></span></div>
       <input class="field" id="tag-search" type="search" placeholder="料理名や食材で探す（例：鶏肉）" autocomplete="off" aria-label="料理名や食材で探す">
       <div class="chips" id="tag-chips" style="margin-top:10px"></div>
       <div class="subbox" id="tag-add-panel" role="group" aria-label="食材を追加" hidden></div>
@@ -592,8 +617,10 @@ input[type="time"].field{width:auto;min-width:140px}
       </div>
       <div id="menu"></div>
       <p class="note" id="edit-msg" role="status"></p>
+      <p class="sr-only" id="rd-live" aria-live="polite"></p>
       <div class="menu-foot" id="menu-foot">
         <button type="button" class="mini sub tiny" id="cat-add-open" aria-expanded="false">＋分類を追加</button>
+        <button type="button" class="mini sub tiny" id="cat-reorder-btn">⇅ 分類の並び替え</button>
         <button type="button" class="mini sub tiny" id="reset-ask">元の献立に戻す</button>
         <div class="add-row" id="cat-add-row" hidden>
           <input class="field" id="cat-add-input" type="text" maxlength="12" placeholder="例：鍋物" autocomplete="off" aria-label="追加する分類の名前">
@@ -668,11 +695,6 @@ input[type="time"].field{width:auto;min-width:140px}
     </section>
   </div>
 
-  <!-- 共通 -->
-  <section class="sec" style="border-bottom:0">
-    <h2>ひとことメモ（任意）</h2>
-    <textarea class="field" id="memo" placeholder="例：辛さ控えめでお願いします" aria-label="メモ"></textarea>
-  </section>
 
   <section class="chat" id="chat" hidden aria-live="polite">
     <h2>送信プレビュー</h2>
@@ -687,6 +709,8 @@ input[type="time"].field{width:auto;min-width:140px}
 
 <button type="button" class="totop" id="totop" aria-label="一番上へ戻る" hidden>↑</button>
 
+<div class="rd-toast" id="rd-toast" role="status" hidden><span id="rd-toast-text"></span><button type="button" class="mini sub" id="rd-toast-undo">元に戻す</button></div>
+
 <div class="bar">
   <div class="bar-in">
     <button type="button" class="go" id="go" disabled>頼む</button>
@@ -698,6 +722,28 @@ input[type="time"].field{width:auto;min-width:140px}
     <div class="sheet-in">
       <div class="sheet-head"><h2 id="sheet-title">この内容でお送りします</h2><div class="cats" id="sheet-cats"><img class="confirm-cat" src="cat-icons/confirm-160.png" width="72" height="72" alt=""></div></div>
       <p class="sub">内容をご確認ください。</p>
+      <div id="sheet-when" hidden>
+        <div class="when-band" id="sb-meal-band" hidden></div>
+        <div class="seg" id="sb-day" role="radiogroup" aria-label="今日か明日か" hidden>
+          <button type="button" class="chip" data-sday="0" role="radio" aria-pressed="true" aria-checked="true">今日</button>
+          <button type="button" class="chip" data-sday="1" role="radio" aria-pressed="false" aria-checked="false">明日</button>
+        </div>
+        <div class="seg" id="sb-when" role="radiogroup" aria-label="いつ" hidden>
+          <button type="button" class="chip" data-swhen="すぐに" role="radio" aria-pressed="true" aria-checked="true">すぐに</button>
+          <button type="button" class="chip" data-swhen="朝" role="radio" aria-pressed="false" aria-checked="false">朝</button>
+          <button type="button" class="chip" data-swhen="昼" role="radio" aria-pressed="false" aria-checked="false">昼</button>
+          <button type="button" class="chip" data-swhen="夜" role="radio" aria-pressed="false" aria-checked="false">夜</button>
+          <button type="button" class="chip" data-swhen="時間指定" role="radio" aria-pressed="false" aria-checked="false">時間指定</button>
+        </div>
+        <div class="row" id="sb-time-row" hidden><input class="field" id="sb-meal-time" type="time" value="19:00" aria-label="何時までに"><span>まで</span></div>
+        <div class="when-band" id="sb-clean-band" hidden></div>
+        <div class="seg" id="sb-cwhen" role="radiogroup" aria-label="掃除の時間" hidden>
+          <button type="button" class="chip" data-scw="now" role="radio" aria-pressed="true" aria-checked="true">すぐに</button>
+          <button type="button" class="chip" data-scw="any" role="radio" aria-pressed="false" aria-checked="false">いつでも</button>
+          <button type="button" class="chip" data-scw="set" role="radio" aria-pressed="false" aria-checked="false">時間を指定</button>
+        </div>
+        <div class="row" id="sb-clean-time-row" hidden><input class="field" id="sb-clean-time" type="time" value="17:00" aria-label="掃除は何時まで"><span>まで</span></div>
+      </div>
       <div id="sheet-people" style="margin-bottom:12px" hidden>
       <div class="row">
         <span id="people-q" style="font-weight:700">何人分ですか？</span>
@@ -711,6 +757,10 @@ input[type="time"].field{width:auto;min-width:140px}
       <div style="margin-top:8px"><button type="button" class="chip" id="daigo" aria-pressed="false">👦 大吾くんもいる</button></div>
       </div>
       <div id="sheet-subok" style="margin-bottom:12px" hidden><button type="button" class="chip" id="subok" aria-pressed="true">材料や品切れのときは、代わりのものでOK</button></div>
+      <div id="sheet-memo" style="margin-bottom:12px">
+        <label for="memo" style="font-weight:700">ひとことメモ（任意）</label>
+        <textarea class="field" id="memo" rows="2" placeholder="例：辛さ控えめでお願いします"></textarea>
+      </div>
       <pre class="msg" id="sheet-msg"></pre>
       <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
       <div class="btns">
@@ -1784,6 +1834,40 @@ input[type="time"].field{width:auto;min-width:140px}
     invalidateEaten();
     if(!tagEditing && !tagAddOpen) renderFind();
   });
+  // ---- 食材の並び（手動の並び順・端末ごとの表示順） ----
+  var TAGORDER_KEY = 'otetsudai-tagorder-v1', TAGSORT_KEY = 'otetsudai-tagsort-v1', rdTagDefault = null;
+  function loadTagOrder(){
+    try{
+      var raw = window.localStorage.getItem(TAGORDER_KEY);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(p && Array.isArray(p.meat) && Array.isArray(p.other) && p.meat.concat(p.other).every(function(s){ return typeof s === 'string'; })) return p;
+      }
+    }catch(e){}
+    return null;
+  }
+  var tagOrder = loadTagOrder();
+  var tagSortMode = (function(){
+    try{ var v = window.localStorage.getItem(TAGSORT_KEY); if(v === 'manual' || v === 'eaten') return v; }catch(e){}
+    return tagOrder ? 'manual' : 'eaten';
+  })();
+  function saveTagOrder(){
+    try{
+      if(tagOrder) window.localStorage.setItem(TAGORDER_KEY, JSON.stringify(tagOrder));
+      else window.localStorage.removeItem(TAGORDER_KEY);
+    }catch(e){}
+    syncMark(TAGORDER_KEY);
+  }
+  function saveTagSort(){ try{ window.localStorage.setItem(TAGSORT_KEY, tagSortMode); }catch(e){} }
+  // 保存した並びに、並びに無い新しい食材を、各段の末尾（よく食べる順）に続ける
+  function applyTagOrder(prim, rest, cnt){
+    var has = function(t){ return Object.prototype.hasOwnProperty.call(cnt, t); }, placed = {}, m = [], o = [];
+    (tagOrder.meat || []).forEach(function(t){ if(has(t) && !placed[t]){ placed[t] = true; m.push(t); } });
+    (tagOrder.other || []).forEach(function(t){ if(has(t) && !placed[t]){ placed[t] = true; o.push(t); } });
+    prim.forEach(function(t){ if(!placed[t]){ placed[t] = true; m.push(t); } });
+    rest.forEach(function(t){ if(!placed[t]){ placed[t] = true; o.push(t); } });
+    return { meat: m, other: o };
+  }
   function renderFind(){
     var cnt = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){ tagsOf(nm).forEach(function(t){ cnt[t] = (cnt[t] || 0) + 1; }); }); });
@@ -1809,6 +1893,34 @@ input[type="time"].field{width:auto;min-width:140px}
     var eat = eatenCounts();
     prim = prim.map(function(t, i){ return { t: t, i: i }; }).sort(function(a, b){ return ((eat[b.t] || 0) - (eat[a.t] || 0)) || (a.i - b.i); }).map(function(x){ return x.t; });
     restAll.sort(function(a, b){ return (eat[b] || 0) - (eat[a] || 0); });   // 同数は、献立で使われている件数の順のまま
+    rdTagDefault = { meat: prim.slice(), other: restAll.slice() };   // よく食べる順
+    if(tagSortMode === 'manual' && tagOrder){ var mr = applyTagOrder(prim, restAll, cnt); prim = mr.meat; restAll = mr.other; }
+    var sbtn = $('tag-sort-toggle');
+    sbtn.textContent = tagSortMode === 'manual' ? '並べた順' : 'よく食べる順';
+    sbtn.setAttribute('aria-label', '食材の表示順：' + (tagSortMode === 'manual' ? '並べた順（押すとよく食べる順）' : 'よく食べる順（押すと並べた順）'));
+    sbtn.hidden = !!tagReorder;
+    $('tag-reorder-btn').hidden = !tagEditing;
+    $('tag-reorder-btn').textContent = tagReorder ? '✓ 並び替え終わり' : '⇅ 並び替え';
+    if(tagReorder && tagEditing){   // 食材の並び替え：段をまたいで動かせる
+      var rbox = $('tag-chips'); rbox.innerHTML = '';
+      rbox.appendChild(el('p', 'rd-banner', RD_BANNER));
+      var rtool = el('div', 'rd-tool'); rbox.appendChild(rtool);
+      rdCopyBar(rtool, '⇅ よく食べる順を、そのまま並びに写す', function(){
+        var snap = tagOrder ? JSON.parse(JSON.stringify(tagOrder)) : null;
+        tagOrder = { meat: rdTagDefault.meat.slice(), other: rdTagDefault.other.slice() }; saveTagOrder();
+        rdAfter('食材の並びを、よく食べる順に写しました', function(){ tagOrder = snap; saveTagOrder(); render(); });
+      });
+      rbox.appendChild(el('p', 'note rd-guide', RD_GUIDE));
+      rbox.appendChild(el('p', 'tag-sub', 'お肉・お魚・たまご'));
+      var z1 = el('div', 'chips rd-chips'); rbox.appendChild(z1);
+      rbox.appendChild(el('p', 'tag-sub', '野菜・その他'));
+      var z2 = el('div', 'chips rd-chips'); rbox.appendChild(z2);
+      var rows = [prim.slice(), restAll.slice()];
+      rdBuild([{ el: z1, names: rows[0].map(function(t){ return '#' + t; }), labels: rows[0] }, { el: z2, names: rows[1].map(function(t){ return '#' + t; }), labels: rows[1] }],
+        function(fz, fi, tz, tp){ rdDropTag(rows, fz, fi, tz, tp); });
+      $('tag-add-panel').hidden = true; $('tag-status').hidden = true;
+      return;
+    }
     var top;
     if(tagEditing || tagsOpen) top = restAll.slice();
     else{
@@ -2291,15 +2403,15 @@ input[type="time"].field{width:auto;min-width:140px}
     return inp;
   }
 
-  // ---- 並び順（よく頼む順／登録順） ----
+  // ---- 並び順（よく頼む順／手動の並び順） ----
   var SORT_KEY = 'otetsudai-sort-v1';
   var sortMode = 'freq';
   try{ if(window.localStorage.getItem(SORT_KEY) === 'reg') sortMode = 'reg'; }catch(e){}
   function updSort(){
     var b = $('sort-toggle');
     b.hidden = false;
-    b.textContent = sortMode === 'freq' ? 'よく頼む順' : '登録順';
-    b.setAttribute('aria-label', '並び順：' + (sortMode === 'freq' ? 'よく頼む順（押すと登録順に切り替え）' : '登録順（押すとよく頼む順に切り替え）'));
+    b.textContent = sortMode === 'freq' ? 'よく頼む順' : '手動の並び順';
+    b.setAttribute('aria-label', '並び順：' + (sortMode === 'freq' ? 'よく頼む順（押すと手動の並び順に切り替え）' : '手動の並び順（押すとよく頼む順に切り替え）'));
   }
   function sortByFreq(names, hc){
     return names.map(function(nm, i){ return { nm: nm, i: i }; }).sort(function(a, b){
@@ -2375,6 +2487,233 @@ input[type="time"].field{width:auto;min-width:140px}
     return b;
   }
 
+  // ================= 並び替え（持ち手「⠿」をつまんでドラッグ） =================
+  var reorderCat = '', reorderAll = false, tagReorder = false, rdDrag = null, rdMenu = null, rdSuppress = false, rdConfirm = false, rdFocus = null, rdToastTimer = 0, rdUndoFn = null;
+  var RD_BANNER = '手動の並び順を変更中（2人共通）';
+  var RD_GUIDE = '☆の代わりの「⠿」をつまんで、好きな場所へ動かします。チップの文字をタップすると「一番上へ／一番下へ」が出ます。';
+  function rdVibrate(){ try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){} }
+  function rdClosePanels(){ subEditOpen = {}; tagEditOpen = {}; subRemoveAsk = {}; renameSt = null; tagRenameSt = null; }
+  // 並び替えに入ったら、この端末の表示を「手動の並び順」にする（終わってもそのまま）
+  function rdEnter(){
+    sortMode = 'reg'; try{ window.localStorage.setItem(SORT_KEY, 'reg'); }catch(e){}
+    tagSortMode = 'manual'; saveTagSort();
+    rdClosePanels(); rdMenu = null; rdConfirm = false; setMsg('');
+  }
+  function rdMoveWithin(arr, from, to){
+    if(from === to || from < 0 || from >= arr.length || to < 0 || to >= arr.length) return false;
+    arr.splice(to, 0, arr.splice(from, 1)[0]);
+    return true;
+  }
+  // 動かした直後に、画面下へ「元に戻す」（約6秒・1手分だけ）
+  function rdAfter(label, undoFn){
+    rdMenu = null; rdConfirm = false;
+    rdUndoFn = undoFn;
+    $('rd-toast-text').textContent = label;
+    $('rd-toast').hidden = false;
+    $('rd-live').textContent = label;
+    clearTimeout(rdToastTimer);
+    rdToastTimer = setTimeout(function(){ $('rd-toast').hidden = true; rdUndoFn = null; }, 6000);
+    render();
+  }
+  $('rd-toast-undo').addEventListener('click', function(){
+    var fn = rdUndoFn; rdUndoFn = null;
+    $('rd-toast').hidden = true; clearTimeout(rdToastTimer);
+    if(fn) fn();
+  });
+  function rdDropDish(gi, fi, tp){
+    var arr = menu[gi][1], snap = arr.slice(), nm = arr[fi];
+    if(!rdMoveWithin(arr, fi, tp)) { rdMenu = null; render(); return; }
+    saveMenu();
+    rdAfter('「' + nm + '」を移動しました', function(){ menu[gi][1] = snap; saveMenu(); render(); });
+  }
+  function rdDropCat(fi, tp){
+    var snap = menu.slice(), nm = menu[fi][0];
+    if(!rdMoveWithin(menu, fi, tp)){ rdMenu = null; render(); return; }
+    saveMenu();
+    rdAfter('分類「' + nm + '」を移動しました', function(){ menu = snap; saveMenu(); render(); });
+  }
+  function rdDropTag(rows, fz, fi, tz, tp){
+    var a = rows[0].slice(), b = rows[1].slice(), arrs = [a, b], nm = arrs[fz][fi];
+    if(fz === tz){ if(!rdMoveWithin(arrs[fz], fi, tp)){ rdMenu = null; render(); return; } }
+    else{ arrs[fz].splice(fi, 1); arrs[tz].splice(tp, 0, nm); }
+    var snap = tagOrder ? JSON.parse(JSON.stringify(tagOrder)) : null;
+    tagOrder = { meat: a, other: b }; saveTagOrder();
+    rdAfter('「#' + nm + '」を移動しました', function(){ tagOrder = snap; saveTagOrder(); render(); });
+  }
+  function rdTouchBlock(e){ if(rdDrag && rdDrag.started && e.cancelable) e.preventDefault(); }
+  function rdKey(e){ if(e.key === 'Escape' && rdDrag){ e.preventDefault(); rdEnd(false); } }
+  function rdOutside(st){ return st.x < 0 || st.y < 0 || st.x > window.innerWidth || st.y > window.innerHeight; }
+  function rdUpdate(st){
+    st.it.style.left = (st.x - st.offX) + 'px'; st.it.style.top = (st.y - st.offY) + 'px';
+    // いちばん近い列（段）を選ぶ
+    var bz = -1, bd = 1e12, i;
+    for(i = 0; i < st.zones.length; i++){
+      var zr = st.zones[i].el.getBoundingClientRect();
+      var dy = st.y < zr.top ? zr.top - st.y : st.y > zr.bottom ? st.y - zr.bottom : 0;
+      var dx = st.x < zr.left ? zr.left - st.x : st.x > zr.right ? st.x - zr.right : 0;
+      var dd = dy * dy * 4 + dx * dx;
+      if(dd < bd){ bd = dd; bz = i; }
+    }
+    var zel = st.zones[bz].el, kids = zel.children, best = null, bdd = 1e12;
+    for(i = 0; i < kids.length; i++){
+      var c = kids[i];
+      if(c === st.it || !c.classList.contains('rd-item')) continue;
+      var r = c.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var d2 = (cy - st.y) * (cy - st.y) * 4 + (cx - st.x) * (cx - st.x);
+      if(d2 < bdd){ bdd = d2; best = c; }
+    }
+    if(!best){ if(zel.lastChild !== st.caret) zel.appendChild(st.caret); return; }
+    var br = best.getBoundingClientRect(), target = best;
+    if(st.x >= br.left + br.width / 2){
+      target = best.nextSibling;
+      while(target && !(target.classList && target.classList.contains('rd-item'))) target = target.nextSibling;
+    }
+    if(target === st.it) target = st.it.nextSibling;
+    if(target){ if(st.caret.nextSibling !== target || st.caret.parentNode !== zel) zel.insertBefore(st.caret, target); }
+    else if(zel.lastChild !== st.caret) zel.appendChild(st.caret);
+  }
+  function rdLoop(){
+    var st = rdDrag;
+    if(!st || !st.started) return;
+    var stick = $('tabs-stick'), bar = document.querySelector('.bar');
+    var top = (stick ? Math.max(0, stick.getBoundingClientRect().bottom) : 0) + 60;
+    var bottom = window.innerHeight - (bar ? bar.offsetHeight : 0) - 60, dy = 0;
+    if(st.y < top) dy = -Math.min(8, (top - st.y) / 8 + 1);      // 低速
+    else if(st.y > bottom) dy = Math.min(8, (st.y - bottom) / 8 + 1);
+    if(dy){ window.scrollBy(0, dy); rdUpdate(st); }
+    st.raf = window.requestAnimationFrame(rdLoop);
+  }
+  function rdStart(st){
+    st.started = true; rdMenu = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.rd-menu'), function(m){ m.parentNode.removeChild(m); });
+    var r = st.it.getBoundingClientRect();
+    st.offX = st.x0 - r.left; st.offY = st.y0 - r.top;
+    st.caret = document.createElement('div'); st.caret.className = 'rd-caret'; st.caret.style.height = r.height + 'px';
+    st.it.parentNode.insertBefore(st.caret, st.it);
+    st.it.classList.add('rd-lift');
+    st.it.style.position = 'fixed'; st.it.style.left = r.left + 'px'; st.it.style.top = r.top + 'px'; st.it.style.zIndex = '30'; st.it.style.margin = '0';
+    try{ st.handle.setPointerCapture(st.id); }catch(e){}
+    document.addEventListener('touchmove', rdTouchBlock, { passive: false });
+    document.addEventListener('keydown', rdKey);
+    st.raf = window.requestAnimationFrame(rdLoop);
+    rdUpdate(st);
+  }
+  function rdEnd(commit){
+    var st = rdDrag;
+    if(!st) return;
+    rdDrag = null;
+    if(st.raf) window.cancelAnimationFrame(st.raf);
+    window.removeEventListener('pointermove', rdPointerMove);
+    window.removeEventListener('pointerup', rdPointerUp);
+    window.removeEventListener('pointercancel', rdPointerCancel);
+    document.removeEventListener('touchmove', rdTouchBlock);
+    document.removeEventListener('keydown', rdKey);
+    var dz = st.zi, pos = st.idx, i, j;
+    for(i = 0; i < st.zones.length; i++){
+      if(st.caret.parentNode === st.zones[i].el){
+        dz = i; pos = 0;
+        var kids = st.zones[i].el.children;
+        for(j = 0; j < kids.length; j++){
+          if(kids[j] === st.caret) break;
+          if(kids[j] !== st.it && kids[j].classList.contains('rd-item')) pos++;
+        }
+      }
+    }
+    if(st.caret.parentNode) st.caret.parentNode.removeChild(st.caret);
+    st.it.classList.remove('rd-lift');
+    ['position', 'left', 'top', 'zIndex', 'margin'].forEach(function(p){ st.it.style[p] = ''; });
+    try{ st.handle.releasePointerCapture(st.id); }catch(e){}
+    rdSuppress = true; window.setTimeout(function(){ rdSuppress = false; }, 80);
+    if(commit && !(dz === st.zi && pos === st.idx)) st.onDrop(st.zi, st.idx, dz, pos);   // 元の場所で離したら何もしない
+  }
+  function rdPointerMove(e){
+    var st = rdDrag;
+    if(!st || e.pointerId !== st.id) return;
+    st.x = e.clientX; st.y = e.clientY;
+    if(rdOutside(st)){ rdEnd(false); return; }   // 画面外に出たら取りやめ
+    rdUpdate(st);
+  }
+  function rdPointerUp(e){ if(rdDrag && e.pointerId === rdDrag.id){ rdDrag.x = e.clientX; rdDrag.y = e.clientY; rdEnd(!rdOutside(rdDrag)); } }
+  function rdPointerCancel(e){ if(rdDrag && e.pointerId === rdDrag.id) rdEnd(false); }
+  function rdPointerDown(e, it, handle, zones, zi, idx, onDrop){
+    if(rdDrag) return;
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    var st = { id: e.pointerId, it: it, handle: handle, zones: zones, zi: zi, idx: idx, onDrop: onDrop, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, raf: 0 };
+    rdDrag = st;
+    window.addEventListener('pointermove', rdPointerMove);
+    window.addEventListener('pointerup', rdPointerUp);
+    window.addEventListener('pointercancel', rdPointerCancel);
+    rdStart(st); rdVibrate();   // 持ち手に触れた瞬間につまめる
+  }
+  // zones：[{ el, names, labels? }]。onDrop(元の段, 元の位置, 先の段, 先の位置)
+  function rdBuild(zones, onDrop){
+    zones.forEach(function(z, zi){
+      z.el.innerHTML = ''; z.el.classList.add('rd-zone'); z.el.dataset.rdz = String(zi);
+      z.names.forEach(function(nm, i){
+        var plain = (z.labels && z.labels[i]) || nm;
+        var it = el('div', 'rd-item'); it.dataset.rdi = String(i);
+        var cb = el('button', 'chip rd-chip', nm); cb.type = 'button';
+        var h = el('button', 'rd-handle', '⠿'); h.type = 'button';
+        h.setAttribute('aria-label', '「' + plain + '」を動かす（矢印キーで移動、' + (i + 1) + '番目）');
+        h.addEventListener('pointerdown', function(e){ rdPointerDown(e, it, h, zones, zi, i, onDrop); });
+        h.addEventListener('keydown', function(e){
+          var d = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : 0;
+          if(!d || i + d < 0 || i + d >= z.names.length) return;
+          e.preventDefault(); rdFocus = { z: zi, i: i + d }; onDrop(zi, i, zi, i + d);
+        });
+        it.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+        cb.addEventListener('click', function(){
+          if(rdSuppress) return;
+          rdMenu = (rdMenu && rdMenu.z === zi && rdMenu.i === i) ? null : { z: zi, i: i };
+          render();
+        });
+        it.appendChild(cb); it.appendChild(h); z.el.appendChild(it);
+        if(rdMenu && rdMenu.z === zi && rdMenu.i === i){
+          var m = el('div', 'rd-menu');
+          [['⤒ 一番上へ', function(){ onDrop(zi, i, zi, 0); }], ['⤓ 一番下へ', function(){ onDrop(zi, i, zi, z.names.length - 1); }], ['✕ やめる', function(){ rdMenu = null; render(); }]].forEach(function(b){
+            var bt = el('button', 'mini sub', b[0]); bt.type = 'button';
+            bt.addEventListener('click', function(){ rdMenu = null; b[1](); });
+            m.appendChild(bt);
+          });
+          z.el.appendChild(m);
+        }
+      });
+    });
+    if(rdFocus){
+      var hh = document.querySelector('.rd-zone[data-rdz="' + rdFocus.z + '"] .rd-item[data-rdi="' + rdFocus.i + '"] .rd-handle');
+      rdFocus = null;
+      if(hh) hh.focus();
+    }
+  }
+  // 「よく頼む順をそのまま手動の並び順に写す」＋ページ内の確認
+  function rdCopyBar(parent, label, onYes){
+    var b = el('button', 'mini sub tiny', label); b.type = 'button';
+    parent.appendChild(b);
+    if(!rdConfirm){ b.addEventListener('click', function(){ rdConfirm = true; render(); }); return; }
+    b.hidden = true;
+    var c = el('div', 'undo');
+    c.appendChild(el('span', null, 'いまの手動の並びは置き換わります。よろしいですか？'));
+    var y = el('button', 'mini', '写す'); y.type = 'button';
+    y.addEventListener('click', function(){ rdConfirm = false; onYes(); });
+    var n = el('button', 'mini sub', 'やめる'); n.type = 'button';
+    n.addEventListener('click', function(){ rdConfirm = false; render(); });
+    c.appendChild(y); c.appendChild(n); parent.appendChild(c);
+  }
+  $('cat-reorder-btn').addEventListener('click', function(){
+    reorderAll = !reorderAll; reorderCat = ''; tagReorder = false;
+    if(reorderAll) rdEnter();
+    this.textContent = reorderAll ? '✓ 並び替え終わり' : '⇅ 分類の並び替え';
+    render();
+  });
+
+  // ---- 分類の開閉（初期は全部畳む。端末ごとに覚える） ----
+  var CATOPEN_KEY = 'otetsudai-catopen-v1', catOpen = {};
+  try{
+    var rawCO = window.localStorage.getItem(CATOPEN_KEY);
+    if(rawCO){ var pCO = JSON.parse(rawCO); if(pCO && typeof pCO === 'object' && !Array.isArray(pCO)) catOpen = pCO; }
+  }catch(e){}
+  function saveCatOpen(){ try{ window.localStorage.setItem(CATOPEN_KEY, JSON.stringify(catOpen)); }catch(e){} }
+
   // メニュー表を描画
   function render(){
     Object.keys(subSel).forEach(function(k){
@@ -2385,11 +2724,39 @@ input[type="time"].field{width:auto;min-width:140px}
     var filt = filterActive();
     var histCounts = {};
     orderHist.forEach(function(he){ histCounts[he.name] = (histCounts[he.name] || 0) + 1; });
+    if(reorderAll){   // 分類の並び替え：分類の見出しだけをチップで並べる
+      menuEl.appendChild(el('p', 'rd-banner', RD_BANNER));
+      menuEl.appendChild(el('p', 'note rd-guide', RD_GUIDE));
+      var czone = el('div', 'chips rd-chips'); menuEl.appendChild(czone);
+      rdBuild([{ el: czone, names: menu.map(function(g){ return g[0] + '（' + g[1].length + '）'; }), labels: menu.map(function(g){ return g[0]; }) }],
+        function(fz, fi, tz, tp){ rdDropCat(fi, tp); });
+      renderFind(); renderQuick(); paintOmakase();
+      return;
+    }
     menu.forEach(function(g, gi){
       var ed = !!editCats[g[0]];   // この分類だけ編集状態（編集中は絞り込みも並び替えもせず、登録順）
       var names = (filt && !ed) ? g[1].filter(tagMatch) : g[1];
       if(!ed && sortMode === 'freq') names = sortByFreq(names, histCounts);
       if(filt && !ed && names.length === 0) return;
+      var open = ed || (filt ? names.length > 0 : !!catOpen[g[0]]);
+      if(reorderCat === g[0]){   // この分類の並び替え：今のチップの並びのまま、持ち手だけを出す
+        var rhead = el('div', 'cat-head');
+        rhead.appendChild(el('h3', null, g[0]));
+        var rend = el('button', 'mini sub cat-edit-btn', '✓ 並び替え終わり'); rend.type = 'button'; rend.setAttribute('aria-pressed', 'true');
+        rend.addEventListener('click', function(){ reorderCat = ''; rdMenu = null; rdConfirm = false; render(); });
+        rhead.appendChild(rend);
+        menuEl.appendChild(rhead);
+        menuEl.appendChild(el('p', 'rd-banner', RD_BANNER));
+        var rtool = el('div', 'rd-tool'); menuEl.appendChild(rtool);
+        rdCopyBar(rtool, '⇅ よく頼む順を、そのまま手動の並び順に写す', function(){
+          var snap = g[1].slice(); menu[gi][1] = sortByFreq(g[1].slice(), histCounts); saveMenu();
+          rdAfter('「' + g[0] + '」の並びを、よく頼む順に写しました', function(){ menu[gi][1] = snap; saveMenu(); render(); });
+        });
+        menuEl.appendChild(el('p', 'note rd-guide', RD_GUIDE));
+        var rzone = el('div', 'chips rd-chips'); menuEl.appendChild(rzone);
+        rdBuild([{ el: rzone, names: g[1].slice() }], function(fz, fi, tz, tp){ rdDropDish(gi, fi, tp); });
+        return;
+      }   // 編集中・絞り込みで該当あり・開いている分類だけ料理を出す
       var head = el('div', 'cat-head');
       var h3 = el('h3');
       if(ed){
@@ -2405,7 +2772,17 @@ input[type="time"].field{width:auto;min-width:140px}
           h3.appendChild(cb);
         }
       }else{
-        h3.textContent = g[0];
+        var selN = g[1].filter(function(nm){ return dishes.indexOf(nm) >= 0; }).length;
+        var ct = el('button', 'cat-toggle'); ct.type = 'button'; ct.dataset.cattoggle = g[0];
+        ct.setAttribute('aria-expanded', open ? 'true' : 'false');
+        ct.appendChild(document.createTextNode((open ? '▾ ' : '▸ ') + g[0] + '（' + (filt ? names.length : g[1].length) + '）'));
+        if(selN){ var cs = el('span', 'cat-sel', '✓' + selN); cs.setAttribute('aria-label', '選択中' + selN + '品'); ct.appendChild(cs); }
+        ct.addEventListener('click', function(){
+          catOpen[g[0]] = !catOpen[g[0]]; saveCatOpen(); render();
+          var bs = menuEl.querySelectorAll('button[data-cattoggle]');
+          for(var i = 0; i < bs.length; i++) if(bs[i].dataset.cattoggle === g[0]){ bs[i].focus(); break; }
+        });
+        h3.appendChild(ct);
       }
       head.appendChild(h3);
       if(ed && g[1].length === 0){
@@ -2424,15 +2801,20 @@ input[type="time"].field{width:auto;min-width:140px}
       eb.setAttribute('aria-label', '分類「' + g[0] + '」を' + (ed ? '編集し終える' : '編集する'));
       eb.dataset.catedit = g[0];
       eb.addEventListener('click', function(){
-        if(editCats[g[0]]) delete editCats[g[0]]; else editCats[g[0]] = true;
+        if(editCats[g[0]]) delete editCats[g[0]]; else{ editCats[g[0]] = true; catOpen[g[0]] = true; saveCatOpen(); }
         renameSt = null; tagRenameSt = null; hideUndo(); setMsg(''); render();
         var bs = menuEl.querySelectorAll('button[data-catedit]');
         for(var i = 0; i < bs.length; i++) if(bs[i].dataset.catedit === g[0]){ bs[i].focus(); break; }
       });
       head.appendChild(eb);
       menuEl.appendChild(head);
+      if(ed){
+        var rbar = el('div', 'rd-bar'), rbtn = el('button', 'mini sub', '⇅ 並び替え'); rbtn.type = 'button';
+        rbtn.addEventListener('click', function(){ reorderCat = g[0]; reorderAll = false; tagReorder = false; rdEnter(); render(); });
+        rbar.appendChild(rbtn); menuEl.appendChild(rbar);
+      }
       var box = el('div', 'chips');
-      names.forEach(function(name){
+      (open ? names : []).forEach(function(name){
         if(ed){
           var it = el('div', 'edit-item');
           if(renameSt && renameSt.k === 'dish' && renameSt.gi === gi && renameSt.old === name){
@@ -2500,7 +2882,7 @@ input[type="time"].field{width:auto;min-width:140px}
           box.appendChild(hasSub(name) && sub[name].length ? inPanel(subPanel(name), name, 'chip') : inPanel(favRow(name), name, ''));
         }
       });
-      menuEl.appendChild(box);
+      if(open) menuEl.appendChild(box);
       if(ed){
         var row = el('div', 'add-row');
         var inp = el('input', 'field');
@@ -2609,7 +2991,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('reset-confirm').hidden = true; $('reset-ask').focus();
   });
   $('reset-yes').addEventListener('click', function(){
-    menu = clone(MENU); editCats = {};
+    menu = clone(MENU); editCats = {}; reorderCat = ''; reorderAll = false; tagReorder = false; rdMenu = null; rdConfirm = false; tagOrder = null; saveTagOrder(); $('cat-reorder-btn').textContent = '⇅ 分類の並び替え';
     sub = clone(SUB_DEFAULT); subSel = {}; subOther = {}; subEditOpen = {}; subRemoveAsk = {};
     saveSub();
     tags = {}; saveTags(); tagEditOpen = {}; tagFilter = ''; tagQuery = ''; $('tag-search').value = '';
@@ -2622,6 +3004,15 @@ input[type="time"].field{width:auto;min-width:140px}
     hideUndo(); $('reset-confirm').hidden = true; setMsg('初期の献立に戻しました。');
     render(); refresh(); $('reset-ask').focus();
   });
+  $('tag-reorder-btn').addEventListener('click', function(){
+    tagReorder = !tagReorder;
+    if(tagReorder){ reorderCat = ''; reorderAll = false; $('cat-reorder-btn').textContent = '⇅ 分類の並び替え'; rdEnter(); }
+    else{ rdMenu = null; rdConfirm = false; }
+    render();
+  });
+  $('tag-sort-toggle').addEventListener('click', function(){
+    tagSortMode = tagSortMode === 'manual' ? 'eaten' : 'manual'; saveTagSort(); render();
+  });
   $('cat-add-open').addEventListener('click', function(){
     var row = $('cat-add-row'), open = row.hidden;
     row.hidden = !open;
@@ -2632,6 +3023,7 @@ input[type="time"].field{width:auto;min-width:140px}
     tagEditing = !tagEditing;
     this.textContent = tagEditing ? '✓ 終わる' : '✎';
     this.setAttribute('aria-pressed', tagEditing ? 'true' : 'false');
+    if(!tagEditing){ tagReorder = false; rdMenu = null; rdConfirm = false; }
     tagRenameSt = null; hideUndo(); setTagNote('');
     render();
   });
@@ -2653,6 +3045,7 @@ input[type="time"].field{width:auto;min-width:140px}
   function setWhen(v){
     when = v;
     renderQuick();
+    syncSheetWhen(); updateSheetMsg();
     $('meal-time-row').hidden = when !== '時間指定';
     Array.prototype.forEach.call(whenBtns, function(x){
       var on = x.dataset.v === v;
@@ -2675,6 +3068,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('day-tomorrow').setAttribute('aria-checked', t ? 'true' : 'false');
     $('when-now').hidden = t;
     if(t && when === 'すぐに') setWhen('夜');
+    syncSheetWhen(); updateSheetMsg();
   }
   $('day-today').addEventListener('click', function(){ setDay(false); });
   $('day-tomorrow').addEventListener('click', function(){ setDay(true); });
@@ -2871,6 +3265,7 @@ input[type="time"].field{width:auto;min-width:140px}
       $(p[0]).setAttribute('aria-checked', on ? 'true' : 'false');
     });
     $('clean-time-row').hidden = m !== 'set';
+    syncSheetWhen(); updateSheetMsg();
   }
   function setCleanAny(v){ setCleanMode(v ? 'any' : 'set'); }
   $('clean-now').addEventListener('click', function(){ setCleanMode('now'); });
@@ -3000,6 +3395,41 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // 確認シート
   var scrim = $('scrim'), lastFocus = null, pending = '';
+  // ---- 確認シートで、日時をその場で変える（メイン画面の選択と同じ状態を共有） ----
+  function setRadioBtn(b, on){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-checked', on ? 'true' : 'false'); }
+  function mealHeadText(){
+    var d = new Date(); if(tomorrow) d.setDate(d.getDate() + 1);
+    var ds = (tomorrow ? '明日' : '今日') + '（' + (d.getMonth() + 1) + '/' + d.getDate() + '・' + '日月火水木金土'.charAt(d.getDay()) + '）';
+    return ds + (when === 'すぐに' ? 'すぐに' : when === '時間指定' ? ($('meal-time').value || '時間未指定') + 'までに' : 'の' + when);
+  }
+  function syncSheetWhen(){
+    var hasMeal = mealCount() > 0, hasClean = !!usual;
+    $('sheet-when').hidden = !(hasMeal || hasClean);
+    $('sb-meal-band').hidden = !hasMeal; $('sb-day').hidden = !hasMeal; $('sb-when').hidden = !hasMeal;
+    $('sb-time-row').hidden = !(hasMeal && when === '時間指定');
+    $('sb-clean-band').hidden = !hasClean; $('sb-cwhen').hidden = !hasClean;
+    $('sb-clean-time-row').hidden = !(hasClean && cleanMode === 'set');
+    if(hasMeal){
+      $('sb-meal-band').textContent = '🍳 ' + mealHeadText();
+      Array.prototype.forEach.call($('sb-day').querySelectorAll('.chip'), function(c){ setRadioBtn(c, (c.dataset.sday === '1') === !!tomorrow); });
+      Array.prototype.forEach.call($('sb-when').querySelectorAll('.chip'), function(c){
+        setRadioBtn(c, c.dataset.swhen === when);
+        if(c.dataset.swhen === 'すぐに') c.hidden = !!tomorrow;
+      });
+      if($('sb-meal-time').value !== $('meal-time').value) $('sb-meal-time').value = $('meal-time').value;
+    }
+    if(hasClean){
+      $('sb-clean-band').textContent = '🧹 ' + (cleanMode === 'now' ? 'すぐに' : cleanMode === 'any' ? 'いつでも' : ($('clean-time').value || '時間未指定') + 'まで');
+      Array.prototype.forEach.call($('sb-cwhen').querySelectorAll('.chip'), function(c){ setRadioBtn(c, c.dataset.scw === cleanMode); });
+      if($('sb-clean-time').value !== $('clean-time').value) $('sb-clean-time').value = $('clean-time').value;
+    }
+  }
+  Array.prototype.forEach.call($('sb-day').querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){ setDay(c.dataset.sday === '1'); }); });
+  Array.prototype.forEach.call($('sb-when').querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){ setWhen(c.dataset.swhen); }); });
+  Array.prototype.forEach.call($('sb-cwhen').querySelectorAll('.chip'), function(c){ c.addEventListener('click', function(){ setCleanMode(c.dataset.scw); }); });
+  $('sb-meal-time').addEventListener('input', function(){ $('meal-time').value = this.value; renderQuick(); syncSheetWhen(); updateSheetMsg(); });
+  $('sb-clean-time').addEventListener('input', function(){ $('clean-time').value = this.value; syncSheetWhen(); updateSheetMsg(); });
+  $('memo').addEventListener('input', updateSheetMsg);
   function openSheet(){
     pending = buildMessage();
     if(!pending) return;
@@ -3007,6 +3437,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('sheet-subok').hidden = !(mealCount() > 0 || shopCount() > 0);
     $('subok').setAttribute('aria-pressed', subOk ? 'true' : 'false');
     showSheetErr('');
+    syncSheetWhen();
     paintMsg($('sheet-msg'), pending);
     lastFocus = document.activeElement;
     scrim.classList.add('open');
@@ -3023,7 +3454,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!scrim.classList.contains('open')) return;
     if(e.key === 'Escape') closeSheet();
     if(e.key === 'Tab'){ // フォーカスをシート内に留める
-      var f = ($('sheet-people').hidden ? [] : [$('people-minus'), $('people-plus'), $('daigo')]).concat($('sheet-subok').hidden ? [] : [$('subok')], [$('sheet-back'), $('sheet-send')]);
+      var f = Array.prototype.filter.call($('scrim').querySelectorAll('button, input, textarea'), function(x){ return !x.disabled && !x.closest('[hidden]'); });
       var i = f.indexOf(document.activeElement);
       e.preventDefault();
       f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
@@ -3251,6 +3682,7 @@ input[type="time"].field{width:auto;min-width:140px}
   SYNC_KEYS[HIST_KEY] = { get: function(){ return orderHist; }, load: function(){ orderHist = loadList(HIST_KEY); } };
   SYNC_KEYS[SUBSEEN_KEY] = { get: function(){ return loadSubSeen() || []; }, load: function(){} };
   SYNC_KEYS[MOODS_KEY] = { get: function(){ return moods; }, load: function(){ moods = loadMoods(); } };
+  SYNC_KEYS[TAGORDER_KEY] = { get: function(){ return tagOrder; }, load: function(){ tagOrder = loadTagOrder(); } };
   SYNC_KEYS[SEEN_KEY] = { get: function(){ return loadSeen() || []; }, load: function(){} };
   SYNC_KEYS[FAV_KEY] = { get: function(){ return favs; }, load: function(){ favs = loadList(FAV_KEY); } };
   var syncVer = {}, syncDirty = {}, syncTimer = 0, syncChain = Promise.resolve();
@@ -3343,7 +3775,7 @@ input[type="time"].field{width:auto;min-width:140px}
       .then(function(data){
         if(!data || typeof data !== 'object' || data.ok === false) throw new Error('bad response');
         var ae = document.activeElement, typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
-        if(!first && (typing || $('scrim').classList.contains('open'))){ syncOk(); return; }   // 入力中・確認中は次回に回す
+        if(!first && (typing || rdDrag || $('scrim').classList.contains('open'))){ syncOk(); return; }   // 入力中・確認中は次回に回す
         var changed = false;
         Object.keys(SYNC_KEYS).forEach(function(k){
           var r = data[k];
@@ -3392,7 +3824,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var LINK_BASE = 'https://liff.line.me/' + LIFF_ID + '?reply=';
   var liffReady = false, liffType = '', liffInClient = false, myHash = '';
   var replyId = '', replyOrderData = null, replyErr = '', replyNotice = '', rs = { mode: 'main' };
-  var ordersData = [], myHashP = null, answerMode = false;
+  var ordersData = [], myHashP = null, answerMode = false, replyRendered = false;
 
   function pad2(n){ return ('0' + n).slice(-2); }
   function dateStr(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -3493,7 +3925,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(!ordersEnabled()){ card.hidden = true; return; }
     var y = new Date(); y.setDate(y.getDate() - 1);
     syncPost({ action: 'listOrders', since: dateStr(y) }).then(function(res){
-      if(res && res.ok && Array.isArray(res.orders)){ ordersData = res.orders; renderOrders(); }
+      if(res && res.ok && Array.isArray(res.orders)){ ordersData = res.orders; if(ordUi.id || ordUi.sending) return; renderOrders(); }
     }).catch(function(){});
   }
   function orderIncomplete(o){
@@ -3640,13 +4072,18 @@ input[type="time"].field{width:auto;min-width:140px}
     $('orders-card').hidden = true;
     loadReply();
   }
+  // 確認プレビュー中・送信中・入力欄にフォーカスがある間は、自動更新で描き直さない
+  function replyBusy(){
+    var ae = document.activeElement;
+    return rs.mode === 'preview' || !!rs.sending || !!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && $('reply-view').contains(ae));
+  }
   function loadReply(){
     if(!replyId) return;
     if(!SYNC_URL){ replyErr = '返事の機能が設定されていません。'; renderReply(); return; }
     syncPost({ action: 'getOrder', id: replyId }).then(function(res){
       if(res && res.ok && res.order){ replyOrderData = res.order; replyErr = ''; }
       else replyErr = (res && res.error) || 'お願いを読み込めませんでした。';
-    }).catch(function(){ replyErr = 'お願いを読み込めませんでした。通信を確かめてください。'; }).then(renderReply);
+    }).catch(function(){ replyErr = 'お願いを読み込めませんでした。通信を確かめてください。'; }).then(function(){ if(replyRendered && replyBusy()) return; renderReply(); });
   }
   function liffDone(){
     liffReady = true;
@@ -3733,54 +4170,10 @@ input[type="time"].field{width:auto;min-width:140px}
     parent.appendChild(b);
     return b;
   }
-  // ---- 返事画面：種類ごとのチェック ----
-  function ensureRs(o){
-    if(!rs.ok){ rs.ok = {}; rs.c = {}; rs.base = {}; }
-    KINDS.forEach(function(k){
-      if(!hasKind(o, k)) return;
-      var st = stOf(o, k);
-      if(rs.base[k] !== st){ rs.base[k] = st; rs.ok[k] = (st === 'none'); delete rs.c[k]; }   // 返事なしの行は最初からOK、承知済みの行は「できた」を未チェックで始める
-    });
-  }
-  function rowCard(o, k){
-    var st = stOf(o, k), card = el('div', 'rv-card');
-    var main = el('div', 'rv-rowmain'), left = el('div', 'rv-left'), right = el('div', 'rv-right');
-    var head = el('div', 'rv-head');
-    head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
-    head.appendChild(stBadge(st));
-    left.appendChild(head);
-    (o[k] || []).forEach(function(t){ left.appendChild(el('p', 'rv-line', '・' + t)); });
-    if(st === 'done'){
-      right.appendChild(el('span', 'rv-doneflag', '✅ 済み'));
-    }else{
-      var lab = st === 'ack' ? 'できた' : 'OK', on = !!rs.ok[k];
-      var b = el('button', 'rv-check', (on ? '✓ ' : '') + lab); b.type = 'button';
-      b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      b.setAttribute('aria-label', KIND_NAME[k] + '：' + lab);
-      if(rs.sending) b.disabled = true;
-      b.addEventListener('click', function(){
-        rs.err = ''; replyNotice = '';
-        rs.ok[k] = !rs.ok[k];
-        if(rs.ok[k]) delete rs.c[k];
-        renderReply();
-      });
-      right.appendChild(b);
-      var cb = el('button', 'rv-consult-btn', '相談'); cb.type = 'button';
-      cb.setAttribute('aria-pressed', rs.c[k] ? 'true' : 'false');
-      cb.setAttribute('aria-label', KIND_NAME[k] + 'について相談する');
-      if(rs.sending) cb.disabled = true;
-      cb.addEventListener('click', function(){
-        rs.err = ''; replyNotice = '';
-        if(rs.c[k]) delete rs.c[k];
-        else{ rs.c[k] = { reason: '', alt: '', note: '' }; rs.ok[k] = false; }
-        renderReply();
-      });
-      right.appendChild(cb);
-    }
-    main.appendChild(left); main.appendChild(right); card.appendChild(main);
-    if(rs.c[k]) card.appendChild(consultPanel(k));
-    return card;
-  }
+  // ---- 返事画面：大きな2択（OKで返事する／できたで返事する／相談する） ----
+  function pendingKinds(o){ return KINDS.filter(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; }); }
+  function noneKinds(o){ return pendingKinds(o).filter(function(k){ return stOf(o, k) !== 'ack'; }); }   // 返事なし（相談中も含む）
+  function ackKinds(o){ return kindsWith(o, 'ack'); }
   function consultPanel(k){
     var c = rs.c[k], box = el('div', 'rv-consult');
     box.appendChild(el('p', 'note', 'わけは？'));
@@ -3796,62 +4189,120 @@ input[type="time"].field{width:auto;min-width:140px}
     return box;
   }
   function endSentence(t){ return /[。！？!?☺️]$/.test(t) ? t : t + '。'; }
-  // チェックの結果から、changes・kind・文面を作る。相談のわけが未選択なら文字列（エラー）を返す
+  // rs.plan（oks＝OK／dones＝できた／c＝相談／restOk＝ほかはOK）とひとこと（rs.free）から、changes・kind・文面を作る
   function buildReply(o){
-    var changes = {}, lines = [], hasConsult = false, hasDone = false, any = false;
+    var p = rs.plan || {}, changes = {}, lines = [], hasConsult = false, hasDone = false;
     var okMsg = { meal: '🍳 ご飯：OKです☺️', clean: '🧹 掃除：OKです', shop: '🛒 買い物：OKです' };
     var doneMsg = { meal: '🍳 ご飯：できました☺️', clean: '🧹 掃除：終わりました', shop: '🛒 買い物：買ってきました' };
-    for(var i = 0; i < KINDS.length; i++){
-      var k = KINDS[i];
-      if(!hasKind(o, k) || stOf(o, k) === 'done') continue;
-      var c = rs.c[k];
+    KINDS.forEach(function(k){
+      var c = p.c && p.c[k];
       if(c){
-        if(!c.reason) return KIND_NAME[k] + 'の相談のわけを選んでください。';
         var t = c.reason === 'その他' ? '' : endSentence(c.reason);
         t += (c.alt && c.alt.trim()) ? endSentence(c.alt.trim() + 'にしました') : 'どうしましょうか？';
         if(c.note && c.note.trim()) t += ' ' + endSentence(c.note.trim());
         lines.push(KIND_ICON[k] + ' ' + KIND_NAME[k] + '：' + t);
-        changes[k] = 'consult'; hasConsult = true; any = true;
-      }else if(rs.ok[k]){
-        if(stOf(o, k) === 'ack'){ changes[k] = 'done'; hasDone = true; lines.push(doneMsg[k]); }
-        else{ changes[k] = 'ack'; lines.push(okMsg[k]); }
-        any = true;
+        changes[k] = 'consult'; hasConsult = true;
+      }else if((p.dones || []).indexOf(k) >= 0){
+        changes[k] = 'done'; hasDone = true; lines.push(doneMsg[k]);
+      }else if((p.oks || []).indexOf(k) >= 0 || (p.restOk || []).indexOf(k) >= 0){
+        changes[k] = 'ack'; lines.push(okMsg[k]);
       }
-    }
-    var free = (rs.free || '').trim();
-    if(!any && !free) return 'チェックか相談、ひとことのどれかを入れてください。';
+    });
+    var n = lines.length, free = (rs.free || '').trim();
     if(free) lines.push('💬 ' + free);
     var tx = replyHead(o) + '\n' + lines.join('\n');
     if(hasConsult || free) tx += '\n\nぴーちゃん、お返事はこちら👇\n' + LINK_BASE.replace('reply=', 'answer=') + replyId;
-    return { changes: changes, kind: (hasConsult || !any) ? 'consult' : hasDone ? 'done' : 'ack', text: tx };
+    return { changes: changes, kind: (hasConsult || (!n && free)) ? 'consult' : hasDone ? 'done' : 'ack', text: tx, lines: n };
+  }
+  function applyPlan(o){ var r = buildReply(o); rs.text = r.text; rs.kind = r.kind; rs.changes = r.changes; rs.lines = r.lines; }
+  function toPreviewPlan(o, plan, back){
+    rs.plan = plan; rs.back = back || 'main'; rs.mode = 'preview'; rs.err = '';
+    applyPlan(o); renderReply();
   }
   function renderActions(v, o){
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
     if(rs.err){ var er = el('p', 'rv-err', rs.err); er.setAttribute('role', 'alert'); v.appendChild(er); }
     if(rs.mode === 'preview'){
+      if(answerMode){
+        v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
+        v.appendChild(el('pre', 'msg', rs.text));
+        rvBtn(v, rs.sending ? '送っています…' : 'LINEに送る', false, sendReplyNow);
+        rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
+        return;
+      }
+      var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, 'ひとこと（確認したいこと・伝えたいこと）'));
+      var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
+      ft.placeholder = '例：卵が少ないので、明日買ってきますね';
+      fl.appendChild(ft); v.appendChild(fl);
       v.appendChild(el('p', 'sub-h', 'この内容をLINEに送ります'));
-      v.appendChild(el('pre', 'msg', rs.text));
-      rvBtn(v, rs.sending ? '送っています…' : 'この内容でLINEに送る', false, sendReplyNow);
-      rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
+      var pre = el('pre', 'msg', rs.text); v.appendChild(pre);
+      var sb = rvBtn(v, rs.sending ? '送っています…' : 'LINEに送る', false, sendReplyNow);
+      function canSendNow(){ return !rs.sending && (rs.lines > 0 || !!(rs.free && rs.free.trim())); }
+      sb.disabled = !canSendNow();
+      ft.addEventListener('input', function(){ rs.free = ft.value; applyPlan(o); pre.textContent = rs.text; sb.disabled = !canSendNow(); });
+      rvBtn(v, 'もどる', true, function(){ rs.mode = rs.back || 'main'; rs.err = ''; renderReply(); });
       return;
     }
     if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事は松永さんがしてください（押した人の名前で送られます）'));
-    var pendingAny = KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
-    if(!pendingAny) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
-    var anySel = function(){
-      return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done' && (rs.ok[k] || rs.c[k]); }) || !!(rs.free && rs.free.trim());
-    };
-    var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, 'ひとこと（確認したいこと・伝えたいこと）'));
-    var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
-    ft.placeholder = '例：卵が少ないので、明日買ってきますね';
-    fl.appendChild(ft); v.appendChild(fl);
-    var sb = rvBtn(v, 'この返事をLINEに送る', false, function(){
-      var r = buildReply(o);
-      if(typeof r === 'string'){ rs.err = r; renderReply(); return; }
-      rs.mode = 'preview'; rs.kind = r.kind; rs.changes = r.changes; rs.text = r.text; rs.err = ''; renderReply();
-    });
-    sb.disabled = !!rs.sending || !anySel();
-    ft.addEventListener('input', function(){ rs.free = ft.value; sb.disabled = !!rs.sending || !anySel(); });
+    var pend = pendingKinds(o), nones = noneKinds(o), acks = ackKinds(o);
+    if(rs.mode === 'doneSel'){
+      v.appendChild(el('p', 'sub-h', 'どれができましたか？'));
+      chipRow(v, acks.map(function(k){ return [k, KIND_ICON[k] + ' ' + KIND_NAME[k]]; }), function(k){ return !!rs.sel[k]; }, function(k){ rs.sel[k] = !rs.sel[k]; renderReply(); }, 'できた種類');
+      rvBtn(v, '送る内容を確認', false, function(){
+        var ks = acks.filter(function(k){ return rs.sel[k]; });
+        if(!ks.length){ rs.err = '1つ以上、選んでください。'; renderReply(); return; }
+        toPreviewPlan(o, { dones: ks }, 'doneSel');
+      });
+      rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
+      return;
+    }
+    if(rs.mode === 'consult'){
+      v.appendChild(el('p', 'sub-h', '相談する内容'));
+      pend.forEach(function(k){
+        var card = el('div', 'rv-card'), head = el('div', 'rv-head');
+        head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
+        head.appendChild(stBadge(stOf(o, k)));
+        card.appendChild(head);
+        (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+        var on = !!rs.c[k];
+        var tb = el('button', 'rv-btn sub', '💬 この種類を相談する'); tb.type = 'button';
+        tb.setAttribute('aria-pressed', on ? 'true' : 'false');
+        tb.addEventListener('click', function(){
+          rs.err = '';
+          if(rs.c[k]) delete rs.c[k]; else rs.c[k] = { reason: '', alt: '', note: '' };
+          renderReply();
+        });
+        card.appendChild(tb);
+        if(on) card.appendChild(consultPanel(k));
+        v.appendChild(card);
+      });
+      var rest = nones.filter(function(k){ return !rs.c[k]; });
+      if(rest.length){
+        chipRow(v, [['on', '✔ ほかはOK（' + rest.map(function(k){ return KIND_NAME[k]; }).join('・') + '）']], function(){ return !!rs.restOn; }, function(){ rs.restOn = !rs.restOn; renderReply(); }, 'ほかはOK');
+      }
+      rvBtn(v, '送る内容を確認', false, function(){
+        var ks = Object.keys(rs.c);
+        if(!ks.length){ rs.err = '相談する種類を選んでください。'; renderReply(); return; }
+        for(var i = 0; i < ks.length; i++) if(!rs.c[ks[i]].reason){ rs.err = KIND_NAME[ks[i]] + 'の相談のわけを選んでください。'; renderReply(); return; }
+        toPreviewPlan(o, { c: rs.c, restOk: rs.restOn ? rest : [] }, 'consult');
+      });
+      rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
+      return;
+    }
+    if(!pend.length) v.appendChild(el('p', 'note', 'いま、お返事することはありません。'));
+    else{
+      if(nones.length) rvBtn(v, '👌 OKで返事する', false, function(){ toPreviewPlan(o, { oks: nones }, 'main'); }).classList.add('big');
+      if(acks.length) rvBtn(v, '✅ できたで返事する', false, function(){
+        if(acks.length === 1){ toPreviewPlan(o, { dones: acks }, 'main'); return; }
+        rs.sel = {}; acks.forEach(function(k){ rs.sel[k] = true; });
+        rs.mode = 'doneSel'; renderReply();
+      }).classList.add('big');
+      rvBtn(v, '💬 相談する', false, function(){
+        rs.c = {}; if(pend.length === 1) rs.c[pend[0]] = { reason: '', alt: '', note: '' };
+        rs.restOn = true; rs.mode = 'consult'; renderReply();
+      }).classList.add('big');
+    }
+    rvBtn(v, 'ひとことだけ送る', true, function(){ toPreviewPlan(o, {}, 'main'); });
     v.appendChild(el('p', 'note', 'お返事は、ふつうのトークでも大丈夫です'));
   }
   function plainCard(o, k, canManual){
@@ -4112,18 +4563,18 @@ input[type="time"].field{width:auto;min-width:140px}
     var o = replyOrderData;
     if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
     if(o.canceled){ v.appendChild(el('p', 'rv-big', 'このお願いは取り消されました')); return; }
+    replyRendered = true;
     if(answerMode){ renderAnswer(v, o); return; }
     v.appendChild(rvBig(o));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
     var expired = o.target.date < dateStr(new Date());
     var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
     var matsu = liffReady && !mine && !expired && canSend;
-    if(matsu) ensureRs(o);
-    var previewing = matsu && rs.mode === 'preview';
+    var previewing = matsu && rs.mode !== 'main';
     if(!previewing){
       KINDS.forEach(function(k){
         if(!hasKind(o, k)) return;
-        v.appendChild(matsu ? rowCard(o, k) : plainCard(o, k, mine && !expired));
+        v.appendChild(plainCard(o, k, mine && !expired));
       });
       if(o.memo){ var mc = el('div', 'rv-card'); mc.appendChild(el('p', 'rv-kn', '📝 メモ')); mc.appendChild(el('p', 'rv-line', o.memo)); v.appendChild(mc); }
       var rp = (o.replies || []).slice(-3);
@@ -4148,7 +4599,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(id) enterReply(id);
     function tick(){
       if(document.visibilityState !== 'visible') return;
-      if(replyId){ if(rs.mode === 'main' && !rs.sending) loadReply(); }
+      if(replyId){ if(!replyBusy()) loadReply(); }
       else ordersRefresh();
     }
     setInterval(tick, 30000);
