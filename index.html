@@ -910,7 +910,7 @@ input[type="time"].field{width:auto;min-width:140px}
     </div>
     <p class="dview-msg" id="dview-msg" role="status"></p>
     <div class="dview-confirm" id="dview-confirm" hidden>
-      <span>この写真を消しますか？（元には戻せません）</span>
+      <span id="dview-confirm-text">この写真を消しますか？（元には戻せません）</span>
       <div class="btns"><button type="button" class="btn sub" id="dview-del-no">やめる</button><button type="button" class="btn sub dng" id="dview-del-yes">消す</button></div>
     </div>
     <div class="btns dview-btns">
@@ -985,7 +985,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 50;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 51;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1714,8 +1714,13 @@ input[type="time"].field{width:auto;min-width:140px}
     $('dview-desc-edit').textContent = ds ? '✎ 説明を直す' : '✎ 説明を書く';
     $('dview-desc').hidden = descEditing; $('dview-desc-edit').hidden = descEditing; $('dview-descedit').hidden = !descEditing;
     $('dview-by').textContent = info ? (info.src === 'photo' ? '📷 登録した写真' : '🌐 Web の画像') + (info.by ? '（' + info.by + 'さん）' : '') : '画像はありません';
-    $('dview-pick').textContent = info ? '📷 差し替え' : '📷 写真を登録';
-    $('dview-del').hidden = !info;
+    // 写真が出ていて Web の画像が残っている＝「元の画像に戻す」／写真だけ＝「消す」／Web の画像が出ている時は消せない（誤って消さないように）
+    var restore = !!(info && info.src === 'photo' && info.web && /^[0-9a-f]{32}$/.test(String(info.web.id)));
+    $('dview-pick').textContent = !info ? '📷 写真を登録' : info.src === 'web' ? '📷 写真に差し替え' : '📷 差し替え';
+    $('dview-del').hidden = !info || info.src === 'web';
+    $('dview-del').textContent = restore ? '↩ 元の画像に戻す' : '消す';
+    $('dview-confirm-text').textContent = restore ? '登録した写真を外して、元の画像に戻します' : 'この写真を消しますか？（元には戻せません）';
+    $('dview-del-yes').textContent = restore ? '戻す' : '消す';
   }
   function openImgView(name, opener){
     dviewName = name; dviewOpener = opener || null;
@@ -1832,7 +1837,9 @@ input[type="time"].field{width:auto;min-width:140px}
     }).then(function(res){
       dimgBusy = false;
       if(res && res.ok && res.id){
+        var prev = imgInfo(name), keepWeb = prev ? (prev.src === 'web' ? { id: prev.id, by: prev.by || '', at: prev.at || '' } : prev.web) : null;
         imgMap = Object.assign({}, imgMap); imgMap[name] = { id: res.id, src: 'photo', by: by, at: new Date().toISOString() };
+        if(keepWeb) imgMap[name].web = keepWeb;
         imgRefresh(); imgToast('登録しました');
       }else imgToast('登録できませんでした' + (res && res.auth === false ? '。LINEのトークから開き直してください' : ''));
     }).catch(function(e){
@@ -1846,8 +1853,13 @@ input[type="time"].field{width:auto;min-width:140px}
     syncPost({ action: 'deleteImage', dish: name }).then(function(res){
       dimgBusy = false;
       if(res && res.ok){
-        imgMap = Object.assign({}, imgMap); delete imgMap[name];
-        imgRefresh(); closeImgView(); imgToast('消しました');
+        var pv = imgInfo(name);
+        imgMap = Object.assign({}, imgMap);
+        if(res.restored && pv && pv.web) imgMap[name] = { id: pv.web.id, src: 'web', by: pv.web.by || '', at: pv.web.at || '' };
+        else delete imgMap[name];
+        $('dview-confirm').hidden = true;
+        if(res.restored){ imgRefresh(); $('dview-pick').focus(); imgToast('元の画像に戻しました'); }
+        else{ imgRefresh(); closeImgView(); imgToast('消しました'); }
       }else{ $('dview-confirm').hidden = true; $('dview-msg').textContent = '消せませんでした' + (res && res.auth === false ? '。LINEのトークから開き直してください' : ''); }
     }).catch(function(){ dimgBusy = false; $('dview-confirm').hidden = true; $('dview-msg').textContent = '消せませんでした。通信を確かめてください'; });
   }
