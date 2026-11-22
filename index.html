@@ -159,6 +159,10 @@ button,input,textarea{font:inherit;color:inherit}
 .submark{margin-left:6px;font-size:11px;font-weight:700;color:var(--accent)}
 .sub-lab{display:flex;align-items:center;gap:8px;margin:6px 0;font-weight:700;font-size:14px}
 .sub-lab .field{flex:1;min-width:0;margin-top:0}
+.rv-lab{display:block;margin:8px 0;font-weight:700;font-size:14px}
+.rv-lab>span{display:block;margin-bottom:4px;overflow-wrap:anywhere}
+.rv-lab .field{display:block;width:100%;max-width:100%;box-sizing:border-box;min-width:0;margin-top:0}
+.sheet-send-sub{margin-top:8px;width:100%}
 .subbox .seg{margin:6px 0 4px}
 .subbox .seg .chip{min-height:40px;font-size:14px}
 .name-btn{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -655,19 +659,19 @@ input[type="time"].field{width:auto;min-width:140px}
       <div class="menu-foot" id="menu-foot">
         <button type="button" class="mini sub tiny" id="cat-add-open" aria-expanded="false">＋分類を追加</button>
         <button type="button" class="mini sub tiny" id="cat-reorder-btn">⇅ 分類の並び替え</button>
-        <button type="button" class="mini sub tiny" id="reset-ask">元の献立に戻す</button>
+        <button type="button" class="mini sub tiny" id="reset-ask" hidden>元の献立に戻す</button>
         <div class="add-row" id="cat-add-row" hidden>
           <input class="field" id="cat-add-input" type="text" maxlength="12" placeholder="例：鍋物" autocomplete="off" aria-label="追加する分類の名前">
           <button type="button" class="mini" id="cat-add-btn">追加</button>
         </div>
         <div class="undo" id="reset-confirm" hidden>
-          <span>献立を初期の状態に戻します。追加・削除した内容は消えます。よろしいですか？</span>
+          <span>献立を初期の状態に戻します。追加・削除した内容は消えます。3人とも・サブメニュー・食材・気分も消えます。よろしいですか？</span>
           <button type="button" class="mini" id="reset-yes">戻す</button>
           <button type="button" class="mini sub" id="reset-no">やめる</button>
         </div>
       </div>
       <h3 id="free-h" style="margin-top:18px">表にない料理</h3>
-      <input class="field" id="free-dish" type="text" placeholder="例：鶏のから揚げ" autocomplete="off" aria-labelledby="free-h">
+      <input class="field" id="free-dish" type="text" maxlength="40" placeholder="例：鶏のから揚げ" autocomplete="off" aria-labelledby="free-h">
       <p class="note">お菓子・スイーツは受けておりません。</p>
     </section>
 
@@ -715,9 +719,9 @@ input[type="time"].field{width:auto;min-width:140px}
           <button type="button" class="mini" id="shop-add-btn">追加</button>
         </div>
         <p class="note" id="shop-msg" role="status"></p>
-        <button type="button" class="mini sub" id="shop-reset-ask" style="margin-top:8px">元のリストに戻す</button>
+        <button type="button" class="mini sub" id="shop-reset-ask" style="margin-top:8px" hidden>元のリストに戻す</button>
         <div class="undo" id="shop-reset-confirm" hidden>
-          <span>品目を初期のリストに戻します。追加・削除した内容は消えます。よろしいですか？</span>
+          <span>品目を初期のリストに戻します。追加・削除した内容は消えます。3人とも・サブメニュー・食材・気分も消えます。よろしいですか？</span>
           <button type="button" class="mini" id="shop-reset-yes">戻す</button>
           <button type="button" class="mini sub" id="shop-reset-no">やめる</button>
         </div>
@@ -725,7 +729,7 @@ input[type="time"].field{width:auto;min-width:140px}
     </section>
     <section class="sec">
       <h2 id="shop-other-h">その他</h2>
-      <input class="field" id="shop-other" type="text" placeholder="例：牛乳" autocomplete="off" aria-labelledby="shop-other-h">
+      <input class="field" id="shop-other" type="text" maxlength="40" placeholder="例：牛乳" autocomplete="off" aria-labelledby="shop-other-h">
     </section>
   </div>
 
@@ -794,7 +798,7 @@ input[type="time"].field{width:auto;min-width:140px}
       <div id="sheet-subok" style="margin-bottom:12px" hidden><button type="button" class="chip" id="subok" aria-pressed="true">材料や品切れのときは、代わりのものでOK</button></div>
       <div id="sheet-memo" style="margin-bottom:12px">
         <label for="memo" style="font-weight:700">ひとことメモ（任意）</label>
-        <textarea class="field" id="memo" rows="2" placeholder="例：辛さ控えめでお願いします"></textarea>
+        <textarea class="field" id="memo" rows="2" maxlength="1000" placeholder="例：辛さ控えめでお願いします"></textarea>
       </div>
       <pre class="msg" id="sheet-msg"></pre>
       <p class="sheet-err" id="sheet-err" role="alert" hidden></p>
@@ -802,6 +806,7 @@ input[type="time"].field{width:auto;min-width:140px}
         <button type="button" class="btn sub" id="sheet-back">戻る</button>
         <button type="button" class="btn main" id="sheet-send">送る</button>
       </div>
+      <button type="button" class="btn sub sheet-send-sub" id="sheet-nolink" hidden>返事リンクなしで送る</button>
     </div>
   </div>
 </div>
@@ -1908,7 +1913,9 @@ input[type="time"].field{width:auto;min-width:140px}
     var q = normText(tagQuery.trim());
     if(q){
       if(normText(name).indexOf(q) >= 0) return true;
-      return tagsOf(name).some(function(t){ return normText(t).indexOf(q) >= 0; });
+      if(tagsOf(name).some(function(t){ return normText(t).indexOf(q) >= 0; })) return true;
+      // その料理のサブメニューの選択肢（例：キーマ→カレー、きつね→うどん）も探す。ひらがな・カタカナは同じ扱い
+      return (sub[name] || []).some(function(g){ return g.options.some(function(op){ return normText(op).indexOf(q) >= 0; }); });
     }
     return true;
   }
@@ -3645,6 +3652,7 @@ input[type="time"].field{width:auto;min-width:140px}
     saveMenu(); hideUndo(); render(); refresh();
     $('sort-toggle').focus();
   });
+  if(DEBUG){ $('reset-ask').hidden = false; $('shop-reset-ask').hidden = false; }   // 普段は出さない（?debug=1 の時だけ）
   $('reset-ask').addEventListener('click', function(){
     $('reset-confirm').hidden = false; $('reset-no').focus();
   });
@@ -4114,10 +4122,12 @@ input[type="time"].field{width:auto;min-width:140px}
   function openSheet(){
     pending = buildMessage();
     if(!pending) return;
+    orderCache = null; $('sheet-nolink').hidden = true; lastBlockWhy = '';
     $('sheet-people').hidden = mealCount() === 0;
     $('sheet-subok').hidden = !(mealCount() > 0 || shopCount() > 0);
     $('subok').setAttribute('aria-pressed', subOk ? 'true' : 'false');
     showSheetErr('');
+    paintSendState();
     syncSheetWhen();
     paintSummary();
     paintMsg($('sheet-msg'), pending);
@@ -4147,32 +4157,81 @@ input[type="time"].field{width:auto;min-width:140px}
   });
 
   function showSheetErr(t){ var e = $('sheet-err'); e.textContent = t; e.hidden = !t; }
-  $('sheet-send').addEventListener('click', function(){
+  // 送れない時（LINEのトーク以外から開いた等）は「送る」を押せなくして理由を出す。選択は残る
+  var lastBlockWhy = '';
+  function sendBlockReason(){
+    if(isProtoUrl()) return '';
+    if(!liffReady) return 'LINEに接続しています。少しお待ちください。';
+    if(sendMode !== 'chat') return 'ここからは送れません。LINEのトークから、松永便を開いてください。（選んだ内容はそのまま残っています）';
+    return '';
+  }
+  function paintSendState(){
+    var why = sendBlockReason();
+    $('sheet-send').disabled = !!why || sending;
+    if(why) showSheetErr(why);
+    else if(lastBlockWhy && $('sheet-err').textContent === lastBlockWhy) showSheetErr('');
+    lastBlockWhy = why;
+    return why;
+  }
+  var orderCache = null;   // 同じシートでやり直す時は、同じ注文ID・内容を使う（サーバーは同じIDを二重に作らない）
+  function getMyName(){
+    try{
+      if(!window.liff || !window.liff.getProfile) return Promise.resolve('');
+      return window.liff.getProfile().then(function(pr){ return String((pr && pr.displayName) || '').slice(0, 40); }).catch(function(){ return ''; });
+    }catch(e){ return Promise.resolve(''); }
+  }
+  function postRetry(obj, tries){
+    return syncPost(obj).then(function(r){ if(!(r && r.ok)) throw new Error('ng'); return r; }).catch(function(e){
+      if(tries <= 1) throw e;
+      return new Promise(function(res){ setTimeout(res, 800); }).then(function(){ return postRetry(obj, tries - 1); });
+    });
+  }
+  function startSend(withLink){
     var text = pending;
-    if(sendMode === 'proto'){ finishSend(text, false); return; }
+    if(sendMode === 'proto'){ if(paintSendState()) return; finishSend(text, false); return; }
     if(sending) return;
     if(text.length > 5000){
       showSheetErr('文字数が多すぎます（' + text.length + '字）。LINEで送れるのは5000字までです。内容を減らしてください。');
       return;
     }
-    sending = true; showSheetErr('');
-    $('sheet-send').disabled = true;
-    function done(){ sending = false; $('sheet-send').disabled = false; }
-    var order = SYNC_URL ? buildOrderData() : null;
-    var pre = order ? getMyHash().then(function(h){ order.ordererHash = h; return syncPost({ action: 'createOrder', order: order }); })
-      .then(function(r){ return !!(r && r.ok); }).catch(function(){ return false; }) : Promise.resolve(false);
-    pre.then(function(created){
+    sending = true; showSheetErr(''); $('sheet-nolink').hidden = true;
+    $('sheet-send').disabled = true; $('sheet-nolink').disabled = true;
+    function done(){ sending = false; $('sheet-nolink').disabled = false; paintSendState(); }
+    var useOrder = !!SYNC_URL && withLink;
+    var pre;
+    if(useOrder){
+      pre = (orderCache ? Promise.resolve(orderCache) : Promise.all([getMyHash(), getMyName()]).then(function(r){
+        var od = buildOrderData(); od.ordererHash = r[0]; od.ordererName = r[1]; orderCache = od; return od;
+      })).then(function(od){
+        return syncPost({ action: 'createOrder', order: od }).then(function(r){ return { ok: !!(r && r.ok), order: od }; }).catch(function(){ return { ok: false, order: od }; });
+      });
+    }else pre = Promise.resolve({ ok: false, order: null });
+    pre.then(function(c){
+      if(useOrder && !c.ok){
+        done();
+        showSheetErr('記録に失敗しました。もう一度「送る」を押してください。（返事のリンクなしで送ることもできます）');
+        $('sheet-nolink').hidden = false; $('sheet-send').focus();
+        return;
+      }
+      var created = c.ok, order = c.order;
       var finalText = (created && text.length < 4800) ? text + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + order.id : text;
       return Promise.resolve().then(function(){ return window.liff.sendMessages([{ type: 'text', text: finalText }]); }).then(function(){
-        if(created) syncPost({ action: 'markOrderSent', id: order.id }).catch(function(){});
-        done(); finishSend(finalText, true);
+        orderCache = null;
+        var mark = created ? postRetry({ action: 'markOrderSent', id: order.id }, 4).then(function(){ return true; }).catch(function(){ return false; }) : Promise.resolve(true);
+        return mark.then(function(markOk){
+          done(); finishSend(finalText, true);
+          if(!markOk){ $('chat-warn').hidden = false; $('chat-warn').textContent = '送りましたが、「今日のお願い」への記録の更新に失敗しました。あとで画面を開き直してください。'; }
+          ordersRefresh();
+        });
       });
     }).catch(function(e){
       done();
       showSheetErr('送れませんでした。もう一度お試しください（理由：' + ((e && (e.message || e.code)) || '不明') + '）');
       $('sheet-send').focus();
     });
-  });
+  }
+  $('sheet-send').addEventListener('click', function(){ startSend(true); });
+  $('sheet-nolink').addEventListener('click', function(){ startSend(false); });
 
   // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
   function finishSend(text, sent){
@@ -4182,10 +4241,12 @@ input[type="time"].field{width:auto;min-width:140px}
     try{
       var nowT = Date.now();
       var newHist = [];
+      if(sent){
       if(omakase){ var oe = omakaseEntry(); oe.t = nowT; oe.w = whenBucket(); orderHist.push(oe); newHist.push(oe); }
       dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
       saveHist(true); syncAppendHist(newHist); invalidateEaten();
+      }
       if(mealCount() > 0) savePeople(daigoAuto ? 1 : people);   // 次回の初期値（大吾くんで自動的に増やした分は数えない）
     }catch(err){}
     var line = document.createElement('div'); line.className = 'bubble-line';
@@ -4515,6 +4576,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var LINK_BASE = 'https://liff.line.me/' + LIFF_ID + '?reply=';
   var liffReady = false, liffType = '', liffInClient = false, myHash = '', myHashReady = false;
   var replyId = '', replyOrderData = null, replyErr = '', replyNotice = '', rs = { mode: 'main' };
+  var replyRevShown = null;   // いま画面に出している依頼の版（古い返事の上書き防止）
   var ordersData = [], myHashP = null, answerMode = false, replyRendered = false;
 
   function pad2(n){ return ('0' + n).slice(-2); }
@@ -4630,11 +4692,20 @@ input[type="time"].field{width:auto;min-width:140px}
   function ordersRefresh(){
     var card = $('orders-card');
     if(!ordersEnabled()){ card.hidden = true; return; }
-    var y = new Date(); y.setDate(y.getDate() - 1);
+    var y = new Date(); y.setDate(y.getDate() - 3);   // 完了・取り消しでない依頼は、依頼日から3日間は一覧に出す
     syncPost({ action: 'listOrders', since: dateStr(y) }).then(function(res){
       if(res && res.ok && Array.isArray(res.orders)){ ordersData = res.orders; if(ordUi.id || ordUi.sending) return; renderOrders(); }
     }).catch(function(){});
   }
+  // 依頼日から何日たったか（端末の日付で数える）
+  function orderAgeDays(o){
+    var c = new Date(o.createdAt), t = new Date();
+    if(isNaN(c.getTime())) return 0;
+    var a = Date.UTC(c.getFullYear(), c.getMonth(), c.getDate()), b = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+    return Math.round((b - a) / 86400000);
+  }
+  // 「終わっています」は、完了・取り消し・3日超の時だけ
+  function orderOver(o){ return !!o.canceled || !orderIncomplete(o) || orderAgeDays(o) > 3; }
   function orderIncomplete(o){
     if(o.canceled) return false;
     return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
@@ -4804,6 +4875,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function liffDone(){
     liffReady = true;
+    try{ if(scrim.classList.contains('open')) paintSendState(); }catch(e){}
     if(!replyId){ var id = getReplyId(); if(id) enterReply(id); }
     if(replyId){
       if(window.liff && liffInClient) getMyHash().then(function(h){ myHash = h; myHashReady = true; renderReply(); });
@@ -4811,6 +4883,8 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     ordersRefresh();
   }
+  // 頼んだ人の呼び名（依頼に保存した LINE の表示名。無い時は「頼んだ方」）
+  function ordName(o){ var n = o && o.ordererName ? String(o.ordererName).trim() : ''; return n ? n + 'さん' : '頼んだ方'; }
   function replyHead(o){ return '🐈 松永便のお返事｜' + shortTarget(o) + 'のご依頼'; }
   function ackText(o, kinds){ return replyHead(o) + '\n' + kinds.map(function(k){ return KIND_NAME[k]; }).join('・') + '、承知しました☺️'; }
   function doneText(o, kinds){
@@ -4848,8 +4922,13 @@ input[type="time"].field{width:auto;min-width:140px}
   function sendReplyNow(){
     var o = replyOrderData;
     if(!o || rs.sending) return;
+    if(String(rs.text || '').length > 2000){ rs.err = '返事が長すぎます（' + rs.text.length + '字）。2000字までです。ひとことを短くしてください。'; renderReply(); return; }
     rs.sending = true; rs.err = ''; renderReply();
-    syncPost({ action: 'replyOrder', id: replyId, changes: rs.changes, kind: rs.kind, text: rs.text, by: answerMode ? 'orderer' : 'matsunaga', detail: rs.detail, items: rs.items }).then(function(res){
+    syncPost({ action: 'replyOrder', id: replyId, changes: rs.changes, kind: rs.kind, text: rs.text, by: answerMode ? 'orderer' : 'matsunaga', detail: rs.detail, items: rs.items, baseRev: (replyRevShown === null ? (Number(o.rev) || 0) : replyRevShown) }).then(function(res){
+      if(res && res.stale){   // 画面が見ていた後に、ほかの返事が付いた
+        if(res.order) replyOrderData = res.order;
+        rs = { mode: 'main' }; replyNotice = '新しい返事があります。内容を確かめて、もう一度お返事ください。'; renderReply(); return;
+      }
       if(!res || !res.ok) throw new Error((res && res.error) || '送れませんでした');
       if(res.order) replyOrderData = res.order;
       var text = rs.text, failed = getReplyFail();
@@ -4906,13 +4985,13 @@ input[type="time"].field{width:auto;min-width:140px}
   function reasonAltBlock(parent, obj, group, reasons){
     chipRow(parent, (reasons || REASONS).map(function(r){ return [r, r]; }), function(r){ return obj.reason === r; }, function(r){ obj.reason = r; renderReply(); }, group + 'のわけ');
     if(obj.reason === 'その他'){
-      var lo = el('label', 'sub-lab'); lo.appendChild(el('span', null, 'わけを書いてください（必須）'));
+      var lo = el('label', 'rv-lab'); lo.appendChild(el('span', null, 'わけを書いてください（必須）'));
       var io = el('input', 'field'); io.type = 'text'; io.maxLength = 40; io.value = obj.other || ''; io.autocomplete = 'off';
       io.placeholder = '例：お店が休みでした';
       io.addEventListener('input', function(){ obj.other = io.value; });
       lo.appendChild(io); parent.appendChild(lo);
     }
-    var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
+    var l1 = el('label', 'rv-lab'); l1.appendChild(el('span', null, '代わりにしたもの（なくてもOK）'));
     var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = obj.alt || ''; i1.autocomplete = 'off';
     var modeBox = el('div', 'rv-mode'); modeBox.hidden = !(obj.alt && obj.alt.trim());
     chipRow(modeBox, [['propose', '提案する（○○でもいいですか？）'], ['done', 'もう変えた（○○にしました）']], function(m){ return (obj.altMode || 'propose') === m; }, function(m){ obj.altMode = m; renderReply(); }, '代わりの伝え方');
@@ -4943,7 +5022,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }else{
       reasonAltBlock(box, c, KIND_NAME[k], REASONS_CLEAN);
     }
-    var l2 = el('label', 'sub-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
+    var l2 = el('label', 'rv-lab'); l2.appendChild(el('span', null, 'ひとこと（なくてもOK）'));
     var i2 = el('input', 'field'); i2.type = 'text'; i2.maxLength = 80; i2.value = c.note || ''; i2.autocomplete = 'off';
     i2.addEventListener('input', function(){ c.note = i2.value; });
     l2.appendChild(i2); box.appendChild(l2);
@@ -5023,7 +5102,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function leaveReply(){
     document.body.classList.remove('reply-mode'); $('reply-view').hidden = true;
-    replyId = ''; replyOrderData = null; replyFromList = false; answerMode = false; replyRendered = false; rs = { mode: 'main' };
+    replyId = ''; replyOrderData = null; replyRevShown = null; replyFromList = false; answerMode = false; replyRendered = false; rs = { mode: 'main' };
     ordersRefresh();
     try{ window.scrollTo(0, 0); }catch(e){}
   }
@@ -5049,7 +5128,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var n = lines.length, free = (rs.free || '').trim();
     if(free) lines.push('💬 ' + free);
     var tx = replyHead(o) + '\n' + lines.join('\n');
-    if(hasConsult || free) tx += '\n\nぴーちゃん、お返事はこちら👇\n' + LINK_BASE.replace('reply=', 'answer=') + replyId;
+    if(hasConsult || free) tx += '\n\n' + ordName(o) + '、お返事はこちら👇\n' + LINK_BASE.replace('reply=', 'answer=') + replyId;
     return { changes: changes, kind: (hasConsult || (!n && free)) ? 'consult' : hasDone ? 'done' : 'ack', text: tx, lines: n, detail: Object.keys(detail).length ? detail : undefined };
   }
   function applyPlan(o){ var r = buildReply(o); rs.text = r.text; rs.kind = r.kind; rs.changes = r.changes; rs.lines = r.lines; rs.detail = r.detail; rs.items = undefined; }
@@ -5068,7 +5147,7 @@ input[type="time"].field{width:auto;min-width:140px}
         rvBtn(v, 'もどる', true, function(){ rs.mode = 'main'; rs.err = ''; renderReply(); });
         return;
       }
-      var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, 'ひとこと（確認したいこと・伝えたいこと）'));
+      var fl = el('label', 'rv-lab'); fl.appendChild(el('span', null, 'ひとこと（確認したいこと・伝えたいこと）'));
       var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
       ft.placeholder = '例：卵が少ないので、明日買ってきますね';
       fl.appendChild(ft); v.appendChild(fl);
@@ -5162,7 +5241,7 @@ input[type="time"].field{width:auto;min-width:140px}
     }
     return card;
   }
-  // ---- 答える画面（URL に answer=ID があるとき：ぴーちゃんが松永さんの相談に答える） ----
+  // ---- 答える画面（URL に answer=ID があるとき：頼んだ人が松永さんの相談に答える） ----
   function isDropped(o, k){ return stOf(o, k) === 'na' && ((o[k] || []).length > 0 || !!(o.prevItems && o.prevItems[k] && o.prevItems[k].length)); }   // 答えで「なし」になった種類（最初から依頼が無い種類とは区別）
   var ANS_CHOICES = [['ok', '👌 それで大丈夫です'], ['alt', '🔁 代わりは…でお願いします'], ['na', '🙅 今回はなしで大丈夫です']];
   // ---- 代わりを「献立から選ぶ」「品目から選ぶ」 ----
@@ -5348,7 +5427,7 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       if(ai[item] && ai[item].t === 'alt'){
         altPicker(ib, k, ai[item]);
-        var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, '手入力（選んだものと一緒でもOK）'));
+        var l1 = el('label', 'rv-lab'); l1.appendChild(el('span', null, '手入力（選んだものと一緒でもOK）'));
         var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = ai[item].alt || ''; i1.autocomplete = 'off';
         i1.placeholder = '例：ミルクティー';
         i1.addEventListener('input', function(){ ai[item].alt = i1.value; });
@@ -5362,7 +5441,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   function renderAnswer(v, o){
     v.appendChild(rvBig(o));
-    var expired = o.target.date < dateStr(new Date());
+    var expired = orderOver(o);
     var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
     var last = null, pendingC = null, answered = {};   // answered：種類ごとに、答え済みの料理
     var kindOf = { 'ご飯': 'meal', '掃除': 'clean', '買い物': 'shop' };
@@ -5405,12 +5484,12 @@ input[type="time"].field{width:auto;min-width:140px}
     if(expired){ v.appendChild(el('p', 'note', 'このお願いは終わっています。')); return; }
     if(!canSend){ v.appendChild(el('p', 'rv-err', '松永便を送ったトークから開いてください。')); return; }
     if(o.ordererHash && !myHashReady){ v.appendChild(el('p', 'note', '確認しています…')); return; }
-    if(o.ordererHash && myHash !== o.ordererHash){ v.appendChild(el('p', 'rv-err', 'ぴーちゃん（お願いした人）が答える画面です')); return; }   // ordererHash が空の古い依頼は誰でも可
+    if(o.ordererHash && myHash !== o.ordererHash){ v.appendChild(el('p', 'rv-err', ordName(o) + '（お願いした人）が答える画面です')); return; }   // ordererHash が空の古い依頼は誰でも可
     if(!rs.a) rs.a = {};
     if(!rs.ai) rs.ai = {};
     if(rs.mode === 'preview'){ renderActions(v, o); return; }
     if(replyNotice) v.appendChild(el('p', 'rv-ok', replyNotice));
-    if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事はぴーちゃんがしてください（押した人の名前で送られます）'));
+    if(liffType !== 'utou') v.appendChild(el('p', 'note', 'お返事は' + ordName(o) + 'がしてください（押した人の名前で送られます）'));
     var cons = kindsWith(o, 'consult');
     if(!cons.length) v.appendChild(el('p', 'note', 'いま、答えが必要なご相談はありません。ひとことだけ送ることもできます。'));
     var sb = null;
@@ -5437,7 +5516,7 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       if(rs.a[k] && rs.a[k].t === 'alt'){
         if(k === 'meal' || k === 'shop') altPicker(card, k, rs.a[k]);
-        var l1 = el('label', 'sub-lab'); l1.appendChild(el('span', null, (k === 'meal' || k === 'shop') ? '手入力（選んだものと一緒でもOK）' : '代わりのもの'));
+        var l1 = el('label', 'rv-lab'); l1.appendChild(el('span', null, (k === 'meal' || k === 'shop') ? '手入力（選んだものと一緒でもOK）' : '代わりのもの'));
         var i1 = el('input', 'field'); i1.type = 'text'; i1.maxLength = 40; i1.value = rs.a[k].alt || ''; i1.autocomplete = 'off';
         i1.placeholder = '例：ミルクティー';
         i1.addEventListener('input', function(){ rs.a[k].alt = i1.value; });
@@ -5445,7 +5524,7 @@ input[type="time"].field{width:auto;min-width:140px}
       }
       v.appendChild(card);
     });
-    var fl = el('label', 'sub-lab'); fl.appendChild(el('span', null, '💬 ひとこと（なくてもOK）'));
+    var fl = el('label', 'rv-lab'); fl.appendChild(el('span', null, '💬 ひとこと（なくてもOK）'));
     var ft = el('textarea', 'field'); ft.id = 'rv-free'; ft.rows = 3; ft.maxLength = 300; ft.value = rs.free || '';
     ft.placeholder = '例：ありがとうございます';
     fl.appendChild(ft); v.appendChild(fl);
@@ -5503,7 +5582,7 @@ input[type="time"].field{width:auto;min-width:140px}
       if(!lines.length){ rs.err = '選ぶか、ひとことを書いてください。'; renderReply(); return; }
       rs.mode = 'preview'; rs.kind = 'answer'; rs.changes = changes; rs.hist = hist; rs.err = '';
       rs.items = Object.keys(itemsOut).length ? itemsOut : undefined; rs.detail = undefined;
-      rs.text = '🐈 松永便｜ぴーちゃんからのお返事' + '\n' + lines.join('\n') + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + replyId;
+      rs.text = '🐈 松永便｜' + ordName(o) + 'からのお返事' + '\n' + lines.join('\n') + '\n\n松永さん、お返事はこちら👇\n' + LINK_BASE + replyId;
       renderReply();
     });
     sb.disabled = !!rs.sending;
@@ -5519,15 +5598,15 @@ input[type="time"].field{width:auto;min-width:140px}
       var bk = el('button', 'mini sub', '← 一覧にもどる'); bk.type = 'button';
       bk.addEventListener('click', leaveReply); v.appendChild(bk);
     }
-    v.appendChild(el('h2', 'rv-title', answerMode ? '🐈 松永便｜ぴーちゃんへのご相談' : '🐈 松永便のお返事'));
     var o = replyOrderData;
+    v.appendChild(el('h2', 'rv-title', answerMode ? '🐈 松永便｜' + ordName(o) + 'へのご相談' : '🐈 松永便のお返事'));
     if(!o){ v.appendChild(el('p', 'note', replyErr || 'お願いを読み込んでいます…')); return; }
     if(o.canceled){ v.appendChild(el('p', 'rv-big', 'このお願いは取り消されました')); return; }
-    replyRendered = true;
+    replyRendered = true; replyRevShown = Number(o.rev) || 0;
     if(answerMode){ renderAnswer(v, o); return; }
     v.appendChild(rvBig(o));
     var mine = !!(myHash && o.ordererHash && myHash === o.ordererHash);
-    var expired = o.target.date < dateStr(new Date());
+    var expired = orderOver(o);
     var canSend = liffReady && liffInClient && ['utou', 'group', 'room'].indexOf(liffType) >= 0 && sendMode === 'chat';
     var matsu = liffReady && !mine && !expired && canSend;
     var previewing = matsu && rs.mode !== 'main';
