@@ -383,6 +383,21 @@ body.reply-mode .bar,body.reply-mode .totop{display:none !important}
 /* ---- 献立の写真の格子（写真＋料理名）。1行3つ（広い画面は4つ） ---- */
 .view-seg{max-width:260px;margin:8px 0 4px}
 .view-seg .chip{min-height:40px;padding:4px 10px;font-size:14px;font-weight:700}
+.dsearch{margin:6px 0 0}
+.dsearch[hidden]{display:none}
+.dsearch-box{position:relative;display:flex;align-items:center}
+.dsearch-box .field{min-height:46px;padding:6px 46px 6px 40px;border:2px solid var(--accent);border-radius:24px;font-size:16px}
+.dsearch-ico{position:absolute;left:14px;font-size:16px;line-height:1;pointer-events:none}
+.dsearch-x{position:absolute;right:3px;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
+.dsearch-x[hidden]{display:none}
+.dsearch-x:focus-visible,#dish-q:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+#dish-q::-webkit-search-cancel-button,#dish-q::-webkit-search-decoration{-webkit-appearance:none;display:none}
+#find-host{scroll-margin-top:var(--stick-h,110px)}
+#find-host[hidden]{display:none}
+.find-status{margin:6px 0 8px;font-weight:700}
+.dnote{font-size:12px;font-weight:400;color:var(--muted)}
+.chip.tile .tname .dnote{display:block;overflow:hidden;text-overflow:ellipsis}
+.chip.tile[aria-pressed="true"] .tname .dnote{color:var(--fg)}
 .dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-flow:row dense;align-items:start;gap:8px}
 @media (min-width:640px){.dgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .dgrid > .inpanel{grid-column:1 / -1;min-width:0}
@@ -677,10 +692,18 @@ input[type="time"].field{width:auto;min-width:140px}
     <button class="tab" id="tab-clean" role="tab" aria-selected="false" aria-controls="panel-clean" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-clean-96.png" width="32" height="32" alt="">掃除<span class="badge" id="badge-clean"></span></button>
     <button class="tab" id="tab-shop" role="tab" aria-selected="false" aria-controls="panel-shop" type="button" tabindex="-1"><img class="tab-ico" src="cat-icons/tab-shop-96.png" width="32" height="32" alt="">買い物<span class="badge" id="badge-shop"></span></button>
   </div>
+  <div class="dsearch" id="dsearch" role="search">
+    <div class="dsearch-box">
+      <span class="dsearch-ico" aria-hidden="true">🔍</span>
+      <input class="field" id="dish-q" type="search" placeholder="料理名で探す（例：からあげ）" autocomplete="off" enterkeyhint="search" aria-label="料理名で探す">
+      <button type="button" class="dsearch-x" id="dish-q-clear" aria-label="入力を消す" hidden>✕</button>
+    </div>
+  </div>
   </div>
 
   <!-- ご飯 -->
   <div id="panel-meal" role="tabpanel" aria-labelledby="tab-meal">
+    <div id="find-host" hidden><p class="note find-status" id="dish-q-status" role="status"></p></div>
     <section class="sec">
       <h2>いつのご飯ですか</h2>
       <div class="seg" id="day-group" role="radiogroup" aria-label="今日か明日か" style="margin-bottom:8px">
@@ -727,7 +750,7 @@ input[type="time"].field{width:auto;min-width:140px}
     <section class="sec" id="tag-find">
       <div id="mood-row" style="margin-bottom:12px"><h2>気分で探す</h2><div class="mood-chips" id="mood-chips" role="group" aria-label="気分で探す"></div></div>
       <div class="tag-find-head"><h2>食材で探す</h2><span class="tag-find-tools"><span class="sort-wrap"><button type="button" class="mini sub tiny" id="tag-sort-toggle">並び：よく食べる順 ▾</button><div class="sort-pop" id="tag-sort-pop" role="menu" aria-label="食材の並び順" hidden></div></span><button type="button" class="mini sub tiny" id="tag-reorder-btn" hidden>⇅ 並び替え</button><button type="button" class="mini sub tiny" id="tag-edit-toggle" aria-pressed="false" aria-label="食材の編集">✎</button></span></div>
-      <input class="field" id="tag-search" type="search" placeholder="料理名や食材で探す（例：鶏肉）" autocomplete="off" aria-label="料理名や食材で探す">
+      <input class="field" id="tag-search" type="search" placeholder="食材で探す（例：鶏肉）" autocomplete="off" aria-label="食材で探す">
       <div class="chips" id="tag-chips" style="margin-top:10px"></div>
       <div class="subbox" id="tag-add-panel" role="group" aria-label="食材を追加" hidden></div>
       <p class="note" id="tag-note" role="status"></p>
@@ -955,7 +978,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 48;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 49;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -2467,12 +2490,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(tagFilter && tagsOf(name).indexOf(tagFilter) < 0) return false;
     if(moodFilter && moodsOf(name).indexOf(moodFilter) < 0) return false;
     var q = normText(tagQuery.trim());
-    if(q){
-      if(normText(name).indexOf(q) >= 0) return true;
-      if(tagsOf(name).some(function(t){ return normText(t).indexOf(q) >= 0; })) return true;
-      // その料理のサブメニューの選択肢（例：キーマ→カレー、きつね→うどん）も探す。ひらがな・カタカナは同じ扱い
-      return (sub[name] || []).some(function(g){ return g.options.some(function(op){ return normText(op).indexOf(q) >= 0; }); });
-    }
+    if(q) return tagsOf(name).some(function(t){ return normText(t).indexOf(q) >= 0; });   // ここは食材だけ。料理名の検索は上の「料理名で探す」
     return true;
   }
   // ---- 食材（タグ）の一括操作 ----
@@ -3694,6 +3712,145 @@ input[type="time"].field{width:auto;min-width:140px}
   }catch(e){}
   function saveCatOpen(){ try{ window.localStorage.setItem(CATOPEN_KEY, JSON.stringify(catOpen)); }catch(e){} }
 
+  // 料理1つ分（写真の札または名前のボタン＋☆＋選んだ時のサブメニュー）を box に足す。note は検索で「（○○）」と添える一致した言葉
+  function appendDishCell(box, name, gridOn, histCounts, note){
+    var b = el('button', gridOn ? 'chip tile' : 'chip', gridOn ? '' : name);
+    var tmedia = gridOn ? tileFill(b, name) : null;
+    if(note){ (gridOn ? b.querySelector('.tname') : b).appendChild(el('small', 'dnote', note)); }
+    var hc = histCounts[name] || 0;
+    if(hc > 0){
+      var badge = el('small', 'dcnt', String(hc));
+      badge.setAttribute('aria-hidden', 'true');
+      (tmedia || b).appendChild(badge);
+    }
+    if(hc > 0 || gridOn || note) b.setAttribute('aria-label', name + (note || '') + (hc > 0 ? '（' + hc + '回）' : ''));
+    b.type = 'button'; b.id = 'dish-' + (n++);
+    b.setAttribute('aria-pressed', dishes.indexOf(name) >= 0 ? 'true' : 'false'); b.dataset.v = name;
+    b.addEventListener('click', function(){
+      toggle(dishes, name);
+      b.setAttribute('aria-pressed', dishes.indexOf(name)>=0 ? 'true':'false');
+      if(hasSub(name)){
+        if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
+        render(); focusDishChip(name);
+        if(dishes.indexOf(name) >= 0) revealPanel(name);
+      }
+      refresh();
+    });
+    var gp = el('span', 'dgroup'); gp.appendChild(b); gp.appendChild(dishStar(name)); box.appendChild(gp);
+    if(dishes.indexOf(name) >= 0){
+      box.appendChild(hasSub(name) && sub[name].length ? inPanel(subPanel(name), name, 'chip') : inPanel(favRow(name), name, ''));
+    }
+  }
+
+  // ---- 料理名で探す（ひらがな・カタカナ・全角半角・大小文字を同じに扱う。読みがな・別名の表を使う） ----
+  var YOMI = {"肉じゃが":["にくじゃが"],"筑前煮":["ちくぜんに","がめ煮","がめに"],"生姜焼き":["しょうがやき","しょうが焼き","しょーがやき","豚の生姜焼き"],"天ぷら":["てんぷら","天麩羅"],"とんかつ":["トンカツ","豚カツ","ぶたかつ"],"焼き魚定食":["やきざかなていしょく","焼魚定食","やきざかな"],"もんじゃ焼き":["もんじゃやき","もんじゃ","モンジャ"],"さばの味噌煮":["さばのみそに","鯖の味噌煮","さばみそ","サバ味噌"],"唐揚げ":["からあげ","から揚げ","から揚","唐揚","カラアゲ","とりのからあげ"],"鮭の塩焼き":["さけのしおやき","しゃけのしおやき","鮭塩焼き","さけしおやき"],"ぶり大根":["ぶりだいこん","鰤大根"],"照り焼きチキン":["てりやきちきん","照焼チキン","てりやき"],"豚の角煮":["ぶたのかくに","角煮","かくに"],"焼肉":["やきにく","焼き肉"],"しゃぶしゃぶ":["シャブシャブ"],"冷しゃぶ":["ひやしゃぶ","冷やししゃぶしゃぶ","冷製しゃぶしゃぶ"],"炊き込みご飯":["たきこみごはん","炊き込みごはん","たきこみ","炊込みご飯"],"お好み焼き":["おこのみやき","おこのみ","お好み"],"焼き鳥":["やきとり","焼鳥","ヤキトリ"],"たこ焼き":["たこやき","タコ焼き"],"鶏そぼろ":["とりそぼろ","鳥そぼろ","そぼろ"],"あじの南蛮漬け":["あじのなんばんづけ","鯵の南蛮漬け","あじなんばん"],"揚げ出し豆腐":["あげだしどうふ","あげだし"],"鮭のホイル焼き":["さけのほいるやき","しゃけのホイル焼き","鮭ホイル"],"肉豆腐":["にくどうふ"],"いわしの蒲焼き":["いわしのかばやき","鰯の蒲焼き","いわし蒲焼"],"かぼちゃのそぼろ煮":["かぼちゃのそぼろに","南瓜のそぼろ煮","かぼちゃそぼろ"],"煮魚":["にざかな","にさかな"],"豚キムチ":["ぶたきむち","豚キムチ炒め"],"ゴーヤチャンプルー":["ごーやちゃんぷるー","ゴーヤチャンプル","ゴーヤーチャンプルー"],"肉巻き野菜":["にくまきやさい","野菜肉巻き","やさいのにくまき"],"刺身盛り合わせ":["さしみもりあわせ","お刺身","おさしみ","刺身盛合せ"],"ぶりの照り焼き":["ぶりのてりやき","鰤の照り焼き","ぶりてり"],"鶏と野菜の黒酢あん":["とりとやさいのくろずあん","黒酢あん","くろずあん"],"なす味噌炒め":["なすみそいため","茄子味噌炒め","なすのみそいため"],"串揚げ":["くしあげ","串カツ","くしかつ"],"カレー":["かれー","カレーライス","かれーらいす"],"ハンバーグ":["はんばーぐ"],"オムライス":["おむらいす"],"グラタン":["ぐらたん"],"シチュー":["しちゅー","クリームシチュー"],"ビーフシチュー":["びーふしちゅー"],"クリームコロッケ":["くりーむころっけ"],"アヒージョ":["あひーじょ","アヒジョ"],"ドリア":["どりあ"],"ハヤシライス":["はやしらいす","ハッシュドビーフ","はやし"],"ガーリックシュリンプ":["がーりっくしゅりんぷ"],"エビフライ":["えびふらい","海老フライ"],"コロッケ":["ころっけ"],"メンチカツ":["めんちかつ","ミンチカツ","みんちかつ"],"ロールキャベツ":["ろーるきゃべつ"],"ポトフ":["ぽとふ"],"チキン南蛮":["ちきんなんばん"],"ステーキ":["すてーき"],"オムレツ":["おむれつ","オムレット"],"ピザ":["ぴざ","ピッツァ","ぴっつぁ"],"サンドイッチ":["さんどいっち","サンド"],"ポークソテー":["ぽーくそてー","豚ソテー"],"チキンソテー":["ちきんそてー","鶏ソテー"],"チキンカツ":["ちきんかつ","とりかつ","鶏カツ"],"白身魚のムニエル":["しろみざかなのむにえる","ムニエル","むにえる"],"ピカタ":["ぴかた"],"マカロニチーズ":["まかろにちーず","マカロニ&チーズ","マックアンドチーズ"],"カキフライ":["かきふらい","牡蠣フライ"],"ローストビーフ":["ろーすとびーふ"],"ピーマンの肉詰め":["ぴーまんのにくづめ","ピーマン肉詰め"],"アジフライ":["あじふらい","鯵フライ"],"麻婆豆腐":["まーぼーどうふ","まーぼー","マーボー豆腐","マーボー","麻婆","まーぼーどーふ"],"回鍋肉":["ほいこーろー","ホイコーロー","ほいこーろう"],"餃子":["ぎょうざ","ぎょーざ","ギョーザ","ギョウザ"],"青椒肉絲":["ちんじゃおろーす","ちんじゃおろうす","チンジャオロース","青椒肉糸","ピーマンと牛肉の炒め物","ちんじゃお"],"エビチリ":["えびちり","海老チリ","えびのチリソース"],"チャーハン":["ちゃーはん","炒飯","焼き飯","やきめし"],"酢豚":["すぶた"],"八宝菜":["はっぽうさい","はっぽーさい"],"春巻き":["はるまき","春巻"],"焼売":["しゅうまい","しゅーまい","シュウマイ","シューマイ","焼買"],"天津飯":["てんしんはん","天津丼","てんしんどん"],"棒棒鶏":["ばんばんじー","ばんばんじ","バンバンジー","棒々鶏","バンバンジ"],"麻婆茄子":["まーぼーなす","マーボーなす","マーボー茄子","麻婆なす"],"ニラレバ炒め":["にらればいため","ニラレバ","にらレバ","韮レバ炒め"],"かに玉":["かにたま","蟹玉","カニ玉"],"油淋鶏":["ゆーりんちー","ゆうりんちー","ユーリンチー","ユーリンジー"],"肉野菜炒め":["にくやさいいため","野菜炒め","やさいいため"],"エビマヨ":["えびまよ","海老マヨ","えびのマヨネーズ"],"ニラ玉":["にらたま","韮玉","にら玉"],"木須肉":["むーすーろー","ムースーロー","もくすにく","ムーシューロー","むーしゅーろー"],"鶏肉のカシューナッツ炒め":["とりにくのかしゅーなっついため","鶏肉とカシューナッツの炒め","かしゅーなっつ炒め"],"豚肉ともやしの中華蒸し":["ぶたにくともやしのちゅうかむし","豚もやし蒸し","ぶたもやしむし"],"麻婆春雨":["まーぼーはるさめ","マーボー春雨"],"肉団子の甘酢あん":["にくだんごのあますあん","肉団子","にくだんご","ミートボール"],"タンメン":["たんめん","湯麺"],"チヂミ":["ちぢみ","チジミ","ちじみ","韓国風お好み焼き"],"プルコギ":["ぷるこぎ"],"サムギョプサル":["さむぎょぷさる"],"ヤンニョムチキン":["やんにょむちきん","韓国風フライドチキン"],"タッカルビ":["たっからび"],"チャプチェ":["ちゃぷちぇ","韓国春雨炒め"],"トッポッキ":["とっぽっき","トッポギ","とっぽぎ","トッポキ"],"キンパ":["きんぱ","キムパ","きむぱ","韓国のり巻き","キンパプ"],"キムチチゲ":["きむちちげ","キムチチゲ鍋"],"テンジャンチゲ":["てんじゃんちげ","味噌チゲ","みそチゲ"],"部隊チゲ":["ぶでちげ","プデチゲ","ぷでちげ"],"ユッケジャンスープ":["ゆっけじゃんすーぷ","ユッケジャン","ゆっけじゃん"],"サムゲタン":["さむげたん","参鶏湯"],"キムチチャーハン":["きむちちゃーはん","キムチ炒飯"],"ケランチム":["けらんちむ","韓国茶碗蒸し"],"ポッサム":["ぽっさむ","ボッサム"],"ビビン麺":["びびんめん","ビビンミョン","びびんみょん","ビビム麺"],"チョレギサラダ":["ちょれぎさらだ","チョレギ","ちょれぎ"],"キムチ":["きむち"],"ビビンパ":["びびんぱ","ビビンバ","びびんば","ビビンパップ"],"石焼き風ビビンパ":["いしやきふうびびんぱ","石焼きビビンパ","石焼ビビンバ","いしやきびびんば"],"ミートスパゲティ":["みーとすぱげてぃ","みーとそーす","ミートソース","ボロネーゼ","ミートスパ","みーとすぱげってぃ"],"ナポリタン":["なぽりたん","ナポリタンスパゲティ"],"カルボナーラ":["かるぼなーら"],"ペペロンチーノ":["ぺぺろんちーの","ペペロン","ぺぺろん"],"その他のパスタ":["そのたのぱすた","パスタ","ぱすた","スパゲティ","すぱげてぃ"],"そば":["蕎麦"],"焼きそば":["やきそば","焼そば","ヤキソバ"],"ラーメン":["らーめん","拉麺"],"つけ麺":["つけめん","漬け麺"],"油そば":["あぶらそば","まぜそば","混ぜそば"],"冷やし中華":["ひやしちゅうか","冷し中華","れいめんちゅうか"],"そうめん":["素麺","そーめん"],"焼きうどん":["やきうどん","焼うどん"],"ちゃんぽん":["チャンポン"],"担々麺":["たんたんめん","担担麺","タンタンメン","坦々麺"],"皿うどん":["さらうどん"],"焼きビーフン":["やきびーふん","焼ビーフン","ビーフン"],"ジャージャー麺":["じゃーじゃーめん","じゃじゃめん","ジャジャ麺","炸醤麺"],"冷麺":["れいめん","ネンミョン","ねんみょん","ひやしめん"],"親子丼":["おやこどん","おやこどんぶり"],"牛丼":["ぎゅうどん","ぎゅーどん","ぎゅうめし"],"カツ丼":["かつどん","かつどんぶり"],"海鮮丼":["かいせんどん","かいせんどんぶり"],"天丼":["てんどん","てんぷらどんぶり"],"中華丼":["ちゅうかどん","ちゅうかどんぶり"],"ネギトロ丼":["ねぎとろどん","ネギトロ","ねぎとろ"],"豚丼":["ぶたどん"],"そぼろ丼":["そぼろどん","三色丼","さんしょくどん"],"うな丼":["うなどん","うなぎ丼","うなぎどん","鰻丼"],"マグロの漬け丼":["まぐろのづけどん","まぐろづけどん","づけ丼","漬け丼","鮪の漬け丼"],"玉子丼":["たまごどん","卵丼","たまごどんぶり"],"ロコモコ丼":["ろこもこどん","ロコモコ","ろこもこ"],"しらす丼":["しらすどん","シラス丼"],"スタミナ丼":["すたみなどん","すた丼","すたどん"],"おにぎり":["おむすび","お握り","オニギリ"],"手巻き寿司":["てまきずし","てまきすし","手巻寿司"],"ちらし寿司":["ちらしずし","ちらし","散らし寿司","ちらしすし"],"お茶漬け":["おちゃづけ","お茶づけ","おちゃずけ"],"いなり寿司":["いなりずし","稲荷寿司","おいなりさん","いなりすし"],"雑炊":["ぞうすい","ぞーすい"],"おかゆ":["お粥","粥","かゆ"],"赤飯":["せきはん","おこわ","お赤飯","おせきはん"],"焼きおにぎり":["やきおにぎり","焼おにぎり","焼きおむすび"],"栗ご飯":["くりごはん","栗ごはん","くりめし"],"ガパオライス":["がぱおらいす","ガパオ","がぱお"],"タコライス":["たこらいす"],"巻き寿司":["まきずし","巻寿司","まきすし","のり巻き","のりまき","太巻き","ふとまき","恵方巻き","えほうまき"],"味噌汁":["みそしる","お味噌汁","おみそしる","みそ汁"],"豚汁":["とんじる","ぶたじる","ぶた汁"],"ミネストローネ":["みねすとろーね"],"中華スープ":["ちゅうかすーぷ","ちゅーかすーぷ"],"けんちん汁":["けんちんじる","けんちん"],"わかめスープ":["わかめすーぷ","ワカメスープ","若布スープ"],"コーンスープ":["こーんすーぷ"],"クラムチャウダー":["くらむちゃうだー"],"お吸い物":["おすいもの","お吸物","すまし汁","すましじる","おすまし"],"かきたま汁":["かきたまじる","かきたま","卵スープ","たまごスープ"],"ワンタンスープ":["わんたんすーぷ","ワンタン","わんたん"],"オニオンスープ":["おにおんすーぷ","玉ねぎスープ","たまねぎすーぷ"],"つみれ汁":["つみれじる","つみれ"],"あら汁":["あらじる","あらしる","アラ汁"],"すいとん":["水団"],"かぼちゃのポタージュ":["かぼちゃのぽたーじゅ","南瓜ポタージュ","かぼちゃぽたーじゅ","かぼちゃスープ"],"寄せ鍋":["よせなべ","寄鍋"],"キムチ鍋":["きむちなべ"],"水炊き":["みずたき","水焚き"],"湯豆腐":["ゆどうふ","ゆどーふ"],"ちゃんこ鍋":["ちゃんこなべ","ちゃんこ"],"豆乳鍋":["とうにゅうなべ","とうにゅーなべ"],"もつ鍋":["もつなべ","モツ鍋"],"ミルフィーユ鍋":["みるふぃーゆなべ","白菜と豚バラの鍋","はくさいぶたばらなべ"],"鶏団子鍋":["とりだんごなべ","鳥団子鍋","つくね鍋","つくねなべ"],"石狩鍋":["いしかりなべ","石狩"],"すき焼き":["すきやき","すき焼","スキヤキ"],"スンドゥブ":["すんどぅぶ","すんどぅぶちげ","スンドゥブチゲ","すんどぶ"],"山芋ポテト":["やまいもぽてと"],"ピーマン千切りからいやつ":["ぴーまんせんぎりからいやつ"],"玉ねぎサラダ":["たまねぎさらだ","玉葱サラダ","オニオンサラダ","おにおんさらだ"],"生ピーマン辛味噌だれ":["なまぴーまんからみそだれ"],"ほうれん草のおひたし":["ほうれんそうのおひたし","ほうれん草おひたし","ほうれんそう","おひたし","お浸し"],"にんじん千切りサラダ辛いやつ":["にんじんせんぎりさらだからいやつ"],"キムチになる前のキャベツ":["きむちになるまえのきゃべつ"],"野菜スティック":["やさいすてぃっく","スティックサラダ","すてぃっくさらだ"],"サラダ":["さらだ"],"きんぴら":["きんぴらごぼう","金平","金平ごぼう"],"ポテトサラダ":["ぽてとさらだ","ポテサラ","ぽてさら"],"だし巻き卵":["だしまきたまご","出汁巻き卵","だし巻き","だしまき","出汁巻"],"冷奴":["ひややっこ","冷やっこ","ひややこ"],"ひじき煮":["ひじきに","ひじきの煮物","ひじき"],"切り干し大根":["きりぼしだいこん","切干大根","切り干し","きりぼし"],"春雨サラダ":["はるさめさらだ"],"枝豆":["えだまめ"],"茶碗蒸し":["ちゃわんむし"],"きゅうりとわかめの酢の物":["きゅうりとわかめのすのもの","胡瓜とわかめの酢の物","きゅうりの酢の物","酢の物","すのもの"],"ほうれん草のごま和え":["ほうれんそうのごまあえ","ほうれん草の胡麻和え","ごま和え","ごまあえ","胡麻和え"],"かぼちゃの煮物":["かぼちゃのにもの","南瓜の煮物","かぼちゃ煮","かぼちゃに"],"もやしのナムル":["もやしのなむる","ナムル","なむる"],"きゅうりの浅漬け":["きゅうりのあさづけ","胡瓜の浅漬け","浅漬け","あさづけ"],"なすの煮びたし":["なすのにびたし","茄子の煮びたし","なす煮びたし","なすの煮浸し"],"こんにゃくの煮物":["こんにゃくのにもの","蒟蒻の煮物","こんにゃく煮","こんにゃくに"],"小松菜と油揚げの煮びたし":["こまつなとあぶらあげのにびたし","小松菜の煮びたし","こまつなのにびたし","小松菜煮浸し"],"白和え":["しらあえ"],"ほうれん草とベーコンのソテー":["ほうれんそうとべーこんのそてー","ほうれん草ベーコン炒め","ほうれんそうべーこんそてー","ほうれん草のソテー"],"マカロニサラダ":["まかろにさらだ"],"ジャーマンポテト":["じゃーまんぽてと"],"焼きなす":["やきなす","焼き茄子","焼茄子"],"フライドポテト":["ふらいどぽてと","ポテトフライ","ぽてとふらい","フライポテト"],"いちご":["苺","イチゴ","ストロベリー"],"シャインマスカット":["しゃいんますかっと","マスカット","ますかっと"],"ぶどう巨峰":["ぶどうきょほう","葡萄","ぶどう","巨峰","きょほう","ブドウ"],"メロン":["めろん"],"桃":["もも","モモ","ピーチ","ぴーち"],"梨":["なし","ナシ","洋梨","ようなし"],"りんご":["林檎","リンゴ","アップル"],"みかん":["蜜柑","ミカン","温州みかん"],"キウイ":["きうい","キウイフルーツ","きういふるーつ"],"バナナ":["ばなな"],"グレープフルーツ":["ぐれーぷふるーつ","グレフル","ぐれふる"],"オレンジ":["おれんじ"],"バレリーナの夜食":["ばれりーなのやしょく"]};
+  function kn(s){
+    return String(s).normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); }).replace(/\s+/g, '');
+  }
+  var yomiCache = {};
+  function yomiKeys(name){   // [料理名, 読み・別名…] を、そろえた形で
+    if(!Object.prototype.hasOwnProperty.call(yomiCache, name)){
+      var al = Object.prototype.hasOwnProperty.call(YOMI, name) ? YOMI[name] : [];
+      yomiCache[name] = [kn(name)].concat(al.map(kn));
+    }
+    return yomiCache[name];
+  }
+  var dishQ = '', dishQTimer = 0;
+  function dishTokens(q){
+    return String(q || '').normalize('NFKC').split(/\s+/).filter(function(t){ return t; }).slice(0, 4).map(function(t){ return { raw: t, k: kn(t) }; }).filter(function(t){ return t.k; });
+  }
+  // 一致を調べる。null＝一致しない。{ score, notes }：score 0=名前の先頭、1=名前の途中、2=読み・別名、3=サブメニュー・説明・食材にだけ一致（notes に一致した言葉）
+  function dishMatch(name, toks){
+    var keys = yomiKeys(name), nn = keys[0], score = 0, notes = [];
+    for(var i = 0; i < toks.length; i++){
+      var t = toks[i], sc = -1, j;
+      var at = nn.indexOf(t.k);
+      if(at >= 0) sc = at === 0 ? 0 : 1;
+      else{ for(j = 1; j < keys.length; j++) if(keys[j].indexOf(t.k) >= 0){ sc = 2; break; } }
+      if(sc < 0){
+        var note = '';
+        (sub[name] || []).some(function(g){ return g.options.some(function(op){ if(kn(op).indexOf(t.k) >= 0){ note = op; return true; } return false; }); });
+        if(!note){ var ts = tagsOf(name); for(j = 0; j < ts.length; j++) if(kn(ts[j]).indexOf(t.k) >= 0){ note = ts[j]; break; } }
+        if(!note){ var ds = descOf(name); if(ds && kn(ds).indexOf(t.k) >= 0) note = t.raw; }
+        if(!note) return null;
+        if(notes.indexOf(note) < 0 && notes.length < 2) notes.push(note);
+        sc = 3;
+      }
+      if(sc > score) score = sc;
+    }
+    return { score: score, notes: notes };
+  }
+  // 検索中は、献立の表をページの上（検索欄のすぐ下）へ移して、結果だけを出す。やめたら元の場所へ戻す
+  var menuHome = document.createComment('menu-home');
+  menuEl.parentNode.insertBefore(menuHome, menuEl);
+  function placeMenu(inFind){
+    var host = $('find-host');
+    if(inFind){ if(menuEl.parentNode !== host) host.appendChild(menuEl); host.hidden = false; }
+    else{ if(menuEl.parentNode === host) menuHome.parentNode.insertBefore(menuEl, menuHome.nextSibling); host.hidden = true; }
+  }
+  function searchingNow(){ return dishTokens(dishQ).length > 0 && !reorderAll && !reorderCat; }
+  function clearFilters(){ tagFilter = ''; moodFilter = ''; tagQuery = ''; $('tag-search').value = ''; }
+  function renderSearch(histCounts){
+    var toks = dishTokens(dishQ), q0 = dishQ.trim(), all = [], seen = {};
+    menu.forEach(function(g){ g[1].forEach(function(nm){
+      if(seen[nm]) return; seen[nm] = true;
+      var m = dishMatch(nm, toks);
+      if(m) all.push({ name: nm, m: m, ok: tagMatch(nm), ord: all.length });
+    }); });
+    var res = all.filter(function(x){ return x.ok; });
+    res.sort(function(a, b){ return (a.m.score - b.m.score) || (a.ord - b.ord); });
+    var st = $('dish-q-status'); st.textContent = '';
+    var fl = !!(tagFilter || moodFilter || tagQuery.trim());
+    st.appendChild(document.createTextNode('「' + q0 + '」の検索結果：' + res.length + '品' + (fl && res.length ? '（気分・食材の絞り込みも効いています）' : '')));
+    if(fl){
+      var rb = el('button', 'mini sub tiny', '絞り込みを外す'); rb.type = 'button'; rb.style.marginLeft = '8px';
+      rb.addEventListener('click', function(){ clearFilters(); render(); });
+      st.appendChild(rb);
+    }
+    if(!res.length){
+      var nmb = el('div', 'nomatch');
+      if(all.length){
+        nmb.appendChild(el('p', null, '「' + q0 + '」は、いまの気分・食材の絞り込みの中にはありません（絞り込みを外すと ' + all.length + '品あります）'));
+      }else{
+        nmb.appendChild(el('p', null, '「' + q0 + '」は献立にありません'));
+        var nbtn = el('button', 'mini', '＋「' + q0 + '」をそのまま頼む'); nbtn.type = 'button';
+        nbtn.addEventListener('click', function(){
+          var fd = $('free-dish'), v = q0;
+          if(fd.maxLength > 0) v = v.slice(0, fd.maxLength);
+          fd.value = fd.value.trim() ? fd.value.trim() + '、' + v : v;
+          dishQ = ''; $('dish-q').value = ''; $('dish-q-clear').hidden = true;
+          refresh(); render();
+          imgToast('「' + v + '」を「表にない料理」として注文に加えました');
+        });
+        nmb.appendChild(nbtn);
+      }
+      menuEl.appendChild(nmb);
+      return;
+    }
+    var gridOn = viewMode === 'photo', box = el('div', gridOn ? 'chips dgrid' : 'chips');
+    res.forEach(function(x){
+      appendDishCell(box, x.name, gridOn, histCounts, x.m.score === 3 && x.m.notes.length ? '（' + x.m.notes.join('・') + '）' : '');
+    });
+    menuEl.appendChild(box);
+  }
+  function applyDishQ(){
+    clearTimeout(dishQTimer);
+    var was = searchingNow(), inp = $('dish-q');
+    if(reorderAll || reorderCat){ if(inp.value){ inp.value = ''; setMsg('並び替え中は、料理を探せません。'); } dishQ = ''; $('dish-q-clear').hidden = true; return; }
+    dishQ = inp.value;
+    $('dish-q-clear').hidden = !inp.value;
+    render();
+    if(!was && searchingNow()){ try{ $('find-host').scrollIntoView({ block: 'start' }); }catch(e){} }
+  }
+  $('dish-q').addEventListener('input', function(){
+    $('dish-q-clear').hidden = !this.value;
+    clearTimeout(dishQTimer); dishQTimer = setTimeout(applyDishQ, 160);
+  });
+  $('dish-q').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); applyDishQ(); this.blur(); }
+    else if(e.key === 'Escape' && this.value){ e.preventDefault(); this.value = ''; applyDishQ(); }
+  });
+  $('dish-q-clear').addEventListener('click', function(){ var inp = $('dish-q'); inp.value = ''; applyDishQ(); inp.focus(); });
   // 写真／名前の切り替え
   function paintViewSeg(){
     Array.prototype.forEach.call($('view-seg').querySelectorAll('button[data-view]'), function(b){
@@ -3723,6 +3880,14 @@ input[type="time"].field{width:auto;min-width:140px}
     orderHist.forEach(function(he){ histCounts[he.name] = (histCounts[he.name] || 0) + 1; });
     var recentAt = {};   // 料理ごとに、最後に頼んだ日時（日時が無い古い記録は順番で代用）
     orderHist.forEach(function(he, i){ var sc = typeof he.t === 'number' ? he.t : i; if(recentAt[he.name] == null || sc > recentAt[he.name]) recentAt[he.name] = sc; });
+    var sActive = searchingNow();
+    placeMenu(sActive);
+    if(!sActive) $('dish-q-status').textContent = '';
+    if(sActive){
+      renderSearch(histCounts);
+      renderFind(); renderQuick(); paintOmakase(); placeTriangles();
+      return;
+    }
     if(reorderAll){   // 分類の並び替え：分類の見出しだけをチップで並べる
       menuEl.appendChild(el('p', 'rd-banner', RD_BANNER));
       menuEl.appendChild(el('p', 'note rd-guide', RD_GUIDE));
@@ -3861,31 +4026,7 @@ input[type="time"].field{width:auto;min-width:140px}
           if(tagEditOpen[name]) box.appendChild(inPanel(tagEditPanel(name), name, 'tag'));
           return;
         }
-        var b = el('button', gridOn ? 'chip tile' : 'chip', gridOn ? '' : name);
-        var tmedia = gridOn ? tileFill(b, name) : null;
-        var hc = histCounts[name] || 0;
-        if(hc > 0){
-          var badge = el('small', 'dcnt', String(hc));
-          badge.setAttribute('aria-hidden', 'true');
-          (tmedia || b).appendChild(badge);
-          b.setAttribute('aria-label', name + '（' + hc + '回）');
-        }else if(gridOn) b.setAttribute('aria-label', name);
-        b.type = 'button'; b.id = 'dish-' + (n++);
-        b.setAttribute('aria-pressed', dishes.indexOf(name) >= 0 ? 'true' : 'false'); b.dataset.v = name;
-        b.addEventListener('click', function(){
-          toggle(dishes, name);
-          b.setAttribute('aria-pressed', dishes.indexOf(name)>=0 ? 'true':'false');
-          if(hasSub(name)){
-            if(dishes.indexOf(name) < 0){ delete subSel[name]; delete subOther[name]; }
-            render(); focusDishChip(name);
-            if(dishes.indexOf(name) >= 0) revealPanel(name);
-          }
-          refresh();
-        });
-        var gp = el('span', 'dgroup'); gp.appendChild(b); gp.appendChild(dishStar(name)); box.appendChild(gp);
-        if(dishes.indexOf(name) >= 0){
-          box.appendChild(hasSub(name) && sub[name].length ? inPanel(subPanel(name), name, 'chip') : inPanel(favRow(name), name, ''));
-        }
+        appendDishCell(box, name, gridOn, histCounts, '');
       });
       if(open) menuEl.appendChild(box);
       if(ed){
@@ -3905,21 +4046,6 @@ input[type="time"].field{width:auto;min-width:140px}
         menuEl.appendChild(row);
       }
     });
-    if(filt && tagQuery.trim() && totalMatch === 0){   // 検索で0件：そのまま頼めるようにする
-      var q0 = tagQuery.trim(), nmb = el('div', 'nomatch');
-      nmb.appendChild(el('p', null, '「' + q0 + '」は献立にありません'));
-      var nbtn = el('button', 'mini', '＋「' + q0 + '」をそのまま頼む'); nbtn.type = 'button';
-      nbtn.addEventListener('click', function(){
-        var fd = $('free-dish'), v = q0;
-        if(fd.maxLength > 0) v = v.slice(0, fd.maxLength);
-        fd.value = fd.value.trim() ? fd.value.trim() + '、' + v : v;
-        tagQuery = ''; $('tag-search').value = '';
-        refresh(); render();
-        setTagNote('「' + v + '」を「表にない料理」として注文に加えました。');
-      });
-      nmb.appendChild(nbtn);
-      menuEl.insertBefore(nmb, menuEl.firstChild);
-    }
     renderFind();
     renderQuick();
     paintOmakase();
@@ -4571,6 +4697,7 @@ input[type="time"].field{width:auto;min-width:140px}
       $('tab-'+k).tabIndex = on ? 0 : -1;
       $('panel-'+k).hidden = !on;
     });
+    $('dsearch').hidden = t !== 'meal'; updStick();
     scrollToPanelTop(t);
   }
   $('tab-meal').addEventListener('click', function(){ setTab('meal'); });
