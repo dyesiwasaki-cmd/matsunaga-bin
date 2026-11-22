@@ -530,6 +530,13 @@ input[type="time"].field{width:auto;min-width:140px}
 .qitem{flex:none;display:flex;align-items:stretch;max-width:260px;border:2px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
 .qcard{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:44px;padding:6px 10px;border:0;background:transparent;color:var(--fg);font:inherit;font-size:13px;text-align:left;cursor:pointer;word-break:break-all}
 .qcard .qn{font-size:11px;color:var(--muted)}
+.qgrid{margin:0 0 4px}
+.dgrid .qmore{grid-column:1 / -1;justify-self:start;min-height:40px}
+.chip.qtile .tname{min-height:0}
+.chip.tile .tname .qwhy{display:block;max-width:100%;margin-top:1px;font-size:11px;font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.tile .tname .qwhy.recwhy{color:var(--accent)}
+.chip.tile[aria-pressed="true"] .tname .qwhy{color:var(--fg)}
+.qmore{margin:2px 0 6px}
 .qcard[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .qcard[aria-pressed="true"] .qn{color:var(--accent-fg)}
 .qdel{flex:none;width:36px;border:0;border-left:2px solid var(--line);background:var(--accent-soft);color:var(--fg);font-size:18px;font-weight:700;cursor:pointer}
@@ -556,8 +563,6 @@ input[type="time"].field{width:auto;min-width:140px}
 .shun-toggle{display:inline-flex;align-items:center;min-height:44px;padding:6px 4px;border:0;background:none;color:inherit;font:inherit;font-weight:700;text-align:left;cursor:pointer}
 .shun-toggle:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .shun-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-.shun-row{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
-.shun-row .chip.tile{flex:0 0 104px;width:104px;scroll-snap-align:start}
 .dinfo{display:flex;align-items:flex-start;gap:10px;margin:0 0 6px}
 .dinfo .dthumb{flex:none}
 .dinfo-body{flex:1 1 auto;min-width:0}
@@ -1018,7 +1023,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 58;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 59;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3357,7 +3362,7 @@ input[type="time"].field{width:auto;min-width:140px}
       return true;
     }
     function byHash(a, b){ return (strHash(a + seed) - strHash(b + seed)) || (a < b ? -1 : 1); }
-    var need = 5 - out.length;
+    var need = 6 - out.length;
     var cs0 = REC_CATS[bucket] || REC_CATS['夜'];   // 旬の料理は、まず時間帯に合う分類から（日付と時間帯で入れ替わる）
     var seasonal = sp.all.filter(function(x){ return okName(x.nm); }).sort(function(a, b){
       var ia = cs0.indexOf(cat[a.nm]) >= 0 ? 0 : 1, ib = cs0.indexOf(cat[b.nm]) >= 0 ? 0 : 1;
@@ -3376,16 +3381,16 @@ input[type="time"].field{width:auto;min-width:140px}
       var lb = bucket === '朝' && (moodsOf(b).indexOf('軽め') >= 0 || moodsOf(b).indexOf('やさしい') >= 0) ? 0 : 1;
       return (la - lb) || byHash(a, b);
     });
-    pool.forEach(function(nm){ if(out.length < 5 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
-    if(out.length < 4){   // 分類の候補が足りない時は、ほかの主菜で埋める
-      names.sort(byHash).forEach(function(nm){ if(out.length < 4 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
+    pool.forEach(function(nm){ if(out.length < 6 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
+    if(out.length < 6){   // 分類の候補が足りない時は、ほかの主菜で埋める
+      names.sort(byHash).forEach(function(nm){ if(out.length < 6 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
     }
     return out;
   }
   function recommend(){
     var out = recommendHist();
-    if(out.length >= 4) return out;
-    return recSupplement(out).slice(0, 5);
+    if(out.length >= 6) return out;
+    return recSupplement(out).slice(0, 6);
   }
   function recommendHist(){
     if(orderHist.length < 5) return [];
@@ -3485,10 +3490,11 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       tb.appendChild(b);
     });
-    var row = $('shun-row'); row.innerHTML = '';
-    r.dishes.forEach(function(nm){
-      var b = el('button', 'chip tile'); b.type = 'button'; b.dataset.shun = nm;
-      tileFill(b, nm);
+    var row = $('shun-row'), grid = viewMode === 'photo', openS = !!qMore.shun;
+    row.innerHTML = ''; row.className = grid ? 'chips dgrid qgrid' : 'cardrow';
+    (openS ? r.dishes : r.dishes.slice(0, Q_FIRST)).forEach(function(nm){
+      var b = el('button', grid ? 'chip tile' : 'chip'); b.type = 'button'; b.dataset.shun = nm;
+      if(grid) tileFill(b, nm); else b.textContent = nm;
       b.setAttribute('aria-pressed', dishes.indexOf(nm) >= 0 ? 'true' : 'false');
       b.setAttribute('aria-label', nm + '（旬）');
       b.addEventListener('click', function(){
@@ -3500,6 +3506,12 @@ input[type="time"].field{width:auto;min-width:140px}
       });
       row.appendChild(b);
     });
+    if(r.dishes.length > Q_FIRST){
+      var mb = el('button', 'mini sub qmore', openS ? '閉じる' : 'もっと見る（あと' + (r.dishes.length - Q_FIRST) + '品）'); mb.type = 'button';
+      mb.dataset.qmore = 'shun'; mb.setAttribute('aria-expanded', openS ? 'true' : 'false');
+      mb.addEventListener('click', function(){ qMore.shun = !qMore.shun; renderShun(); $('shun-row').querySelector('button[data-qmore]').focus(); });
+      row.appendChild(mb);
+    }
   }
   $('shun-toggle').addEventListener('click', function(){
     shunClosed = !shunClosed;
@@ -3508,6 +3520,46 @@ input[type="time"].field{width:auto;min-width:140px}
   });
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') renderShun(); });   // 月が替わったら入れ替える
 
+  // 上の段（おすすめ・お気に入り・よく頼む・最近）：献立と同じ写真の格子。最初は6品まで、「もっと見る」で全部
+  var Q_FIRST = 6, qMore = {};
+  function qTile(e, row, extra){
+    var fe = filterEntry(e), isO = e.name === OMAKASE, full = labelFor(e.name, fe.sel, fe.other, fe.qty);
+    var grp = el('span', 'dgroup qgroup');
+    var b = el('button', 'chip tile qtile'); b.type = 'button';
+    b.dataset.qrow = row; b.dataset.qkey = keyOf(e);
+    tileFill(b, e.name);
+    if(isO) b.querySelector('.tt').textContent = full;
+    var ss = isO ? '' : [subSummary(fe), fe.qty || ''].filter(Boolean).join('・');
+    var line = [ss, extra].filter(Boolean).join('｜');   // 前回の指定・理由は、料理名の下に小さく1行
+    if(line) b.querySelector('.tname').appendChild(el('small', row === 'rec' ? 'qn recwhy qwhy' : 'qn qwhy', line));
+    b.setAttribute('aria-pressed', isPressed(e) ? 'true' : 'false');
+    b.setAttribute('aria-label', full + (line ? '（' + line + '）' : ''));
+    b.addEventListener('click', function(){ applyEntry(e); focusCard(row, keyOf(e)); });
+    grp.appendChild(b);
+    if(row === 'fav'){   // ★を押すとお気に入りから外す（外した直後は「元に戻す」が出る）
+      var x = el('button', 'dstar qfav', '★'); x.type = 'button'; x.setAttribute('aria-pressed', 'true');
+      x.setAttribute('aria-label', '「' + full + '」をお気に入りから外す');
+      x.addEventListener('click', function(){ removeFav(e); });
+      grp.appendChild(x);
+    }
+    return grp;
+  }
+  function fillRow(id, row, items){
+    var box = $(id), grid = viewMode === 'photo';
+    box.innerHTML = ''; box.className = grid ? 'chips dgrid qgrid' : 'cardrow';
+    var open = !!qMore[row];
+    (open ? items : items.slice(0, Q_FIRST)).forEach(function(it){ box.appendChild(grid ? qTile(it.e, row, it.extra) : qCard(it.e, row, it.extra)); });
+    if(items.length > Q_FIRST){
+      var mb = el('button', 'mini sub qmore', open ? '閉じる' : 'もっと見る（あと' + (items.length - Q_FIRST) + '品）'); mb.type = 'button';
+      mb.dataset.qmore = row; mb.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mb.addEventListener('click', function(){
+        qMore[row] = !qMore[row]; renderQuick();
+        var bs = document.querySelectorAll('button[data-qmore]');
+        for(var i = 0; i < bs.length; i++) if(bs[i].dataset.qmore === row){ bs[i].focus(); break; }
+      });
+      box.appendChild(mb);
+    }
+  }
   function renderQuick(){
     renderShun();
     var sec = $('quick');
@@ -3515,29 +3567,25 @@ input[type="time"].field{width:auto;min-width:140px}
     var rcs = recommend();
     sec.hidden = (empty && $('fav-undo').hidden && !rcs.length);
     // 今日のおすすめ
-    var rcr = $('rec-row'); rcr.innerHTML = '';
-    rcs.forEach(function(r){ rcr.appendChild(qCard(r.e, 'rec', r.why)); });
+    fillRow('rec-row', 'rec', rcs.map(function(r){ return { e: r.e, extra: r.why }; }));
     $('quick-rec').hidden = !rcs.length;
     // お気に入り
-    var fr = $('fav-row'); fr.innerHTML = '';
-    favs.slice().reverse().forEach(function(e){ fr.appendChild(qCard(e, 'fav')); });
+    fillRow('fav-row', 'fav', favs.slice().reverse().map(function(e){ return { e: e, extra: '' }; }));
     $('quick-fav').hidden = !favs.length;
     // よく頼むもの
     var counts = {}, last = {};
     orderHist.forEach(function(e, i){ counts[e.name] = (counts[e.name] || 0) + 1; last[e.name] = i; });
-    var names = Object.keys(counts).sort(function(a, b){ return (counts[b] - counts[a]) || (last[b] - last[a]); }).slice(0, 8);
-    var pr = $('freq-row'); pr.innerHTML = '';
-    names.forEach(function(nm){ pr.appendChild(qCard(orderHist[last[nm]], 'freq', '×' + counts[nm] + '回')); });
+    var names = Object.keys(counts).sort(function(a, b){ return (counts[b] - counts[a]) || (last[b] - last[a]); }).slice(0, 20);
+    fillRow('freq-row', 'freq', names.map(function(nm){ return { e: orderHist[last[nm]], extra: '×' + counts[nm] + '回' }; }));
     $('quick-freq').hidden = !names.length;
     // 最近頼んだもの
     var seen = {}, rec = [];
-    for(var i = orderHist.length - 1; i >= 0 && rec.length < 8; i--){
+    for(var i = orderHist.length - 1; i >= 0 && rec.length < 20; i--){
       var e = orderHist[i], k = keyOf(filterEntry(e));
       if(seen[k]) continue;
       seen[k] = true; rec.push(e);
     }
-    var rr = $('recent-row'); rr.innerHTML = '';
-    rec.forEach(function(e){ rr.appendChild(qCard(e, 'recent')); });
+    fillRow('recent-row', 'recent', rec.map(function(e){ return { e: e, extra: '' }; }));
     $('quick-recent').hidden = !rec.length;
   }
   // 「☆お気に入りに保存」ボタン（選んだ料理の下に出る）
