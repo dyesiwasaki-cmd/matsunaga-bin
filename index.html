@@ -245,6 +245,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .st-na{color:var(--muted)}
 .daigo-tag{display:inline-block;padding:1px 10px;border:2px solid var(--alert);border-radius:12px;background:var(--alert-soft);color:var(--alert);font-weight:700;font-size:.9em;line-height:1.5;white-space:nowrap}
 .rv-big .daigo-tag{font-size:16px;vertical-align:middle}
+#daigo{background:var(--surface);color:var(--alert);font-weight:700;border-color:#e9a39d;border-color:color-mix(in srgb, var(--alert) 45%, var(--surface))}
 #daigo[aria-pressed="true"]{background:var(--alert-soft);border-color:var(--alert);color:var(--alert);font-weight:700}
 #daigo[aria-pressed="true"]::before{color:var(--alert)}
 .alt-pick{margin:8px 0;padding:8px;border:2px dashed var(--line);border-radius:6px;min-width:0;overflow-wrap:anywhere}
@@ -699,7 +700,7 @@ input[type="time"].field{width:auto;min-width:140px}
         </div>
         <span>人分</span>
       </div>
-      <div style="margin-top:8px"><button type="button" class="chip" id="daigo" aria-pressed="false">大吾くんもいる</button></div>
+      <div style="margin-top:8px"><button type="button" class="chip" id="daigo" aria-pressed="false">👦 大吾くんもいる</button></div>
       </div>
       <div id="sheet-subok" style="margin-bottom:12px" hidden><button type="button" class="chip" id="subok" aria-pressed="true">材料や品切れのときは、代わりのものでOK</button></div>
       <pre class="msg" id="sheet-msg"></pre>
