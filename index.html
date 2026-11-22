@@ -488,6 +488,8 @@ input[type="time"].field{width:auto;min-width:140px}
 .inpanel.withtri{position:relative;margin-top:12px}
 .inpanel.withtri::before{content:"";position:absolute;top:-10px;left:var(--tri,24px);margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom:10px solid var(--accent)}
 .sub-title{margin:0 0 0 6px;font-size:13px;font-weight:700;color:var(--accent)}
+.imgbtn{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:36px;margin:0 0 0 6px;padding:0 10px;border:2px solid var(--muted);border-radius:16px;background:var(--surface);color:var(--fg);font:inherit;font-size:15px;line-height:1;vertical-align:middle;cursor:pointer}
+.imgbtn:active{filter:brightness(.92)}
 .recwhy{color:var(--accent)}
 .omakase-row{display:flex;align-items:center;gap:6px}
 .omakase-btn{flex:1;min-height:56px;padding:8px 14px;border:3px solid var(--accent);border-radius:8px;background:var(--surface);color:var(--accent);font:inherit;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 var(--accent)}
@@ -860,7 +862,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 44;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 45;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1448,10 +1450,41 @@ input[type="time"].field{width:auto;min-width:140px}
     }
   }
   // 注文側：選んだ料理の直下に出るサブメニュー
+  // ---- 料理名をGoogleの画像検索で調べる（見た目の確認用。LINEの外のブラウザで開く） ----
+  function imgSearchUrl(name){
+    var q = String(name || '').trim();
+    if(!q) return '';
+    if(catOf(q) !== '果物') q += ' 料理';
+    return 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q);
+  }
+  function openImgSearch(name){
+    var url = imgSearchUrl(name);
+    if(!url) return;
+    if(window.liff && liffInClient && typeof window.liff.openWindow === 'function'){
+      try{ window.liff.openWindow({ url: url, external: true }); return; }catch(e){}
+    }
+    window.open(url, '_blank', 'noopener');
+  }
+  function imgBtn(name){
+    var b = el('button', 'imgbtn', '🔍');
+    b.type = 'button'; b.title = '画像で見る'; b.setAttribute('aria-label', '画像で見る（' + name + '）');
+    b.dataset.img = name;
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function(ev){ b.addEventListener(ev, function(e){ e.stopPropagation(); }); });
+    b.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openImgSearch(name); });
+    return b;
+  }
+  // 注文の1項目（例「うどん（あったかーい・かけ）」）から料理名を取り出し、ご飯の項目なら 🔍 を末尾に付ける
+  function addImgFor(parent, kind, item){
+    if(kind !== 'meal') return parent;
+    var nm = String(item || '').split('（')[0].replace(/^・/, '').trim();
+    if(!nm || nm === OMAKASE || nm.indexOf('その他：') === 0) return parent;
+    parent.appendChild(imgBtn(nm));
+    return parent;
+  }
   function subPanel(name){
     pruneSub(name);
     var wrap = el('div', 'subwrap');
-    wrap.appendChild(el('p', 'sub-title', name + 'の種類'));
+    var stp = el('p', 'sub-title', name + 'の種類'); stp.appendChild(imgBtn(name)); wrap.appendChild(stp);
     visibleGroups(name).forEach(function(g){
       var box = el('div', 'subbox');
       box.setAttribute('role', 'group');
@@ -4743,6 +4776,9 @@ input[type="time"].field{width:auto;min-width:140px}
       if(i) pre.appendChild(document.createTextNode(String.fromCharCode(10)));
       if(ln.indexOf('👦 大吾くんもいます') === 0) pre.appendChild(el('span', 'daigo-tag', ln));
       else pre.appendChild(document.createTextNode(ln));
+      if(pre.id === 'sheet-msg'){   // 確認画面：選んだ料理ごとに 🔍
+        dishes.forEach(function(nm){ if(ln === '・' + nm || ln.indexOf('・' + nm + '（') === 0) pre.appendChild(imgBtn(nm)); });
+      }
     });
   }
   function hhmm(iso){ var d = new Date(iso); return isNaN(d.getTime()) ? '' : pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
@@ -5199,7 +5235,7 @@ input[type="time"].field{width:auto;min-width:140px}
         idxs.forEach(function(i){
           if(!c.per[i]) c.per[i] = { reason: '', other: '', alt: '', altMode: 'propose' };
           var ib = el('div', 'rv-itembox'); ib.dataset.box = 'c:' + k + ':' + i;
-          ib.appendChild(el('p', 'rv-kn', '・' + items[i]));
+          ib.appendChild(addImgFor(el('p', 'rv-kn', '・' + items[i]), k, items[i]));
           reasonAltBlock(ib, c.per[i], items[i]); box.appendChild(ib);
         });
       }
@@ -5368,7 +5404,7 @@ input[type="time"].field{width:auto;min-width:140px}
         head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
         head.appendChild(stBadge(stOf(o, k)));
         card.appendChild(head);
-        (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+        (o[k] || []).forEach(function(t){ card.appendChild(addImgFor(el('p', 'rv-line', '・' + t), k, t)); });
         var on = !!rs.c[k];
         var tb = el('button', 'rv-btn sub', '💬 この種類を相談する'); tb.type = 'button';
         tb.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -5415,7 +5451,7 @@ input[type="time"].field{width:auto;min-width:140px}
     head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
     head.appendChild(stBadgeFor(o, k));
     card.appendChild(head);
-    (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+    (o[k] || []).forEach(function(t){ card.appendChild(addImgFor(el('p', 'rv-line', '・' + t), k, t)); });
     var pnote = prevNote(o, k);
     if(pnote) card.appendChild(el('p', 'rv-prev', pnote));
     if(canManual && stOf(o, k) !== 'done'){
@@ -5592,9 +5628,9 @@ input[type="time"].field{width:auto;min-width:140px}
     (o[k] || []).forEach(function(item){
       var en = null;
       dk.forEach(function(e){ if(!en && e.dish === item) en = e; });
-      if(!en){ card.appendChild(el('p', 'rv-line', '・' + item)); return; }
+      if(!en){ card.appendChild(addImgFor(el('p', 'rv-line', '・' + item), k, item)); return; }
       var ib = el('div', 'rv-itembox'); ib.dataset.box = 'a:' + k + ':' + item;
-      ib.appendChild(el('p', 'rv-kn', '・' + item));
+      ib.appendChild(addImgFor(el('p', 'rv-kn', '・' + item), k, item));
       var said = (en.reason && en.reason !== 'その他' ? en.reason + '。' : '') + (en.alt ? (en.altMode === 'done' ? en.alt + 'に変えました。' : en.alt + 'でもいいですか？') : 'どうしましょうか？');
       ib.appendChild(el('p', 'note', '松永さん：' + said));
       var choices = [];
@@ -5688,7 +5724,7 @@ input[type="time"].field{width:auto;min-width:140px}
       head.appendChild(el('span', 'rv-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
       head.appendChild(stBadge('consult'));
       card.appendChild(head);
-      (o[k] || []).forEach(function(t){ card.appendChild(el('p', 'rv-line', '・' + t)); });
+      (o[k] || []).forEach(function(t){ card.appendChild(addImgFor(el('p', 'rv-line', '・' + t), k, t)); });
       ANS_CHOICES.forEach(function(ch){
         var on = !!(rs.a[k] && rs.a[k].t === ch[0]);
         var b = el('button', 'rv-btn sub', ch[1]); b.type = 'button';
