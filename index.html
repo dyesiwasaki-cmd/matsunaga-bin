@@ -1018,7 +1018,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 56;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 57;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3352,7 +3352,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var haveDesc = Object.keys(descMap).length > 0;   // 説明がまだ読めていない間は、説明の有無で外さない
     function okName(nm){
       var c = cat[nm] || '';
-      if(used[nm] || recent[nm] || shown[nm] || !c || c === '果物' || c.indexOf('スイーツ') === 0) return false;
+      if(used[nm] || recent[nm] || shown[nm] || !c || c === '果物' || c.indexOf('スイーツ') === 0 || nm.indexOf('その他の') === 0) return false;
       if(haveDesc && !descOf(nm)) return false;   // 家族が付けた名前の料理（説明が空）は入れない
       return true;
     }
@@ -3454,6 +3454,7 @@ input[type="time"].field{width:auto;min-width:140px}
     var tagCnt = {}, list = [], seen = {};
     menu.forEach(function(g){ g[1].forEach(function(nm){
       if(seen[nm]) return; seen[nm] = true;
+      if(nm.indexOf('その他の') === 0) return;   // 「その他の○○」は旬のカードの候補にしない
       var hit = tagsOf(nm).filter(function(t){ return ts.indexOf(t) >= 0; });
       if(!hit.length) return;
       hit.forEach(function(t){ tagCnt[t] = (tagCnt[t] || 0) + 1; });
