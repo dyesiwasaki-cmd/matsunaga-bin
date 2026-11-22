@@ -413,6 +413,13 @@ input[type="time"].field{width:auto;min-width:140px}
 /* ---- 送信プレビュー ---- */
 .chat{margin-top:20px;padding:14px 12px;background:var(--chat-bg);border:2px solid var(--line);border-radius:6px}
 .chat h2{margin:0 0 10px;font-size:14px;color:var(--muted)}
+.sub-opt{margin-left:6px;font-size:11px;font-weight:400;color:var(--muted)}
+.sub-other-btn{min-height:32px;margin-top:6px;padding:2px 10px;font-size:12px}
+.nomatch{margin:0 0 12px;padding:10px 12px;border:2px dashed var(--accent);border-radius:8px;background:var(--accent-soft)}
+.nomatch p{margin:0 0 8px;font-weight:700;overflow-wrap:anywhere}
+.chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.chat-head h2{margin:0}
+.chat-head .mini{min-height:32px;padding:2px 12px}
 .bubble-line{display:flex;justify-content:flex-end;align-items:flex-end;gap:6px}
 .bubble{max-width:88%;white-space:pre-wrap;word-break:break-word;background:var(--bubble);color:var(--bubble-fg);padding:10px 14px;border-radius:16px 16px 2px 16px;font-size:15px}
 .chat .stamp{margin:6px 0 0;text-align:right;font-size:12px;color:var(--muted)}
@@ -706,12 +713,12 @@ input[type="time"].field{width:auto;min-width:140px}
 
 
   <section class="chat" id="chat" hidden aria-live="polite">
-    <h2>送信プレビュー</h2>
+    <div class="chat-head"><h2 id="chat-h">送信プレビュー</h2><button type="button" class="mini sub" id="chat-close">閉じる</button></div>
     <div id="chat-log"></div>
     <p class="warn" id="chat-warn">試作のため、実際には送られていません。</p>
   </section>
 
-  <p class="liff-status" id="liff-status" role="status">LINE接続：確認中…</p>
+  <p class="liff-status" id="liff-status" role="status" hidden>LINE接続：確認中…</p>
   <p class="liff-status" id="sync-status" role="status" style="margin-top:4px" hidden></p>
   <p class="liff-status" id="sync-note" role="status" style="margin-top:4px" hidden></p>
 </div>
@@ -788,6 +795,8 @@ input[type="time"].field{width:auto;min-width:140px}
   var LIFF_ID = '2012740410-E7o8LimO';
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
+  var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
+  try{ DEBUG = new URLSearchParams(location.search).get('debug') === '1'; }catch(e){}
   // 献立を端末どうしで共有する Google Apps Script のURL（…/exec）。空のままなら、この端末の保存だけで動きます。
   var SYNC_URL = 'https://matsunaga-bin-api.netlify.app/api/store';
 
@@ -808,7 +817,13 @@ input[type="time"].field{width:auto;min-width:140px}
   var usual = false;   // いつもの掃除
   var SUBOK_KEY = 'otetsudai-subok-v1', subOk = true;
   try{ if(window.localStorage.getItem(SUBOK_KEY) === '0') subOk = false; }catch(e){}
-  var people = 1, daigo = false, daigoAuto = false;   // daigoAuto: 「大吾くんもいる」で人数を自動で1→2にした
+  var PEOPLE_KEY = 'otetsudai-people-v1';
+  function loadPeople(){
+    try{ var n = parseInt(window.localStorage.getItem(PEOPLE_KEY), 10); if(n >= 1 && n <= 20) return n; }catch(e){}
+    return 1;
+  }
+  function savePeople(n){ try{ window.localStorage.setItem(PEOPLE_KEY, String(n)); }catch(e){} }
+  var people = loadPeople(), daigo = false, daigoAuto = false;   // daigoAuto: 「大吾くんもいる」で人数を自動で1→2にした
   var when = 'すぐに';
   var tab = 'meal';
 
@@ -977,7 +992,7 @@ input[type="time"].field{width:auto;min-width:140px}
     try{ window.localStorage.setItem(SUBG_KEY, JSON.stringify(sub)); }catch(e){}
     syncMark(SUBG_KEY);
   }
-  var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {};
+  var sub = loadSub(), subSel = {}, subOther = {}, subEditOpen = {}, subRemoveAsk = {}, subOtherOpen = {};
   function hasSub(name){ return Object.prototype.hasOwnProperty.call(sub, name) && Array.isArray(sub[name]); }
   function subMarkText(name){
     var gs = sub[name];
@@ -1063,7 +1078,8 @@ input[type="time"].field{width:auto;min-width:140px}
       var box = el('div', 'subbox');
       box.setAttribute('role', 'group');
       box.setAttribute('aria-label', name + 'の' + g.label);
-      box.appendChild(el('p', 'sub-h', name + 'の' + g.label + (g.multi ? '（複数可）' : '（1つ選べます）')));
+      var sh = el('p', 'sub-h', name + 'の' + g.label + (g.multi ? '（複数可）' : '（1つ選べます）'));
+      sh.appendChild(el('small', 'sub-opt', '（選ばなくてもOK）')); box.appendChild(sh);
       var chips = el('div', 'chips');
       g.options.forEach(function(opt){
         var b = el('button', 'chip sub-chip', opt);
@@ -1095,7 +1111,13 @@ input[type="time"].field{width:auto;min-width:140px}
           render(); focusSubOther(name, g.label);
         }
       });
-      box.appendChild(inp);
+      var okey = name + '|' + g.label;
+      if(inp.value.trim() || subOtherOpen[okey]) box.appendChild(inp);
+      else{
+        var ob = el('button', 'mini sub sub-other-btn', '＋その他を書く'); ob.type = 'button';
+        ob.addEventListener('click', function(){ subOtherOpen[okey] = true; ob.hidden = true; box.appendChild(inp); inp.focus(); });
+        box.appendChild(ob);
+      }
       wrap.appendChild(box);
     });
     wrap.appendChild(favRow(name));
@@ -2787,6 +2809,8 @@ input[type="time"].field{width:auto;min-width:140px}
     menuEl.innerHTML = ''; n = 0;
     updSort();
     var filt = filterActive();
+    var totalMatch = 0;
+    if(filt) menu.forEach(function(g){ g[1].forEach(function(nm){ if(tagMatch(nm)) totalMatch++; }); });
     var histCounts = {};
     orderHist.forEach(function(he){ histCounts[he.name] = (histCounts[he.name] || 0) + 1; });
     var recentAt = {};   // 料理ごとに、最後に頼んだ日時（日時が無い古い記録は順番で代用）
@@ -2970,6 +2994,21 @@ input[type="time"].field{width:auto;min-width:140px}
         menuEl.appendChild(row);
       }
     });
+    if(filt && tagQuery.trim() && totalMatch === 0){   // 検索で0件：そのまま頼めるようにする
+      var q0 = tagQuery.trim(), nmb = el('div', 'nomatch');
+      nmb.appendChild(el('p', null, '「' + q0 + '」は献立にありません'));
+      var nbtn = el('button', 'mini', '＋「' + q0 + '」をそのまま頼む'); nbtn.type = 'button';
+      nbtn.addEventListener('click', function(){
+        var fd = $('free-dish'), v = q0;
+        if(fd.maxLength > 0) v = v.slice(0, fd.maxLength);
+        fd.value = fd.value.trim() ? fd.value.trim() + '、' + v : v;
+        tagQuery = ''; $('tag-search').value = '';
+        refresh(); render();
+        setTagNote('「' + v + '」を「表にない料理」として注文に加えました。');
+      });
+      nmb.appendChild(nbtn);
+      menuEl.insertBefore(nmb, menuEl.firstChild);
+    }
     renderFind();
     renderQuick();
     paintOmakase();
@@ -3520,6 +3559,7 @@ input[type="time"].field{width:auto;min-width:140px}
     if(lastFocus && lastFocus.focus) lastFocus.focus();
   }
   $('go').addEventListener('click', openSheet);
+  $('chat-close').addEventListener('click', function(){ $('chat').hidden = true; });
   $('sheet-back').addEventListener('click', closeSheet);
   scrim.addEventListener('click', function(e){ if(e.target === scrim) closeSheet(); });
   document.addEventListener('keydown', function(e){
@@ -3563,7 +3603,9 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
   function finishSend(text, sent){
-    $('chat-warn').textContent = sent ? '送りました。' : '試作のため、実際には送られていません。';
+    $('chat-h').textContent = sent ? '送りました' : '試作モード（送っていません）';
+    $('chat-warn').hidden = !!sent;
+    $('chat-warn').textContent = '試作のため、実際には送られていません。';
     try{
       var nowT = Date.now();
       var newHist = [];
@@ -3571,6 +3613,7 @@ input[type="time"].field{width:auto;min-width:140px}
       dishes.forEach(function(nm){ var he = snapFor(nm); he.t = nowT; he.w = whenBucket(); orderHist.push(he); newHist.push(he); });
       if(orderHist.length > 300) orderHist = orderHist.slice(orderHist.length - 300);
       saveHist(true); syncAppendHist(newHist); invalidateEaten();
+      if(mealCount() > 0) savePeople(daigoAuto ? 1 : people);   // 次回の初期値（大吾くんで自動的に増やした分は数えない）
     }catch(err){}
     var line = document.createElement('div'); line.className = 'bubble-line';
     line.innerHTML = catsHtml(mealCount() > 0, usual, shopCount() > 0, 36, 32);
@@ -3583,7 +3626,7 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = 1; daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = loadPeople(); daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
     $('free-dish').value = ''; $('memo').value = '';
     qty = {}; $('shop-other').value = ''; renderShop();
     $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
@@ -3604,7 +3647,10 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // LIFF SDK は LIFF_ID があるときだけ読み込む。失敗したら試作モードのまま。
   function initLiff(){
-    function status(t){ $('liff-status').textContent = 'LINE接続：' + t; }
+    function status(t){
+      var e = $('liff-status'); e.textContent = 'LINE接続：' + t;
+      e.hidden = !(DEBUG || /失敗|読み込めません/.test(t));   // ふだんは隠す。エラーのときだけ出す
+    }
     try{
       if(new URLSearchParams(location.search).get('proto') === '1'){ status('確認用の試作モード'); liffDone(); return; }
     }catch(e){}
@@ -3767,7 +3813,7 @@ input[type="time"].field{width:auto;min-width:140px}
     else if(state === 'on') t = '献立の共有：オン（最終同期 ' + syncLast + '）';
     else if(state === 'err') t = '献立の共有：エラー（通信できませんでした。あとで自動でやり直します）';
     else if(state === 'loadfail') t = '共有の献立を読み込めませんでした（この端末の献立で表示しています）';
-    var e = $('sync-status'); e.hidden = false; e.textContent = t;
+    var e = $('sync-status'); e.hidden = !(DEBUG || state === 'err' || state === 'loadfail'); e.textContent = t;
   }
   function syncOk(){
     var d = new Date();
@@ -4004,16 +4050,16 @@ input[type="time"].field{width:auto;min-width:140px}
     if(o.canceled) return false;
     return KINDS.some(function(k){ return hasKind(o, k) && stOf(o, k) !== 'done'; });
   }
-  var ordUi = { id: '', mode: '', err: '', sending: false };   // 「片付ける」「取り消しを伝える」の確認中の注文
+  var ordUi = { id: '', mode: '', err: '', sending: false };   // 「一覧から消す」「取り消しを伝える」の確認中の注文
   function ordUiClear(){ ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders(); }
   function cancelText(o){ return '🐈 松永便｜' + shortTarget(o) + 'のご依頼\n先ほどのお願いは取り消しです🙏\nお手数をおかけしました。'; }
   function ordArchive(o){
     ordUi.sending = true; ordUi.err = ''; renderOrders();
     syncPost({ action: 'archiveOrder', id: o.id }).then(function(res){
-      if(!res || !res.ok) throw new Error((res && res.error) || '片付けられませんでした');
+      if(!res || !res.ok) throw new Error((res && res.error) || '消せませんでした');
       ordersData = ordersData.filter(function(x){ return x.id !== o.id; });
       ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders();
-    }).catch(function(e){ ordUi.sending = false; ordUi.err = '片付けられませんでした（' + ((e && e.message) || '通信エラー') + '）'; renderOrders(); });
+    }).catch(function(e){ ordUi.sending = false; ordUi.err = '消せませんでした（' + ((e && e.message) || '通信エラー') + '）'; renderOrders(); });
   }
   function ordCancel(o){
     ordUi.sending = true; ordUi.err = ''; renderOrders();
@@ -4074,7 +4120,7 @@ input[type="time"].field{width:auto;min-width:140px}
       cb.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'cancel', err: '', sending: false }; renderOrders(); });
       tools.appendChild(cb);
     }
-    var ab = el('button', 'mini sub ord-tool', '片付ける'); ab.type = 'button';
+    var ab = el('button', 'mini sub ord-tool', '一覧から消す'); ab.type = 'button';
     ab.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'archive', err: '', sending: false }; renderOrders(); });
     tools.appendChild(ab);
     top.appendChild(tools);
