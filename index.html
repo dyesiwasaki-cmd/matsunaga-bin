@@ -466,6 +466,12 @@ input[type="time"].field{width:auto;min-width:140px}
 #tag-add-panel .row{margin-top:8px}
 .aimark{margin-left:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px;background:var(--accent);color:var(--accent-fg)}
 .head-btns{display:flex;align-items:center;gap:6px;flex:none}
+.chip-flash{outline:4px solid var(--accent);outline-offset:2px;background:var(--accent-soft) !important}
+@media (prefers-reduced-motion:no-preference){.chip-flash{animation:flashpulse .6s ease-in-out 3}}
+@keyframes flashpulse{50%{transform:scale(1.08)}}
+.da-group{margin:8px 0;padding:8px;border:1px dashed var(--line);border-radius:6px;background:var(--surface)}
+.da-group .field{margin:6px 0}
+#dish-add-panel .chips{margin:4px 0}
 .sort-wrap{position:relative;display:inline-block}
 .sort-pop{position:absolute;right:0;top:100%;z-index:15;min-width:12em;margin-top:4px;padding:4px;border:2px solid var(--accent);border-radius:8px;background:var(--surface);box-shadow:0 6px 16px var(--shadow)}
 .sort-pop[hidden]{display:none}
@@ -633,8 +639,9 @@ input[type="time"].field{width:auto;min-width:140px}
     <section class="sec">
       <div class="sec-head">
         <h2 id="menu-h">献立をお選びください（複数可）</h2>
-        <div class="head-btns"><span class="sort-wrap"><button type="button" class="sort-btn" id="sort-toggle">並び：よく頼む順 ▾</button><div class="sort-pop" id="sort-pop" role="menu" aria-label="並び順" hidden></div></span></div>
+        <div class="head-btns"><button type="button" class="sort-btn" id="dish-add-open" aria-expanded="false">＋料理を追加</button><span class="sort-wrap"><button type="button" class="sort-btn" id="sort-toggle">並び：よく頼む順 ▾</button><div class="sort-pop" id="sort-pop" role="menu" aria-label="並び順" hidden></div></span></div>
       </div>
+      <div class="subbox" id="dish-add-panel" role="group" aria-label="料理を追加" hidden></div>
       <div class="undo" id="edit-undo" role="status" hidden>
         <span id="edit-undo-text"></span>
         <button type="button" class="mini sub" id="edit-undo-btn">元に戻す</button>
@@ -3156,8 +3163,232 @@ input[type="time"].field{width:auto;min-width:140px}
     showUndo('「' + name + '」を削除しました。');
     focusAdd(gi);
   }
-  // 新しい料理に、AI（共有用のGAS経由）で食材のタグを自動で付ける。失敗したら何もしない
+  // ---- 「＋料理を追加」（AIの提案つき。すべて直せる） ----
+  function normTags(arr){
+    var out = [];
+    (Array.isArray(arr) ? arr : []).forEach(function(t){ t = stripHash(t); if(t && t.length <= 16 && out.indexOf(t) < 0 && out.length < 6) out.push(t); });
+    return out;
+  }
+  function normMoods(arr){
+    var out = [], ok = MOOD_LIST.map(function(m){ return m[0]; });
+    (Array.isArray(arr) ? arr : []).forEach(function(m){ if(ok.indexOf(m) >= 0 && out.indexOf(m) < 0) out.push(m); });
+    return out;
+  }
+  function normSubGroups(arr){
+    var out = [], seen = {};
+    (Array.isArray(arr) ? arr : []).forEach(function(g){
+      if(!g || typeof g.label !== 'string' || !g.label.trim() || out.length >= 4) return;
+      var label = g.label.trim().slice(0, 20), opts = [];
+      (Array.isArray(g.options) ? g.options : []).forEach(function(o){ if(typeof o === 'string' && o.trim() && opts.length < 20 && opts.indexOf(o.trim().slice(0, 20)) < 0) opts.push(o.trim().slice(0, 20)); });
+      if(!opts.length || seen[label]) return;
+      seen[label] = true; out.push({ label: label, multi: !!g.multi, options: opts, showIf: null });
+    });
+    return out;
+  }
+  function aiDishCall(name){
+    var known = {};
+    allDishNames().forEach(function(nm){ tagsOf(nm).forEach(function(t){ known[t] = true; }); });
+    customTags.forEach(function(t){ known[t] = true; });
+    return syncPost({ action: 'aiDishInfo', dish: name, categories: menu.map(function(g){ return g[0]; }), knownTags: Object.keys(known).slice(0, 300), moods: MOOD_LIST.map(function(m){ return m[0]; }) });
+  }
+  // AIの提案（食材・気分・サブメニュー）を、まだ無いものにだけ付ける
+  function applyDishInfo(name, info){
+    var n = 0, t = normTags(info.tags), m = normMoods(info.moods), sg = normSubGroups(info.submenu);
+    if(t.length && !tagsOf(name).length){ tags[name] = t; saveTags(); n++; }
+    if(m.length && !moodsOf(name).length){ moods[name] = m; saveMoods(); n++; }
+    if(sg.length && !hasSub(name)){ sub[name] = sg; saveSub(); n++; }
+    return n;
+  }
+  var dishAdd = null;
+  function dishAddClose(){
+    dishAdd = null;
+    $('dish-add-panel').hidden = true; $('dish-add-panel').innerHTML = '';
+    $('dish-add-open').setAttribute('aria-expanded', 'false');
+  }
+  function flashDish(nm){
+    var cs = menuEl.querySelectorAll('.chip[data-v]');
+    for(var i = 0; i < cs.length; i++){
+      if(cs[i].dataset.v !== nm) continue;
+      var c = cs[i];
+      c.classList.add('chip-flash');
+      try{ c.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }catch(e){}
+      setTimeout(function(){ c.classList.remove('chip-flash'); }, 2000);
+      return;
+    }
+  }
+  function buildDishAdd(){
+    var st = dishAdd, panel = $('dish-add-panel');
+    panel.innerHTML = ''; panel.hidden = false;
+    panel.appendChild(el('p', 'sub-h', '料理を追加'));
+    var nl = el('label', 'sub-lab'); nl.appendChild(el('span', null, '料理名'));
+    var ni = el('input', 'field'); ni.type = 'text'; ni.maxLength = 20; ni.autocomplete = 'off'; ni.placeholder = '例：ビビンバ'; ni.value = st.name;
+    ni.addEventListener('input', function(){ st.name = ni.value; });
+    nl.appendChild(ni); panel.appendChild(nl);
+    var note = el('p', 'note'); note.setAttribute('role', 'status'); panel.appendChild(note);
+    var aiBtn = null;
+    if(SYNC_URL){
+      aiBtn = el('button', 'mini', 'AIに考えてもらう'); aiBtn.type = 'button';
+      aiBtn.addEventListener('click', function(){
+        var nm = st.name.trim();
+        if(!nm){ err.textContent = '料理名を入れてください。'; ni.focus(); return; }
+        if(st.loading) return;
+        err.textContent = ''; st.loading = true; aiBtn.disabled = true; note.textContent = 'AIが考えています…';
+        var my = ++st.seq;
+        aiDishCall(nm).then(function(res){
+          if(dishAdd !== st || my !== st.seq) return;
+          st.loading = false; aiBtn.disabled = false;
+          if(!res || !res.ok) throw new Error((res && res.error) || '');
+          if(!res.known){
+            st.known = false; note.textContent = 'AIにはこの料理が分かりませんでした。分類だけ選んでください。';
+          }else{
+            st.known = true;
+            st.cat = menu.some(function(g){ return g[0] === res.category; }) ? res.category : '';
+            st.tags = normTags(res.tags); st.moods = normMoods(res.moods);
+            st.sub = normSubGroups(res.submenu).map(function(g){ g.on = true; return g; });
+            note.textContent = 'AIの提案です。すべて直せます。' + (st.cat ? '' : '（分類は選んでください）');
+          }
+          paint();
+        }).catch(function(){
+          if(dishAdd !== st || my !== st.seq) return;
+          st.loading = false; aiBtn.disabled = false;
+          note.textContent = 'AIの提案を受け取れませんでした。手入力で進められます。';
+        });
+      });
+      panel.appendChild(aiBtn);
+    }
+    var fields = el('div', 'da-fields'); panel.appendChild(fields);
+    var err = el('p', 'note rv-err'); err.setAttribute('role', 'alert'); panel.appendChild(err);
+    var row = el('div', 'row');
+    var go = el('button', 'mini', '追加'); go.type = 'button';
+    var cn = el('button', 'mini sub', 'やめる'); cn.type = 'button';
+    go.addEventListener('click', function(){ if(!st.loading) submit(); });
+    cn.addEventListener('click', dishAddClose);
+    row.appendChild(go); row.appendChild(cn); panel.appendChild(row);
+
+    function chipsRow(parent, labels, isOn, onClick){
+      var r = el('div', 'chips');
+      labels.forEach(function(l){
+        var c = el('button', 'chip sub-chip', l[1]); c.type = 'button'; c.setAttribute('aria-pressed', isOn(l[0]) ? 'true' : 'false');
+        c.addEventListener('click', function(){ onClick(l[0]); });
+        r.appendChild(c);
+      });
+      parent.appendChild(r);
+    }
+    function addInput(parent, placeholder, onAdd, id){
+      var r = el('div', 'add-row'), i = el('input', 'field'); i.type = 'text'; i.maxLength = 20; i.autocomplete = 'off'; i.placeholder = placeholder;
+      if(id) i.dataset.daid = id;
+      var b = el('button', 'mini', '追加'); b.type = 'button';
+      function go2(){ var v = i.value.trim(); if(v){ onAdd(v); } }
+      b.addEventListener('click', go2);
+      i.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); go2(); } });
+      r.appendChild(i); r.appendChild(b); parent.appendChild(r);
+      return i;
+    }
+    function refocus(id){
+      var ins = fields.querySelectorAll('input[data-daid]');
+      for(var i = 0; i < ins.length; i++) if(ins[i].dataset.daid === id){ ins[i].focus(); return; }
+    }
+    function paint(){
+      fields.innerHTML = '';
+      fields.appendChild(el('p', 'sub-h', '分類'));
+      chipsRow(fields, menu.map(function(g){ return [g[0], g[0]]; }), function(c){ return st.cat === c; }, function(c){ st.cat = c; paint(); });
+      fields.appendChild(el('p', 'sub-h', '食材（押すと外れます）'));
+      var tr = el('div', 'chips');
+      st.tags.forEach(function(t){
+        var c = el('button', 'chip sub-chip', '#' + t + ' ×'); c.type = 'button'; c.setAttribute('aria-label', '食材「' + t + '」を外す');
+        c.addEventListener('click', function(){ st.tags.splice(st.tags.indexOf(t), 1); paint(); });
+        tr.appendChild(c);
+      });
+      if(!st.tags.length) tr.appendChild(el('span', 'note', 'まだありません'));
+      fields.appendChild(tr);
+      addInput(fields, '食材を足す（例：鶏肉）', function(v){ v = stripHash(v); if(v && st.tags.indexOf(v) < 0 && st.tags.length < 8) st.tags.push(v); paint(); refocus('tag'); }, 'tag');
+      fields.appendChild(el('p', 'sub-h', '気分'));
+      chipsRow(fields, MOOD_LIST.map(function(m){ return [m[0], m[1] + ' ' + m[0]]; }), function(m){ return st.moods.indexOf(m) >= 0; }, function(m){
+        var i = st.moods.indexOf(m); if(i >= 0) st.moods.splice(i, 1); else st.moods.push(m); paint();
+      });
+      fields.appendChild(el('p', 'sub-h', 'サブメニュー（選ぶと注文のとき続けて選べます）'));
+      st.sub.forEach(function(g, gi){
+        var card = el('div', 'da-group');
+        var cl = el('label', 'checkrow'), cb = el('input'); cb.type = 'checkbox'; cb.checked = !!g.on;
+        cb.addEventListener('change', function(){ g.on = cb.checked; });
+        cl.appendChild(cb); cl.appendChild(el('span', null, '入れる')); card.appendChild(cl);
+        var li = el('input', 'field'); li.type = 'text'; li.maxLength = 20; li.value = g.label; li.setAttribute('aria-label', '見出し');
+        li.addEventListener('input', function(){ g.label = li.value; });
+        card.appendChild(li);
+        chipsRow(card, [['0', '1つ選ぶ'], ['1', '複数選べる']], function(v){ return (v === '1') === !!g.multi; }, function(v){ g.multi = v === '1'; paint(); });
+        var or = el('div', 'chips');
+        g.options.forEach(function(o){
+          var c = el('button', 'chip sub-chip', o + ' ×'); c.type = 'button'; c.setAttribute('aria-label', '選択肢「' + o + '」を外す');
+          c.addEventListener('click', function(){ g.options.splice(g.options.indexOf(o), 1); paint(); });
+          or.appendChild(c);
+        });
+        card.appendChild(or);
+        addInput(card, '選択肢を足す', function(v){ if(g.options.indexOf(v) < 0 && g.options.length < 20) g.options.push(v); paint(); refocus('g' + gi); }, 'g' + gi);
+        fields.appendChild(card);
+      });
+      var ag = el('button', 'mini sub', '＋グループを足す'); ag.type = 'button';
+      ag.addEventListener('click', function(){ if(st.sub.length < 4){ st.sub.push({ label: '種類', multi: false, options: [], on: true }); paint(); } });
+      fields.appendChild(ag);
+    }
+    function submit(){
+      var nm = st.name.trim();
+      if(!nm){ err.textContent = '料理名を入れてください。'; ni.focus(); return; }
+      if(!st.cat){ err.textContent = '分類を選んでください。'; return; }
+      var gi = -1;
+      menu.forEach(function(g, i){ if(g[0] === st.cat) gi = i; });
+      if(gi < 0){ err.textContent = '分類が見つかりません。'; return; }
+      if(menu[gi][1].indexOf(nm) >= 0){ err.textContent = '「' + nm + '」は「' + st.cat + '」にすでにあります。'; return; }
+      hideUndo();
+      menu[gi][1].push(nm); saveMenu();
+      var t = st.tags.slice(); if(t.length){ tags[nm] = t; saveTags(); }
+      if(st.moods.length){ moods[nm] = st.moods.slice(); saveMoods(); }
+      var sg = [], seenL = {};
+      st.sub.forEach(function(g){
+        var label = String(g.label || '').trim();
+        if(g.on && label && g.options.length && !seenL[label]){ seenL[label] = true; sg.push({ label: label, multi: !!g.multi, options: g.options.slice(), showIf: null }); }
+      });
+      if(sg.length){ sub[nm] = sg; saveSub(); }
+      var cat = st.cat;
+      catOpen[cat] = true; saveCatOpen();
+      dishAddClose(); setMsg('');
+      render(); flashDish(nm);
+    }
+    paint();
+    ni.focus();
+  }
+  $('dish-add-open').addEventListener('click', function(){
+    if(dishAdd){ dishAddClose(); return; }
+    if(reorderAll || reorderCat){ setMsg('並び替え中は、料理を追加できません。'); return; }
+    dishAdd = { name: '', cat: '', tags: [], moods: [], sub: [], known: null, loading: false, seq: 0 };
+    this.setAttribute('aria-expanded', 'true');
+    buildDishAdd();
+  });
+  // 分類の「✎ 編集」から追加した料理：AIで食材・気分・サブメニューを付ける（分類は固定）。失敗したら食材だけ試す
   function aiTagNew(name){
+    if(!SYNC_URL) return;
+    if(tagsOf(name).length && moodsOf(name).length && hasSub(name)) return;
+    setMsg('AIが考えています…');
+    aiDishCall(name).then(function(res){
+      if(!menu.some(function(g){ return g[1].indexOf(name) >= 0; })) return;
+      if(res && res.ok){
+        var n = res.known ? applyDishInfo(name, res) : 0;
+        var msg = n ? 'AIが食材・気分・サブメニューを付けました（それぞれの編集から直せます）' : '';
+        setMsg(msg);
+        if(msg) setTimeout(function(){ if($('edit-msg').textContent === msg) setMsg(''); }, 6000);
+        if(n) aiRepaint();
+      }else{ setMsg(''); aiTagLegacy(name); }
+    }).catch(function(){ setMsg(''); });
+  }
+  function aiRepaint(){
+    var tries = 0;
+    (function paint(){
+      var ae = document.activeElement;
+      if(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && tries++ < 10){ setTimeout(paint, 1000); return; }   // 入力中は描き直さない
+      render();
+    })();
+  }
+  // 旧：食材だけをAIで付ける（aiDishInfo が使えないときの代わり）
+  function aiTagLegacy(name){
     if(!SYNC_URL || tagsOf(name).length) return;
     var known = {};
     allDishNames().forEach(function(nm){ tagsOf(nm).forEach(function(t){ known[t] = true; }); });
