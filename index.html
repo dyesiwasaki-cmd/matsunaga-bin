@@ -505,7 +505,17 @@ input[type="time"].field{width:auto;min-width:140px}
 .dview-title{margin:0 0 8px;font-size:17px}
 .dview-imgwrap{display:flex;justify-content:center;min-height:80px;border-radius:8px;background:var(--accent-soft)}
 .dview-imgwrap img{display:block;max-width:100%;max-height:55vh;object-fit:contain;border-radius:8px}
+.dview-imgwrap img[hidden]{display:none}
+.dview-noimg{display:flex;align-items:center;justify-content:center;width:100%;min-height:120px;padding:12px;color:var(--muted);font-size:15px}
+.dview-noimg[hidden]{display:none}
 .dview-by{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.dview-desc{margin:10px 0 0;font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.dview-desc.none{color:var(--muted);font-size:14px}
+.dview-descbtn{margin-top:6px;min-height:44px}
+.dview-descedit{margin-top:10px}
+.dview-descedit[hidden]{display:none}
+.dview-descedit textarea{display:block;width:100%;min-height:84px;padding:8px;border:2px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--fg);font:inherit;font-size:15px;line-height:1.5;resize:vertical}
+.dview-count{margin:4px 0 6px;font-size:12px;color:var(--muted);text-align:right}
 .dview-msg{margin:6px 0 0;min-height:1.4em;font-size:14px;color:var(--alert)}
 .dview-confirm{margin:8px 0 0;padding:8px;border:2px solid var(--alert);border-radius:8px;font-size:14px}
 .dview-confirm[hidden]{display:none}
@@ -828,8 +838,16 @@ input[type="time"].field{width:auto;min-width:140px}
 <div class="dview" id="dview" hidden>
   <div class="dview-box" role="dialog" aria-modal="true" aria-labelledby="dview-title">
     <h2 class="dview-title" id="dview-title"></h2>
-    <div class="dview-imgwrap"><img id="dview-img" alt=""></div>
+    <div class="dview-imgwrap"><img id="dview-img" alt=""><div class="dview-noimg" id="dview-noimg" hidden>📷 まだ写真がありません</div></div>
     <p class="dview-by" id="dview-by"></p>
+    <p class="dview-desc" id="dview-desc"></p>
+    <button type="button" class="mini sub dview-descbtn" id="dview-desc-edit">✎ 説明を直す</button>
+    <div class="dview-descedit" id="dview-descedit" hidden>
+      <label for="dview-desc-in" class="dview-by">説明（120字まで）</label>
+      <textarea id="dview-desc-in" maxlength="120" rows="3"></textarea>
+      <p class="dview-count" id="dview-desc-count" aria-live="off"></p>
+      <div class="btns"><button type="button" class="btn sub" id="dview-desc-cancel">やめる</button><button type="button" class="btn main" id="dview-desc-save">保存</button></div>
+    </div>
     <p class="dview-msg" id="dview-msg" role="status"></p>
     <div class="dview-confirm" id="dview-confirm" hidden>
       <span>この写真を消しますか？（元には戻せません）</span>
@@ -907,7 +925,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 46;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 47;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -1532,6 +1550,7 @@ input[type="time"].field{width:auto;min-width:140px}
   var IMG_BASE = SYNC_URL ? SYNC_URL.replace(/\/store(\?.*)?$/, '/img?id=') : '';
   var IMG_LONG = 800, IMG_QUALITY = [0.8, 0.65, 0.5], IMG_MAX_BYTES = 400 * 1024, IMG_FILE_MAX = 30 * 1024 * 1024;
   var IMG_TEST = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD431b/AJCt7/12f/0I0UUV/aGV/wC4UP8ABH/0lHlZj/vtb/FL82f/2Q==';   // 向き(EXIF=6)つきの2x1画像。自動で向きが直る環境かを調べる用
+  var DESC_KEY = 'otetsudai-desc-v1', DESC_MAX = 120, descMap = {}, descVer = 0, descBusy = false, descEditing = false;
   var imgMap = {}, imgVer = 0, imgAuto = null, dimgTarget = '', dimgBusy = false, dviewName = '', dviewOpener = null, dimgToastTimer = 0;
   function imgInfo(name){ return Object.prototype.hasOwnProperty.call(imgMap, name) && imgMap[name] && typeof imgMap[name] === 'object' ? imgMap[name] : null; }
   function imgSrc(info){ return IMG_BASE && info && /^[0-9a-f]{32}$/.test(String(info.id)) ? IMG_BASE + info.id : ''; }
@@ -1555,8 +1574,8 @@ input[type="time"].field{width:auto;min-width:140px}
       b.title = '画像を大きく見る';
     }else{
       b.textContent = '📷';
-      b.setAttribute('aria-label', name + 'の写真を登録');
-      b.title = '写真を登録';
+      b.setAttribute('aria-label', name + 'の画像・説明を開く（写真を登録できます）');
+      b.title = '写真を登録・説明を見る';
     }
   }
   function dishThumb(name){
@@ -1566,7 +1585,7 @@ input[type="time"].field{width:auto;min-width:140px}
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function(ev){ b.addEventListener(ev, function(e){ e.stopPropagation(); }); });
     b.addEventListener('click', function(e){
       e.preventDefault(); e.stopPropagation();
-      if(imgSrc(imgInfo(name))) openImgView(name, b); else pickImg(name);
+      openImgView(name, b);
     });
     paintThumb(b);
     return b;
@@ -1583,26 +1602,39 @@ input[type="time"].field{width:auto;min-width:140px}
     imgVer = v; imgMap = im.value;
     imgRefresh();
   }
+  function descOf(name){ return Object.prototype.hasOwnProperty.call(descMap, name) && typeof descMap[name] === 'string' ? descMap[name] : ''; }
+  function descApplyShared(r){
+    if(!r || typeof r !== 'object' || !r.value || typeof r.value !== 'object' || Array.isArray(r.value)) return;
+    var v = Number(r.version) || 0;
+    if(v <= descVer) return;
+    descVer = v; descMap = r.value;
+    if(!$('dview').hidden) paintView();
+  }
   // 大きく表示
   function paintView(){
     var name = dviewName, info = imgInfo(name), src = imgSrc(info);
     $('dview-title').textContent = name;
     var im = $('dview-img');
     if((im.getAttribute('src') || '') !== src){ im.onerror = function(){ $('dview-msg').textContent = '画像を読み込めませんでした'; }; if(src) im.src = src; else im.removeAttribute('src'); }
+    im.hidden = !src; $('dview-noimg').hidden = !!src;
+    var ds = descOf(name), dp = $('dview-desc');
+    dp.textContent = ds || 'この料理の説明はまだありません'; dp.classList.toggle('none', !ds);
+    $('dview-desc-edit').textContent = ds ? '✎ 説明を直す' : '✎ 説明を書く';
+    $('dview-desc').hidden = descEditing; $('dview-desc-edit').hidden = descEditing; $('dview-descedit').hidden = !descEditing;
     $('dview-by').textContent = info ? (info.src === 'photo' ? '📷 登録した写真' : '🌐 Web の画像') + (info.by ? '（' + info.by + 'さん）' : '') : '画像はありません';
     $('dview-pick').textContent = info ? '📷 差し替え' : '📷 写真を登録';
     $('dview-del').hidden = !info;
   }
   function openImgView(name, opener){
     dviewName = name; dviewOpener = opener || null;
-    $('dview-msg').textContent = ''; $('dview-confirm').hidden = true;
+    $('dview-msg').textContent = ''; $('dview-confirm').hidden = true; descEditing = false;
     $('dview-img').removeAttribute('src');
     paintView();
     $('dview').hidden = false;
     $('dview-close').focus();
   }
   function closeImgView(){
-    $('dview').hidden = true; $('dview-confirm').hidden = true; $('dview-img').removeAttribute('src');
+    $('dview').hidden = true; $('dview-confirm').hidden = true; descEditing = false; $('dview-img').removeAttribute('src');
     var o = dviewOpener; dviewOpener = null;
     try{ if(o && document.contains(o) && !o.hidden) o.focus(); }catch(e){}
   }
@@ -1709,7 +1741,6 @@ input[type="time"].field{width:auto;min-width:140px}
       dimgBusy = false;
       if(res && res.ok && res.id){
         imgMap = Object.assign({}, imgMap); imgMap[name] = { id: res.id, src: 'photo', by: by, at: new Date().toISOString() };
-        if(Number(res.version) > imgVer) imgVer = Number(res.version);
         imgRefresh(); imgToast('登録しました');
       }else imgToast('登録できませんでした' + (res && res.auth === false ? '。LINEのトークから開き直してください' : ''));
     }).catch(function(e){
@@ -1724,7 +1755,6 @@ input[type="time"].field{width:auto;min-width:140px}
       dimgBusy = false;
       if(res && res.ok){
         imgMap = Object.assign({}, imgMap); delete imgMap[name];
-        if(Number(res.version) > imgVer) imgVer = Number(res.version);
         imgRefresh(); closeImgView(); imgToast('消しました');
       }else{ $('dview-confirm').hidden = true; $('dview-msg').textContent = '消せませんでした' + (res && res.auth === false ? '。LINEのトークから開き直してください' : ''); }
     }).catch(function(){ dimgBusy = false; $('dview-confirm').hidden = true; $('dview-msg').textContent = '消せませんでした。通信を確かめてください'; });
@@ -1734,6 +1764,35 @@ input[type="time"].field{width:auto;min-width:140px}
     if(f && dimgTarget) imgUpload(dimgTarget, f);
     this.value = '';
   });
+  // 説明：1料理だけをサーバーに送る（サーバーが読み直して、その料理だけ書き換える。ほかの料理の説明は消えない）
+  function saveDesc(name, text){
+    return syncPost({ action: 'setDesc', dish: name, text: text }).then(function(res){
+      if(res && res.ok){
+        descMap = Object.assign({}, descMap);
+        if(text) descMap[name] = text; else delete descMap[name];
+        return res;
+      }
+      throw new Error((res && res.auth === false) ? 'LINEのトークから開き直してください' : (res && res.error) || '');
+    });
+  }
+  function descEditOpen(){
+    descEditing = true; paintView();
+    var ta = $('dview-desc-in'); ta.value = descOf(dviewName); descCount();
+    ta.focus();
+  }
+  function descCount(){ var n = $('dview-desc-in').value.length; $('dview-desc-count').textContent = n + ' / ' + DESC_MAX + '字'; }
+  function descEditClose(){ descEditing = false; paintView(); $('dview-desc-edit').focus(); }
+  $('dview-desc-edit').addEventListener('click', descEditOpen);
+  $('dview-desc-in').addEventListener('input', descCount);
+  $('dview-desc-cancel').addEventListener('click', descEditClose);
+  $('dview-desc-save').addEventListener('click', function(){
+    if(descBusy) return;
+    var name = dviewName, text = $('dview-desc-in').value.trim();
+    if(text.length > DESC_MAX){ $('dview-msg').textContent = '説明は' + DESC_MAX + '字までです'; return; }
+    descBusy = true; $('dview-msg').textContent = '';
+    saveDesc(name, text).then(function(){ descBusy = false; if(dviewName === name) descEditClose(); imgToast('説明を保存しました'); })
+      .catch(function(e){ descBusy = false; $('dview-msg').textContent = '保存できませんでした' + (e && e.message ? '（' + e.message + '）' : '。通信を確かめてください'); });
+  });
   $('dview-close').addEventListener('click', closeImgView);
   $('dview').addEventListener('click', function(e){ if(e.target === this) closeImgView(); });
   $('dview-pick').addEventListener('click', function(){ pickImg(dviewName); });
@@ -1742,9 +1801,9 @@ input[type="time"].field{width:auto;min-width:140px}
   $('dview-del-yes').addEventListener('click', function(){ imgDelete(dviewName); });
   document.addEventListener('keydown', function(e){
     if($('dview').hidden) return;
-    if(e.key === 'Escape'){ e.preventDefault(); closeImgView(); return; }
+    if(e.key === 'Escape'){ e.preventDefault(); if(descEditing) descEditClose(); else closeImgView(); return; }
     if(e.key === 'Tab'){
-      var bs = Array.prototype.filter.call($('dview').querySelectorAll('button'), function(b){ return !b.hidden && !b.closest('[hidden]'); });
+      var bs = Array.prototype.filter.call($('dview').querySelectorAll('button, textarea'), function(b){ return !b.hidden && !b.closest('[hidden]'); });
       if(!bs.length) return;
       var i = bs.indexOf(document.activeElement);
       if(e.shiftKey && i <= 0){ e.preventDefault(); bs[bs.length - 1].focus(); }
@@ -3838,6 +3897,8 @@ input[type="time"].field{width:auto;min-width:140px}
     if(t.length && !tagsOf(name).length){ tags[name] = t; saveTags(); n++; }
     if(m.length && !moodsOf(name).length){ moods[name] = m; saveMoods(); n++; }
     if(sg.length && !hasSub(name)){ sub[name] = sg; saveSub(); n++; }
+    var ds = typeof info.description === 'string' ? info.description.trim().slice(0, DESC_MAX) : '';
+    if(ds && !descOf(name) && SYNC_URL) saveDesc(name, ds).catch(function(){});
     return n;
   }
   var dishAdd = null;
@@ -3865,6 +3926,10 @@ input[type="time"].field{width:auto;min-width:140px}
     var ni = el('input', 'field'); ni.type = 'text'; ni.maxLength = 20; ni.autocomplete = 'off'; ni.placeholder = '例：ビビンバ'; ni.value = st.name;
     ni.addEventListener('input', function(){ st.name = ni.value; });
     nl.appendChild(ni); panel.appendChild(nl);
+    var dl = el('label', 'sub-lab'); dl.appendChild(el('span', null, '説明（空でもOK・' + DESC_MAX + '字まで）'));
+    var di = el('input', 'field'); di.type = 'text'; di.maxLength = DESC_MAX; di.autocomplete = 'off'; di.placeholder = '例：ご飯の上に具をのせて混ぜて食べる韓国料理'; di.value = st.desc || '';
+    di.addEventListener('input', function(){ st.desc = di.value; });
+    dl.appendChild(di); panel.appendChild(dl);
     var note = el('p', 'note'); note.setAttribute('role', 'status'); panel.appendChild(note);
     var aiBtn = null;
     if(SYNC_URL){
@@ -3886,6 +3951,7 @@ input[type="time"].field{width:auto;min-width:140px}
             st.cat = menu.some(function(g){ return g[0] === res.category; }) ? res.category : '';
             st.tags = normTags(res.tags); st.moods = normMoods(res.moods);
             st.sub = normSubGroups(res.submenu).map(function(g){ g.on = true; return g; });
+            if(!String(st.desc || '').trim() && typeof res.description === 'string' && res.description.trim()){ st.desc = res.description.trim().slice(0, DESC_MAX); di.value = st.desc; }
             note.textContent = 'AIの提案です。すべて直せます。' + (st.cat ? '' : '（分類は選んでください）');
           }
           paint();
@@ -3989,6 +4055,8 @@ input[type="time"].field{width:auto;min-width:140px}
         if(g.on && label && g.options.length && !seenL[label]){ seenL[label] = true; sg.push({ label: label, multi: !!g.multi, options: g.options.slice(), showIf: null }); }
       });
       if(sg.length){ sub[nm] = sg; saveSub(); }
+      var dtext = String(st.desc || '').trim().slice(0, DESC_MAX);
+      if(dtext && SYNC_URL) saveDesc(nm, dtext).catch(function(){ imgToast('説明は保存できませんでした。あとで直せます'); });
       var cat = st.cat;
       catOpen[cat] = true; saveCatOpen();
       dishAddClose(); setMsg('');
@@ -4000,7 +4068,7 @@ input[type="time"].field{width:auto;min-width:140px}
   $('dish-add-open').addEventListener('click', function(){
     if(dishAdd){ dishAddClose(); return; }
     if(reorderAll || reorderCat){ setMsg('並び替え中は、料理を追加できません。'); return; }
-    dishAdd = { name: '', cat: '', tags: [], moods: [], sub: [], known: null, loading: false, seq: 0 };
+    dishAdd = { name: '', desc: '', cat: '', tags: [], moods: [], sub: [], known: null, loading: false, seq: 0 };
     this.setAttribute('aria-expanded', 'true');
     buildDishAdd();
   });
@@ -4971,7 +5039,7 @@ input[type="time"].field{width:auto;min-width:140px}
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data){
         if(!data || typeof data !== 'object' || data.ok === false) throw new Error('bad response');
-        try{ imgApplyShared(data[IMG_KEY]); }catch(e){}
+        try{ imgApplyShared(data[IMG_KEY]); descApplyShared(data[DESC_KEY]); }catch(e){}
         var ae = document.activeElement, typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
         if(!first && (typing || rdDrag || $('scrim').classList.contains('open'))){ syncOk(); return; }   // 入力中・確認中は次回に回す
         var changed = false;
