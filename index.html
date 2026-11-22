@@ -1018,7 +1018,7 @@ input[type="time"].field{width:auto;min-width:140px}
   // LINE Developers で作った LIFF アプリの「LIFF ID」をここに入れると、「送る」で実際に LINE へ送信されます。
   // 空のままなら、従来どおり送信プレビューだけの「試作モード」で動きます（LIFF ID は公開して問題ない値です）。
   var LIFF_ID = '2012740410-E7o8LimO';
-  var APP_VER = 55;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
+  var APP_VER = 56;   // 画面の版。公開する時は、リポジトリ直下の version.json の v と同じ番号で1つ上げる
   var sendMode = 'proto';   // 'chat'=トークへ直接送信 / 'proto'=試作モード
   var sending = false;
   var DEBUG = false;   // ?debug=1 のときだけ、接続・共有の状態の行をいつも表示する
@@ -3337,7 +3337,57 @@ input[type="time"].field{width:auto;min-width:140px}
     if(when === '時間指定'){ var m = /^(\d{1,2}):/.exec($('meal-time').value || ''); if(m) h = +m[1]; }
     return hourBucket(h);
   }
+  // 履歴が少なくても、4〜5品は出す。履歴から選べる分を優先し、足りない分を「時間帯に合う分類」「旬の料理」で補う（AI は使わない）
+  var REC_CATS = { '朝': ['ご飯もの', '汁物', '副菜'], '昼': ['麺類', '丼もの'], '夜': ['和食', '洋食', '中華', '韓国', '鍋'] };
+  var REC_WHY = { '朝': '朝ごはんにどうぞ', '昼': 'お昼にどうぞ', '夜': '夜の定番' };
+  function recSupplement(out){
+    var DAY = 86400000, now = Date.now(), bucket = whenBucket(), day = jstToday();
+    var seed = String(day.y * 10000 + day.m * 100 + day.d) + bucket;
+    var used = {}, recent = {}, shown = {}, cat = {};
+    out.forEach(function(o){ used[o.e.name] = true; });
+    orderHist.forEach(function(e){ if(typeof e.t === 'number' && e.t > now - 2 * DAY) recent[e.name] = true; });   // 直近2日に頼んだ料理は入れない
+    var sp = shunPick(shunMonth());
+    sp.dishes.forEach(function(nm){ shown[nm] = true; });   // 「今が旬」の段に出ている料理とは重ねない
+    menu.forEach(function(g){ g[1].forEach(function(nm){ if(!Object.prototype.hasOwnProperty.call(cat, nm)) cat[nm] = g[0]; }); });
+    var haveDesc = Object.keys(descMap).length > 0;   // 説明がまだ読めていない間は、説明の有無で外さない
+    function okName(nm){
+      var c = cat[nm] || '';
+      if(used[nm] || recent[nm] || shown[nm] || !c || c === '果物' || c.indexOf('スイーツ') === 0) return false;
+      if(haveDesc && !descOf(nm)) return false;   // 家族が付けた名前の料理（説明が空）は入れない
+      return true;
+    }
+    function byHash(a, b){ return (strHash(a + seed) - strHash(b + seed)) || (a < b ? -1 : 1); }
+    var need = 5 - out.length;
+    var cs0 = REC_CATS[bucket] || REC_CATS['夜'];   // 旬の料理は、まず時間帯に合う分類から（日付と時間帯で入れ替わる）
+    var seasonal = sp.all.filter(function(x){ return okName(x.nm); }).sort(function(a, b){
+      var ia = cs0.indexOf(cat[a.nm]) >= 0 ? 0 : 1, ib = cs0.indexOf(cat[b.nm]) >= 0 ? 0 : 1;
+      return (ia - ib) || byHash(a.nm, b.nm);
+    });
+    var nSeason = Math.min(need >= 3 ? 2 : 1, seasonal.length);
+    for(var i = 0; i < nSeason; i++){
+      used[seasonal[i].nm] = true;
+      out.push({ e: { name: seasonal[i].nm, sel: {}, other: {} }, why: '今が旬（' + seasonal[i].ht[0] + '）' });
+    }
+    var cs = REC_CATS[bucket] || REC_CATS['夜'];
+    var names = Object.keys(cat).filter(okName);
+    var pool = names.filter(function(nm){ return cs.indexOf(cat[nm]) >= 0; });
+    pool.sort(function(a, b){
+      var la = bucket === '朝' && (moodsOf(a).indexOf('軽め') >= 0 || moodsOf(a).indexOf('やさしい') >= 0) ? 0 : 1;
+      var lb = bucket === '朝' && (moodsOf(b).indexOf('軽め') >= 0 || moodsOf(b).indexOf('やさしい') >= 0) ? 0 : 1;
+      return (la - lb) || byHash(a, b);
+    });
+    pool.forEach(function(nm){ if(out.length < 5 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
+    if(out.length < 4){   // 分類の候補が足りない時は、ほかの主菜で埋める
+      names.sort(byHash).forEach(function(nm){ if(out.length < 4 && !used[nm]){ used[nm] = true; out.push({ e: { name: nm, sel: {}, other: {} }, why: REC_WHY[bucket] }); } });
+    }
+    return out;
+  }
   function recommend(){
+    var out = recommendHist();
+    if(out.length >= 4) return out;
+    return recSupplement(out).slice(0, 5);
+  }
+  function recommendHist(){
     if(orderHist.length < 5) return [];
     var DAY = 86400000, now = Date.now(), bucket = whenBucket();
     var info = {}, order = [];
@@ -3407,10 +3457,10 @@ input[type="time"].field{width:auto;min-width:140px}
       var hit = tagsOf(nm).filter(function(t){ return ts.indexOf(t) >= 0; });
       if(!hit.length) return;
       hit.forEach(function(t){ tagCnt[t] = (tagCnt[t] || 0) + 1; });
-      list.push({ nm: nm, hit: hit.length, key: Math.min(hc[nm] || 0, 30) * 3 + strHash(nm + seed) % 4 });
+      list.push({ nm: nm, hit: hit.length, ht: hit, key: Math.min(hc[nm] || 0, 30) * 3 + strHash(nm + seed) % 4 });
     }); });
     list.sort(function(a, b){ return (b.hit - a.hit) || (b.key - a.key) || (a.nm < b.nm ? -1 : 1); });
-    return { tags: ts.filter(function(t){ return tagCnt[t] > 0; }).map(function(t){ return [t, tagCnt[t]]; }), dishes: list.slice(0, 8).map(function(x){ return x.nm; }), total: list.length };
+    return { tags: ts.filter(function(t){ return tagCnt[t] > 0; }).map(function(t){ return [t, tagCnt[t]]; }), dishes: list.slice(0, 8).map(function(x){ return x.nm; }), total: list.length, all: list };
   }
   function renderShun(){
     var sec = $('shun'); if(!sec) return;
@@ -3461,9 +3511,10 @@ input[type="time"].field{width:auto;min-width:140px}
     renderShun();
     var sec = $('quick');
     var empty = !favs.length && !orderHist.length;
-    sec.hidden = (empty && $('fav-undo').hidden);
+    var rcs = recommend();
+    sec.hidden = (empty && $('fav-undo').hidden && !rcs.length);
     // 今日のおすすめ
-    var rcs = recommend(), rcr = $('rec-row'); rcr.innerHTML = '';
+    var rcr = $('rec-row'); rcr.innerHTML = '';
     rcs.forEach(function(r){ rcr.appendChild(qCard(r.e, 'rec', r.why)); });
     $('quick-rec').hidden = !rcs.length;
     // お気に入り
