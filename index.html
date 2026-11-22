@@ -239,6 +239,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ord-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .ord-top .ord-h{flex:1;min-width:0}
 .ord-tools{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.ord-sum{margin:2px 0 6px;font-size:14px;line-height:1.5;color:var(--fg);overflow-wrap:anywhere}
+.ord-sum span{display:block}
+.ord-time{font-size:12px;font-weight:400;color:var(--muted);white-space:nowrap}
+.ord-reply-btn{margin-top:6px}
+.draft-note{margin:0 0 10px;font-size:12px;color:var(--muted)}
+.draft-note .tiny{min-height:28px;padding:0 10px;font-size:12px}
+@media (max-width:480px){
+  .ord-top{flex-wrap:wrap}
+  .ord-top .ord-h{flex:1 1 100%}
+  .ord-tools{justify-content:flex-start}
+  .tag-find-head{flex-wrap:wrap}
+  .tag-find-head h2{white-space:nowrap}
+  .tag-find-tools{justify-content:flex-start}
+  .edit-item:has(.subbtn){display:flex;flex-wrap:wrap;width:100%}
+  .edit-item:has(.subbtn) .name-btn{flex:1 1 100%}
+  .edit-item:has(.subbtn) .subbtn{flex:1 1 0;min-height:40px;border-left:0;border-top:2px dashed var(--muted)}
+  .edit-item:has(.subbtn) .subbtn + .subbtn{border-left:2px dashed var(--muted)}
+  .edit-item:has(.subbtn) .del{flex:0 0 56px;min-height:40px;border-top:2px dashed var(--muted)}
+}
 .ord-tool{min-height:32px;padding:2px 8px;font-size:12px}
 .ord.canceled{background:var(--disabled-bg,#e0e0e0);color:var(--muted)}
 .ord-cancel{margin:2px 0;font-weight:700;color:var(--muted)}
@@ -270,7 +289,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rv-manual{min-height:40px}
 .st-wait{color:var(--accent)}
 .rv-missing{outline:3px solid var(--bad,#c62828);outline-offset:2px;border-radius:6px}
-.sheet .btns{position:sticky;bottom:0;z-index:2;margin-bottom:calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 0 calc(8px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -8px 8px -8px var(--shadow)}
+.sheet .btns{position:sticky;bottom:calc(-1 * (16px + env(safe-area-inset-bottom,0px)));z-index:2;margin-bottom:0;padding:10px 0 calc(8px + 16px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -8px 8px -8px var(--shadow)}
 .ord .rv-btn{margin:8px 0}
 .rv-prev,.ord-prev{margin:2px 0 6px;font-size:12px;color:var(--muted)}
 .ord-items{margin:2px 0 0;font-size:13px;overflow-wrap:anywhere}
@@ -364,7 +383,11 @@ body.reply-mode .bar,body.reply-mode .totop{display:none !important}
 .seg .chip[aria-pressed="true"]{padding-left:14px}
 .seg .chip{white-space:nowrap;min-width:0}
 @media (max-width:420px){
-  #when-group,#clean-when{gap:5px}
+  #when-group,#clean-when,#sb-when,#sb-cwhen{gap:5px}
+  #when-group .chip,#clean-when .chip,#sb-when .chip,#sb-cwhen .chip{flex:1 1 auto}   /* 文字の長さに合わせて幅を取る（時間指定が切れない） */
+  #sb-when .chip,#sb-cwhen .chip{padding-left:4px;padding-right:4px;font-size:14px}
+  #sb-when .chip[aria-pressed="true"],#sb-cwhen .chip[aria-pressed="true"]{padding-left:4px}
+  #sb-when .chip[aria-pressed="true"]::before,#sb-cwhen .chip[aria-pressed="true"]::before{margin-right:4px}
   #clean-when .chip{padding-left:4px;padding-right:4px;font-size:14px}
   #clean-when .chip[aria-pressed="true"]{padding-left:4px}
   #clean-when .chip[aria-pressed="true"]::before{margin-right:4px}
@@ -575,6 +598,7 @@ input[type="time"].field{width:auto;min-width:140px}
   <button type="button" class="theme-btn" id="theme-btn"></button>
   </div>
   <p class="lead">お手伝いさんへのお願いを、こちらからお送りいたします。</p>
+  <p class="draft-note" id="draft-note" hidden>前回の続きです <button type="button" class="mini sub tiny" id="draft-clear">消す</button></p>
 
   <div class="sec" id="orders-card" hidden></div>
   <div id="reply-view" hidden></div>
@@ -4335,6 +4359,23 @@ input[type="time"].field{width:auto;min-width:140px}
   $('sheet-send').addEventListener('click', function(){ startSend(true); });
   $('sheet-nolink').addEventListener('click', function(){ startSend(false); });
 
+  // 頼む画面の選択を、すべて空に戻す
+  function resetSelections(){
+    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = loadPeople(); daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
+    $('free-dish').value = ''; $('memo').value = '';
+    qty = {}; $('shop-other').value = ''; renderShop();
+    $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
+    Array.prototype.forEach.call(document.querySelectorAll('.chip[aria-pressed]'), function(x){
+      var on = x.id === 'when-now';
+      x.setAttribute('aria-pressed', 'false');
+      if(x.closest('#when-group')){ x.setAttribute('aria-pressed', on?'true':'false'); x.setAttribute('aria-checked', on?'true':'false'); }
+    });
+    $('meal-time-row').hidden = true;
+    setDay(false);
+    render();
+    setCleanMode('now');
+    refresh();
+  }
   // 送信後の表示（プレビュー）と選択のリセット。sent=true は LINE へ送信済み
   function finishSend(text, sent, oid){
     $('chat-h').textContent = sent ? '送りました' : '試作モード（送っていません）';
@@ -4363,20 +4404,8 @@ input[type="time"].field{width:auto;min-width:140px}
     $('chat').hidden = false;
 
     // 選択をリセット
-    dishes = []; subSel = {}; subOther = {}; usual = false; $('usual-clean').setAttribute('aria-pressed','false'); omakase = false; omakaseMoods = []; omakaseOther = ''; paintOmakase(); people = loadPeople(); daigo = false; daigoAuto = false; $('daigo').setAttribute('aria-pressed','false'); when = 'すぐに';
-    $('free-dish').value = ''; $('memo').value = '';
-    qty = {}; $('shop-other').value = ''; renderShop();
-    $('meal-time').value = '19:00'; $('clean-time').value = '17:00';
-    Array.prototype.forEach.call(document.querySelectorAll('.chip[aria-pressed]'), function(x){
-      var on = x.id === 'when-now';
-      x.setAttribute('aria-pressed', 'false');
-      if(x.closest('#when-group')){ x.setAttribute('aria-pressed', on?'true':'false'); x.setAttribute('aria-checked', on?'true':'false'); }
-    });
-    $('meal-time-row').hidden = true;
-    setDay(false);
-    render();
-    setCleanMode('now');
-    refresh();
+    resetSelections();
+    clearDraft();
     scrim.classList.remove('open');
     lastFocus = null;
     $('chat').scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center'});
@@ -4575,7 +4604,11 @@ input[type="time"].field{width:auto;min-width:140px}
     clearTimeout(syncTimer);
     syncTimer = setTimeout(syncFlush, 1000);
   }
+  // サーバーでの本人確認用に、LINE のアクセストークンを付ける（LINE の外・試作では付かない）。ログや画面には出さない
+  function authToken(){ try{ return (window.liff && window.liff.getAccessToken && window.liff.getAccessToken()) || ''; }catch(e){ return ''; } }
   function syncPost(obj){
+    var tk = authToken();
+    if(tk) obj = Object.assign({}, obj, { accessToken: tk });
     return fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(obj) })
       .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
@@ -4793,9 +4826,27 @@ input[type="time"].field{width:auto;min-width:140px}
 
   // ---- 「今日のお願い」カード（通常画面） ----
   function ordersEnabled(){ return !!SYNC_URL && !replyId && liffReady && (sendMode === 'chat' || isProtoUrl()); }
+  // 頼んだ本人かどうか（依頼作成時と同じ仕組み＝ユーザーIDのハッシュ）。判定が終わる前は、ボタンを出さない
+  var myHashPending = false;
+  function identityReady(){ return myHashReady || (isProtoUrl() && !window.liff); }
+  function ensureIdentity(){
+    if(myHashReady || myHashPending) return;
+    myHashPending = true;
+    getMyHash().then(function(h){ myHash = h; myHashReady = true; myHashPending = false; renderOrders(); });
+  }
+  function ordIsMine(o){
+    if(!o.ordererHash) return true;   // 本人の記録が無い古い依頼は、見分けられないので今までどおり
+    if(!myHash) return isProtoUrl();   // 試作（?proto=1）は本人を見分けられないので、本人として扱う
+    return myHash === o.ordererHash;
+  }
+  function openReplyFor(o){
+    answerMode = false; replyFromList = true; replyOrderData = o; rs = { mode: 'main' }; replyNotice = '';
+    enterReply(o.id);
+  }
   function ordersRefresh(){
     var card = $('orders-card');
     if(!ordersEnabled()){ card.hidden = true; return; }
+    ensureIdentity();
     var y = new Date(); y.setDate(y.getDate() - 3);   // 完了・取り消しでない依頼は、依頼日から3日間は一覧に出す
     syncPost({ action: 'listOrders', since: dateStr(y) }).then(function(res){
       if(res && res.ok && Array.isArray(res.orders)){ ordersData = res.orders; if(ordUi.id || ordUi.sending) return; renderOrders(); }
@@ -4816,7 +4867,19 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   var ordUi = { id: '', mode: '', err: '', sending: false };   // 「一覧から消す」「取り消しを伝える」の確認中の注文
   function ordUiClear(){ ordUi = { id: '', mode: '', err: '', sending: false }; renderOrders(); }
-  function cancelText(o){ return '🐈 松永便｜' + shortTarget(o) + 'のご依頼\n先ほどのお願いは取り消しです🙏\nお手数をおかけしました。'; }
+  // 依頼の中身を短く（長い時は省略して「ほか○件」）
+  function itemShort(t){ t = String(t || ''); return t.length > 16 ? t.slice(0, 15) + '…' : t; }
+  function orderSumList(o, k, max){
+    var it = o[k] || [];
+    if(!it.length) return '';
+    var shown = it.slice(0, max).map(itemShort).join('・');
+    return it.length > max ? shown + ' ほか' + (it.length - max) + '件' : shown;
+  }
+  function orderSumLines(o, max){
+    return KINDS.filter(function(k){ return (o[k] || []).length > 0; }).map(function(k){ return KIND_ICON[k] + ' ' + KIND_NAME[k] + '：' + orderSumList(o, k, max); });
+  }
+  function askTitle(o){ return 'ご依頼（' + shortTarget(o) + '）'; }
+  function cancelText(o){ return '🐈 松永便｜' + askTitle(o) + 'の取り消し\n' + orderSumLines(o, 3).join('\n') + '\n先ほどのお願いは取り消しです🙏\nお手数をおかけしました。'; }
   function ordArchive(o){
     ordUi.sending = true; ordUi.err = ''; renderOrders();
     syncPost({ action: 'archiveOrder', id: o.id }).then(function(res){
@@ -4875,34 +4938,45 @@ input[type="time"].field{width:auto;min-width:140px}
     var top = el('div', 'ord-top');
     var head = shortTarget(o) + (peopleText(o) ? '・' + peopleText(o) : '');
     var hp = el('p', 'ord-h', head);
+    if(hhmm(o.createdAt)){ hp.appendChild(document.createTextNode(' ')); hp.appendChild(el('span', 'ord-time', '（' + hhmm(o.createdAt) + 'の依頼）')); }
     if(o.daigo){ hp.appendChild(document.createTextNode(' ')); hp.appendChild(daigoTag()); }
     top.appendChild(hp);
+    var mine = ordIsMine(o), idReady = identityReady(), canAct = mine && idReady;
     var tools = el('div', 'ord-tools');
     var finished = !!o.canceled || !orderIncomplete(o);
-    if(!finished){
+    if(!finished && canAct){
       var cb = el('button', 'mini sub ord-tool', '取り消しを伝える'); cb.type = 'button';
       cb.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'cancel', err: '', sending: false }; renderOrders(); });
       tools.appendChild(cb);
     }
-    var ab = el('button', 'mini sub ord-tool', '一覧から消す'); ab.type = 'button';
-    ab.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'archive', err: '', sending: false }; renderOrders(); });
-    tools.appendChild(ab);
-    top.appendChild(tools);
+    if(canAct){
+      var ab = el('button', 'mini sub ord-tool', '一覧から消す'); ab.type = 'button';
+      ab.addEventListener('click', function(){ ordUi = { id: o.id, mode: 'archive', err: '', sending: false }; renderOrders(); });
+      tools.appendChild(ab);
+    }
+    if(tools.children.length) top.appendChild(tools);
     b.appendChild(top);
+    var sumLines = orderSumLines(o, 3);
+    if(sumLines.length){ var sm = el('div', 'ord-sum'); sumLines.forEach(function(l){ sm.appendChild(el('span', null, l)); }); b.appendChild(sm); }
     if(o.canceled) b.appendChild(el('p', 'ord-cancel', '取り消し'));
-    if(hasConsult){
+    if(hasConsult && canAct){
       var ansb = el('button', 'rv-btn big', '💬 相談に答える'); ansb.type = 'button';
       ansb.addEventListener('click', function(){ openAnswerFor(o); });
       b.appendChild(ansb);
     }
     if(ordUi.id === o.id && ordUi.mode) b.appendChild(ordConfirm(o));
+    if(!mine && idReady && !o.canceled && orderIncomplete(o)){   // 本人以外（松永さん・大吾くん）は、返事する画面へ
+      var rb = el('button', 'rv-btn big ord-reply-btn', '✉ お返事する'); rb.type = 'button';
+      rb.addEventListener('click', function(){ openReplyFor(o); });
+      b.appendChild(rb);
+    }
     KINDS.forEach(function(k){
       var dropped = isDropped(o, k);
       if(!hasKind(o, k) && !dropped) return;
       var row = el('div', 'ord-k');
       row.appendChild(el('span', 'ord-kn', KIND_ICON[k] + ' ' + KIND_NAME[k]));
       if(!o.canceled) row.appendChild(stBadgeFor(o, k));
-      if(!o.canceled && !dropped && stOf(o, k) !== 'done'){
+      if(!o.canceled && !dropped && stOf(o, k) !== 'done' && canAct){
         var bt = el('button', 'mini sub ord-done', '済みにする'); bt.type = 'button';
         bt.setAttribute('aria-label', KIND_NAME[k] + 'を済みにする');
         bt.addEventListener('click', function(){ bt.disabled = true; manualDone(o.id, k, ordersRefresh, stOf(o, k)); });
@@ -4990,7 +5064,7 @@ input[type="time"].field{width:auto;min-width:140px}
   }
   // 頼んだ人の呼び名（依頼に保存した LINE の表示名。無い時は「頼んだ方」）
   function ordName(o){ var n = o && o.ordererName ? String(o.ordererName).trim() : ''; return n ? n + 'さん' : '頼んだ方'; }
-  function replyHead(o){ return '🐈 松永便のお返事｜' + shortTarget(o) + 'のご依頼'; }
+  function replyHead(o){ return '🐈 松永便のお返事｜' + askTitle(o); }
   function ackText(o, kinds){ return replyHead(o) + '\n' + kinds.map(function(k){ return KIND_NAME[k]; }).join('・') + '、承知しました☺️'; }
   function doneText(o, kinds){
     var w = { meal: 'ご飯ができました☺️', clean: '掃除が終わりました。', shop: '買い物から戻りました。' };
@@ -5932,8 +6006,77 @@ input[type="time"].field{width:auto;min-width:140px}
   });
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') soutaTry(); });
 
+  // ---- 下書き（頼む画面の選択を端末に自動で残し、開き直した時に戻す） ----
+  var DRAFT_KEY = 'otetsudai-draft-v1', draftTimer = 0, draftRestoring = false;
+  function draftEmpty(d){
+    return !(d.dishes.length || d.usual || d.omakase || Object.keys(d.qty).length || d.memo || d.free || d.shopOther);
+  }
+  function snapDraft(){
+    return {
+      v: 1, date: dateStr(new Date()), dishes: dishes.slice(), subSel: clone(subSel), subOther: clone(subOther),
+      usual: !!usual, omakase: !!omakase, omakaseMoods: omakaseMoods.slice(), omakaseOther: omakaseOther,
+      people: people, daigo: !!daigo, daigoAuto: !!daigoAuto, when: when, tomorrow: !!tomorrow,
+      mealTime: $('meal-time').value, cleanTime: $('clean-time').value, cleanMode: cleanMode,
+      memo: $('memo').value, free: $('free-dish').value, shopOther: $('shop-other').value, qty: clone(qty), tab: tab
+    };
+  }
+  function saveDraftNow(){
+    if(draftRestoring) return;
+    try{
+      var d = snapDraft();
+      if(draftEmpty(d)) window.localStorage.removeItem(DRAFT_KEY);
+      else window.localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    }catch(e){}
+  }
+  function scheduleDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(saveDraftNow, 400); }
+  function clearDraft(){
+    clearTimeout(draftTimer);
+    try{ window.localStorage.removeItem(DRAFT_KEY); }catch(e){}
+    $('draft-note').hidden = true;
+  }
+  function restoreDraft(){
+    var d = null;
+    try{ d = JSON.parse(window.localStorage.getItem(DRAFT_KEY) || 'null'); }catch(e){ d = null; }
+    if(!d || d.v !== 1 || !Array.isArray(d.dishes)) return;
+    draftRestoring = true;
+    try{
+      var okName = function(n){ return typeof n === 'string' && menuHas(n); };
+      dishes = d.dishes.filter(okName);
+      subSel = d.subSel && typeof d.subSel === 'object' ? d.subSel : {};
+      subOther = d.subOther && typeof d.subOther === 'object' ? d.subOther : {};
+      usual = !!d.usual; $('usual-clean').setAttribute('aria-pressed', usual ? 'true' : 'false');
+      omakase = !!d.omakase; omakaseMoods = Array.isArray(d.omakaseMoods) ? d.omakaseMoods : []; omakaseOther = String(d.omakaseOther || ''); paintOmakase();
+      people = d.people >= 1 && d.people <= 20 ? d.people : loadPeople();
+      daigo = !!d.daigo; daigoAuto = !!d.daigoAuto; $('daigo').setAttribute('aria-pressed', daigo ? 'true' : 'false');
+      $('meal-time').value = d.mealTime || '19:00'; $('clean-time').value = d.cleanTime || '17:00';
+      $('memo').value = String(d.memo || '').slice(0, 1000); $('free-dish').value = String(d.free || '').slice(0, 40); $('shop-other').value = String(d.shopOther || '').slice(0, 40);
+      qty = {};
+      if(d.qty && typeof d.qty === 'object') Object.keys(d.qty).forEach(function(n){ if(shop.indexOf(n) >= 0 && d.qty[n] >= 1) qty[n] = d.qty[n]; });
+      renderShop();
+      var today = d.date === dateStr(new Date());
+      setDay(today ? !!d.tomorrow : false);   // 日付が変わった下書きの日時は今日に直す
+      var w = ['すぐに','朝','昼','夜','時間指定'].indexOf(d.when) >= 0 ? d.when : 'すぐに';
+      if(tomorrow && w === 'すぐに') w = '夜';
+      setWhen(w);
+      setCleanMode(['now','any','set'].indexOf(d.cleanMode) >= 0 ? d.cleanMode : 'now');
+      render(); refresh();
+      if(d.tab && d.tab !== tab) try{ setTab(d.tab); }catch(e){}
+      if(!snapDraftNonEmpty()){ clearDraft(); }
+      else $('draft-note').hidden = false;
+    }catch(e){}
+    draftRestoring = false;
+  }
+  function snapDraftNonEmpty(){ return !draftEmpty(snapDraft()); }
+  $('draft-clear').addEventListener('click', function(){ resetSelections(); clearDraft(); });
+  document.addEventListener('click', scheduleDraft, true);
+  document.addEventListener('input', scheduleDraft, true);
+  document.addEventListener('change', scheduleDraft, true);
+  window.addEventListener('pagehide', saveDraftNow);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') saveDraftNow(); });
+
   paintOmakase();
   refresh();
+  restoreDraft();
   replyInit();
   initLiff();
   syncInit();
